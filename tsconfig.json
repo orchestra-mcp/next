@@ -47,6 +47,12 @@
   "exclude": [
     "node_modules",
     "**/*.stories.ts",
-    "**/*.stories.tsx"
+    "**/*.stories.tsx",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/vitest.config.ts",
+    "**/vitest.config.mts"
   ]
 }
