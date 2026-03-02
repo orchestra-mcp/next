@@ -2,28 +2,26 @@
 import Link from 'next/link'
 import { useThemeStore } from '@/store/theme'
 
-const posts = [
-  {
-    slug: 'introducing-orchestra',
-    title: 'Introducing Orchestra: The AI-native IDE',
-    excerpt: 'We built Orchestra to solve the fragmentation problem in AI tooling. One protocol, every platform, any AI.',
-    date: 'Feb 2026', readTime: '5 min read', tag: 'Announcement',
-  },
-  {
-    slug: 'rag-memory-engine',
-    title: 'How our RAG Memory Engine works',
-    excerpt: 'A deep dive into Tantivy full-text search, SQLite vector embeddings, and how we got it running in Rust.',
-    date: 'Feb 2026', readTime: '8 min read', tag: 'Engineering',
-  },
-  {
-    slug: 'multi-agent-orchestration',
-    title: 'Multi-agent orchestration with Orchestra',
-    excerpt: 'Running Claude, GPT-4o, and Gemini in parallel agent workflows using our new agent.orchestrator plugin.',
-    date: 'Feb 2026', readTime: '6 min read', tag: 'Tutorial',
-  },
+interface Post {
+  slug: string
+  title: string
+  excerpt: string
+  date: string
+  read_time: string
+  tag: string
+}
+
+interface BlogData {
+  posts?: Post[]
+}
+
+const FALLBACK_POSTS: Post[] = [
+  { slug: 'orchestra-v1-release', title: 'Orchestra v1.0.0 — GA release', excerpt: 'After months of development, Orchestra v1.0.0 is here. 290 tools, 36 plugins, 17 packs, 5 platforms.', date: 'Mar 2026', read_time: '5 min read', tag: 'Announcement' },
+  { slug: 'in-process-architecture', title: 'Why we switched to in-process architecture', excerpt: 'We replaced our QUIC plugin mesh with an in-process single-binary design for local IDE use.', date: 'Mar 2026', read_time: '7 min read', tag: 'Engineering' },
+  { slug: 'rag-memory-engine', title: 'How our RAG Memory Engine works', excerpt: 'A deep dive into Tantivy full-text search, SQLite vector embeddings, and how we got 22 tools running in Rust.', date: 'Feb 2026', read_time: '8 min read', tag: 'Engineering' },
 ]
 
-export function BlogPreview() {
+export function BlogPreview({ data }: { data?: Record<string, unknown> }) {
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
 
@@ -32,6 +30,9 @@ export function BlogPreview() {
   const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
   const cardBg = isDark ? 'rgba(255,255,255,0.02)' : '#ffffff'
   const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
+
+  const rawPosts = (data?.posts ?? []) as Post[]
+  const posts = rawPosts.length ? rawPosts.slice(0, 3) : FALLBACK_POSTS
 
   return (
     <section style={{ padding: '80px 32px', maxWidth: 1200, margin: '0 auto' }}>
@@ -53,7 +54,7 @@ export function BlogPreview() {
             <h3 style={{ fontSize: 16, fontWeight: 600, color: textPrimary, lineHeight: 1.4, marginBottom: 10 }}>{post.title}</h3>
             <p style={{ fontSize: 13, color: textMuted, lineHeight: 1.6, marginBottom: 16 }}>{post.excerpt}</p>
             <div style={{ fontSize: 12, color: textDim, display: 'flex', gap: 8 }}>
-              <span>{post.date}</span><span>&middot;</span><span>{post.readTime}</span>
+              <span>{post.date}</span><span>&middot;</span><span>{post.read_time}</span>
             </div>
           </Link>
         ))}
