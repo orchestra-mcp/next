@@ -1,0 +1,195 @@
+/**
+ * ChatStartupPrompts Component Styles
+ * Centered welcome screen with 2-column prompt grid
+ */
+
+.startup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  gap: 24px;
+  text-align: center;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Header */
+.startup__header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 400px;
+}
+
+.startup__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-fg);
+  line-height: 1.3;
+}
+
+.startup__subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-fg-muted);
+  line-height: 1.5;
+}
+
+/* 2-column grid */
+.startup__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+}
+
+/* Card */
+.startup__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.startup__card:hover {
+  border-color: var(--card-accent, var(--color-accent));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.startup__card:active {
+  transform: translateY(0);
+}
+
+.startup__card-icon {
+  display: flex;
+  font-size: 18px;
+  color: var(--card-accent, var(--color-accent));
+}
+
+.startup__card-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.startup__card-desc {
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  line-height: 1.4;
+}
+
+/* Compact variant */
+[data-variant='compact'] .startup {
+  padding: 20px 16px;
+  gap: 16px;
+}
+
+[data-variant='compact'] .startup__title { font-size: 18px; }
+
+[data-variant='compact'] .startup__grid { gap: 8px; }
+
+[data-variant='compact'] .startup__card {
+  padding: 10px;
+  border-radius: 6px;
+  gap: 4px;
+}
+
+[data-variant='compact'] .startup__card-icon { font-size: 14px; }
+[data-variant='compact'] .startup__card-title { font-size: 12px; }
+[data-variant='compact'] .startup__card-desc { font-size: 11px; }
+
+/* Modern variant */
+[data-variant='modern'] .startup {
+  padding: 40px 32px;
+  gap: 28px;
+}
+
+[data-variant='modern'] .startup__title { font-size: 26px; }
+
+[data-variant='modern'] .startup__grid { gap: 16px; }
+
+[data-variant='modern'] .startup__card {
+  padding: 18px;
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+[data-variant='modern'] .startup__card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Show-more link button */
+.startup__show-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.startup__show-more:hover {
+  opacity: 0.8;
+}
+
+/* Modal search */
+.startup__modal-search {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 16px;
+}
+
+.startup__modal-search:focus {
+  border-color: var(--color-accent);
+}
+
+.startup__modal-search::placeholder {
+  color: var(--color-fg-muted);
+}
+
+/* Modal grid — same 2-col layout, scrolled by modal-body */
+.startup__modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Cards inside modal need explicit interactivity */
+.startup__modal-grid .startup__card {
+  position: relative;
+  z-index: 1;
+}
+
+/* Empty search state */
+.startup__modal-empty {
+  text-align: center;
+  color: var(--color-fg-muted);
+  font-size: 14px;
+  padding: 32px 0;
+  grid-column: 1 / -1;
+}

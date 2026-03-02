@@ -1,0 +1,261 @@
+/**
+ * TerminalSession -- interactive xterm.js terminal with PTY over WebSocket.
+ * BEM naming: .terminal-session__*
+ * Header pattern matches FileExplorerSession.
+ */
+
+/* ── Shell ───────────────────────────────────────────────── */
+
+.terminal-session {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-bg);
+}
+
+/* ── Header (matches file explorer) ─────────────────────── */
+
+.terminal-session__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-alt);
+  flex-shrink: 0;
+  min-height: 32px;
+}
+
+.terminal-session__header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-fg);
+  font-family: 'Menlo', 'Consolas', 'Courier New', monospace;
+  line-height: 1;
+}
+
+.terminal-session__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.terminal-session__header-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  line-height: 0;
+}
+
+.terminal-session__header-btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-fg);
+}
+
+.terminal-session__header-btn--danger:hover {
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  color: var(--color-danger);
+}
+
+.terminal-session__header-btn--accent:hover {
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  color: var(--color-accent);
+}
+
+/* ── Terminal container ──────────────────────────────────── */
+
+.terminal-session__container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.terminal-session__container .xterm {
+  height: 100%;
+}
+
+.terminal-session__container .xterm-viewport {
+  overflow-y: auto;
+}
+
+/* ── Status bar ──────────────────────────────────────────── */
+
+.terminal-session__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-alt);
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  flex-shrink: 0;
+}
+
+.terminal-session__status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-fg-muted);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.terminal-session__status-dot--connected {
+  background: var(--color-success);
+  opacity: 1;
+}
+
+.terminal-session__status-dot--connecting {
+  background: var(--color-warning);
+  opacity: 1;
+  animation: terminal-session-pulse 1s ease-in-out infinite;
+}
+
+.terminal-session__status-dot--error {
+  background: var(--color-danger);
+  opacity: 1;
+}
+
+@keyframes terminal-session-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.terminal-session__status-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.terminal-session__status-path {
+  color: var(--color-fg-muted);
+  font-family: 'Menlo', 'Consolas', 'Courier New', monospace;
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+/* ── Loading / error placeholder ─────────────────────────── */
+
+.terminal-session__loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  z-index: 1;
+}
+
+.terminal-session__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--color-fg-muted);
+  font-size: 13px;
+}
+
+.terminal-session__loading-icon {
+  opacity: 0.4;
+  line-height: 0;
+}
+
+.terminal-session__loading--error {
+  color: var(--color-danger);
+}
+
+/* ── Compact variant ─────────────────────────────────────── */
+
+[data-variant='compact'] .terminal-session__header {
+  padding: 4px 8px;
+  min-height: 28px;
+}
+
+[data-variant='compact'] .terminal-session__header-title {
+  font-size: 11px;
+  gap: 4px;
+}
+
+[data-variant='compact'] .terminal-session__header-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+}
+
+[data-variant='compact'] .terminal-session__container {
+  padding: 2px;
+}
+
+[data-variant='compact'] .terminal-session__status {
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 10px;
+}
+
+[data-variant='compact'] .terminal-session__status-dot {
+  width: 6px;
+  height: 6px;
+}
+
+/* ── Modern variant ──────────────────────────────────────── */
+
+[data-variant='modern'] .terminal-session__header {
+  padding: 8px 14px;
+  min-height: 36px;
+}
+
+[data-variant='modern'] .terminal-session__header-title {
+  font-size: 13px;
+  gap: 8px;
+}
+
+[data-variant='modern'] .terminal-session__header-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .terminal-session__container {
+  padding: 6px;
+}
+
+[data-variant='modern'] .terminal-session__status {
+  gap: 8px;
+  padding: 6px 16px;
+  font-size: 12px;
+}
+
+[data-variant='modern'] .terminal-session__status-dot {
+  width: 10px;
+  height: 10px;
+}
+
+[data-variant='modern'] .terminal-session__status-path {
+  font-size: 11px;
+}
+
+[data-variant='modern'] .terminal-session__loading {
+  font-size: 14px;
+  gap: 10px;
+}

@@ -1,0 +1,91 @@
+/**
+ * ChatBody Component Styles
+ * Scrollable message container with floating scroll button
+ */
+
+.chat-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Scrollable container */
+.chat-body__scroll {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Messages column — extra gap so glow borders have breathing room */
+.chat-body__messages {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 20px 20px;
+}
+
+/* Invisible trigger element for load more detection */
+.chat-body__load-trigger {
+  height: 40px;
+  width: 100%;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-fg-muted);
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+/* Empty state */
+.chat-body__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 32px 16px;
+  color: var(--color-fg-muted);
+  text-align: center;
+}
+
+/* Floating scroll-to-bottom button */
+.chat-body__scroll-btn {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background-color: var(--color-bg);
+  color: var(--color-fg-muted);
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: all 0.15s ease;
+}
+
+.chat-body__scroll-btn:hover {
+  background-color: var(--color-bg-alt);
+  color: var(--color-fg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+/* Compact variant */
+[data-variant='compact'] .chat-body__messages { gap: 20px; padding: 14px 12px; }
+[data-variant='compact'] .chat-body__scroll-btn { width: 28px; height: 28px; bottom: 8px; }
+[data-variant='compact'] .chat-body__empty { padding: 20px 12px; }
+
+/* Modern variant */
+[data-variant='modern'] .chat-body__messages { gap: 36px; padding: 24px 20px; }
+[data-variant='modern'] .chat-body__scroll-btn {
+  width: 36px;
+  height: 36px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  border-radius: 50%;
+}

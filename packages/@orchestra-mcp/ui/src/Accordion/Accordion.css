@@ -1,0 +1,123 @@
+/**
+ * Accordion Component Styles
+ * Uses CSS variables from theme system
+ */
+
+.accordion {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Item */
+.accordion__item {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.accordion__item:last-child {
+  border-bottom: none;
+}
+
+/* Header */
+.accordion__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.accordion__header:hover:not(:disabled) {
+  background: var(--color-bg-alt);
+}
+
+/* Chevron */
+.accordion__chevron {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.accordion__chevron::before {
+  content: '';
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin: 4px auto;
+  border-right: 2px solid var(--color-fg-muted);
+  border-bottom: 2px solid var(--color-fg-muted);
+  transform: rotate(-45deg);
+  transition: transform 0.2s ease;
+}
+
+.accordion__item--open .accordion__chevron::before {
+  transform: rotate(45deg);
+}
+
+/* Content */
+.accordion__content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+
+.accordion__item--open .accordion__content {
+  max-height: 500px;
+}
+
+.accordion__body {
+  padding: 10px 14px;
+  color: var(--color-fg);
+  font-size: 14px;
+  line-height: 1.5;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Disabled */
+.accordion__item--disabled {
+  opacity: 0.5;
+}
+
+.accordion__item--disabled .accordion__header {
+  cursor: not-allowed;
+}
+
+/* Compact variant */
+[data-variant='compact'] .accordion {
+  border-radius: 4px;
+}
+
+[data-variant='compact'] .accordion__header {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+[data-variant='compact'] .accordion__body {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .accordion {
+  border-radius: 8px;
+}
+
+[data-variant='modern'] .accordion__header {
+  padding: 12px 16px;
+  font-weight: 600;
+}
+
+[data-variant='modern'] .accordion__body {
+  padding: 12px 16px;
+}

@@ -1,0 +1,287 @@
+/**
+ * PromptCardEditor — Vertical card CRUD for startup prompts & quick actions
+ * Icon picker, color picker, and live preview
+ */
+
+.pce { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Card list ──────────────────────────────────── */
+.pce__list { display: flex; flex-direction: column; gap: 12px; }
+
+.pce__card {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg-contrast);
+  transition: border-color 0.15s ease;
+}
+.pce__card:hover { border-color: var(--color-fg-dim); }
+.pce__card--drag-over {
+  border-color: var(--color-accent);
+  border-style: dashed;
+  background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+}
+
+.pce__card-top {
+  display: flex; align-items: flex-start; gap: 12px;
+}
+
+/* Drag handle */
+.pce__drag-handle {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 40px;
+  color: var(--color-fg-dim);
+  cursor: grab;
+  opacity: 0.5;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+.pce__drag-handle:hover { opacity: 1; color: var(--color-fg-muted); }
+.pce__card:active .pce__drag-handle { cursor: grabbing; }
+
+/* Icon button (opens picker) */
+.pce__icon-btn {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--color-fg-muted);
+}
+.pce__icon-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Fields column */
+.pce__fields {
+  flex: 1; display: flex; flex-direction: column; gap: 6px;
+  min-width: 0;
+}
+
+.pce__input {
+  width: 100%; padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-size: 13px; font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.pce__input:focus { border-color: var(--color-accent); }
+.pce__input--title { font-weight: 600; }
+
+.pce__textarea {
+  width: 100%; padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-size: 12px; font-family: inherit;
+  outline: none; resize: vertical;
+  min-height: 48px;
+  transition: border-color 0.15s ease;
+}
+.pce__textarea:focus { border-color: var(--color-accent); }
+
+/* Color row */
+.pce__color-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.pce__color-picker {
+  width: 28px; height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0; cursor: pointer;
+  background: none;
+}
+.pce__color-label {
+  font-size: 11px; color: var(--color-fg-muted);
+}
+
+/* Card actions */
+.pce__card-actions {
+  display: flex; align-items: center; gap: 4px;
+  margin-left: auto;
+}
+.pce__remove {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border: none; border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pce__remove:hover {
+  background: var(--color-bg-active);
+  color: var(--color-danger, #f87171);
+}
+
+/* ── Add button ─────────────────────────────────── */
+.pce__add {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 10px;
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  font-size: 13px; font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pce__add:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-bg-contrast);
+}
+
+/* ── Icon Picker Popover ────────────────────────── */
+.pce__picker-overlay {
+  position: fixed; inset: 0;
+  z-index: 999;
+}
+.pce__picker {
+  position: fixed; z-index: 1000;
+  width: 320px; max-height: 360px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.pce__picker-search {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+.pce__picker-input {
+  width: 100%; padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-contrast);
+  color: var(--color-fg);
+  font-size: 13px; font-family: inherit;
+  outline: none;
+}
+.pce__picker-input:focus { border-color: var(--color-accent); }
+
+.pce__picker-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px; padding: 8px;
+  overflow-y: auto;
+  max-height: 280px;
+}
+.pce__picker-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  border: none; border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+.pce__picker-icon:hover {
+  background: var(--color-bg-active);
+  color: var(--color-accent);
+}
+.pce__picker-icon--active {
+  background: var(--color-accent);
+  color: white;
+}
+.pce__picker-empty {
+  padding: 20px; text-align: center;
+  color: var(--color-fg-muted); font-size: 13px;
+}
+
+/* ── Preview Section ────────────────────────────── */
+.pce__preview-section {
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+.pce__preview-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-fg-muted);
+  margin-bottom: 10px;
+}
+
+/* Preview: startup prompt cards (2-col grid) */
+.pce__preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.pce__preview-card {
+  display: flex; flex-direction: column;
+  align-items: flex-start; gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pce__preview-card:hover {
+  border-color: var(--card-accent, var(--color-accent));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.pce__preview-card:active {
+  transform: translateY(0);
+}
+.pce__preview-card-icon {
+  display: flex; font-size: 18px;
+  color: var(--card-accent, var(--color-accent));
+}
+.pce__preview-card-title {
+  font-size: 13px; font-weight: 600;
+  color: var(--color-fg);
+  line-height: 1.3;
+}
+.pce__preview-card-desc {
+  font-size: 12px; color: var(--color-fg-muted);
+  line-height: 1.4;
+}
+
+/* Preview: quick action chips — matches .quick-actions__chip exactly */
+.pce__preview-chips {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 8px 4px;
+}
+.pce__preview-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-size: 13px; font-family: inherit;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pce__preview-chip:hover {
+  border-color: var(--chip-accent, var(--color-accent));
+  background: var(--color-bg-alt);
+  color: var(--chip-accent, var(--color-accent));
+}
+.pce__preview-chip:active {
+  transform: scale(0.97);
+}
+.pce__preview-chip-icon {
+  display: flex; align-items: center;
+  font-size: 14px; line-height: 1;
+}
+.pce__preview-chip-label {
+  line-height: 1;
+}

@@ -1,0 +1,593 @@
+.service-manager-session {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-bg, #1a1a1a);
+}
+
+/* ── Connection form (disconnected) ── */
+.service-manager-session__connection-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  max-width: 400px;
+  margin: 0 auto;
+  width: 100%;
+  flex: 1;
+  justify-content: center;
+}
+
+.service-manager-session__form-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-fg, #e0e0e0);
+}
+
+.service-manager-session__form-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-fg-muted, #888);
+  line-height: 1.5;
+}
+
+.service-manager-session__connect-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  margin-top: 4px;
+}
+
+.service-manager-session__connect-btn:hover {
+  opacity: 0.85;
+}
+
+.service-manager-session__error {
+  padding: 8px 24px;
+  font-size: 12px;
+  color: var(--color-danger, #d9534f);
+}
+
+/* ── Toolbar ── */
+.service-manager-session__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-bg-alt, #1e1e1e);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.service-manager-session__toolbar-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-fg, #e0e0e0);
+  flex: 1;
+}
+
+/* ── Action buttons (Refresh, Stacks) ── */
+.service-manager-session__action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  background: var(--color-bg, #1a1a1a);
+  color: var(--color-fg-muted, #888);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.service-manager-session__action-btn:hover {
+  color: var(--color-fg, #e0e0e0);
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.service-manager-session__action-btn--active {
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+  border-color: var(--color-accent, #6366f1);
+}
+
+/* ── Disconnect button ── */
+.service-manager-session__disconnect-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  background: var(--color-danger, #d9534f);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+}
+
+.service-manager-session__disconnect-btn:hover {
+  opacity: 0.85;
+}
+
+/* ── Error banner ── */
+.service-manager-session__error-banner {
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--color-danger, #d9534f) 15%, transparent);
+  border-bottom: 1px solid var(--color-danger, #d9534f);
+  color: var(--color-danger, #d9534f);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Stacks panel ── */
+.service-manager-session__stacks {
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-bg-alt, #1e1e1e);
+  flex-shrink: 0;
+  padding: 12px;
+}
+
+.service-manager-session__stacks-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.service-manager-session__stacks-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-fg, #e0e0e0);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.service-manager-session__stacks-empty {
+  font-size: 12px;
+  color: var(--color-fg-muted, #888);
+  padding: 8px 0;
+}
+
+.service-manager-session__stacks-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+/* ── Stack card ── */
+.service-manager-session__stack-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 6px;
+  background: var(--color-bg, #1a1a1a);
+  transition: border-color 0.15s ease;
+}
+
+.service-manager-session__stack-card:hover {
+  border-color: var(--color-fg-muted, #888);
+}
+
+.service-manager-session__stack-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-fg, #e0e0e0);
+}
+
+.service-manager-session__stack-desc {
+  font-size: 11px;
+  color: var(--color-fg-muted, #888);
+  line-height: 1.4;
+}
+
+.service-manager-session__stack-services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.service-manager-session__stack-service-tag {
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--color-fg-muted, #888);
+  font-size: 10px;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+}
+
+.service-manager-session__stack-install-btn {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 4px;
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.service-manager-session__stack-install-btn:hover {
+  opacity: 0.85;
+}
+
+/* ── Stack progress bar ── */
+.service-manager-session__stack-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.service-manager-session__stack-progress-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border, rgba(255, 255, 255, 0.08));
+  overflow: hidden;
+}
+
+.service-manager-session__stack-progress-fill {
+  height: 100%;
+  background: var(--color-accent, #6366f1);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.service-manager-session__stack-progress-text {
+  font-size: 10px;
+  color: var(--color-fg-muted, #888);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  flex-shrink: 0;
+}
+
+/* ── Service list area ── */
+.service-manager-session__list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.service-manager-session__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-fg-muted, #888);
+  font-size: 13px;
+}
+
+/* ── Service row ── */
+.service-manager-session__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  transition: background 0.1s ease;
+}
+
+.service-manager-session__row:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.service-manager-session__row:last-child {
+  border-bottom: none;
+}
+
+/* ── Service status dot ── */
+.service-manager-session__svc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-fg-muted, #888);
+}
+
+.service-manager-session__svc-dot--running {
+  background: var(--color-success, #4caf50);
+}
+
+.service-manager-session__svc-dot--stopped {
+  background: var(--color-danger, #d9534f);
+}
+
+.service-manager-session__svc-dot--unknown {
+  background: var(--color-fg-muted, #888);
+}
+
+/* ── Service info (name + version) ── */
+.service-manager-session__svc-info {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.service-manager-session__svc-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-fg, #e0e0e0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.service-manager-session__svc-version {
+  font-size: 10px;
+  color: var(--color-fg-muted, #888);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  flex-shrink: 0;
+}
+
+/* ── Service meta (port + pid) ── */
+.service-manager-session__svc-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.service-manager-session__svc-port {
+  font-size: 11px;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  color: var(--color-accent, #6366f1);
+}
+
+.service-manager-session__svc-pid {
+  font-size: 10px;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  color: var(--color-fg-muted, #888);
+}
+
+/* ── Service action buttons ── */
+.service-manager-session__svc-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.service-manager-session__svc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 3px;
+  background: var(--color-bg, #1a1a1a);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.service-manager-session__svc-btn--start {
+  color: var(--color-success, #4caf50);
+  border-color: var(--color-success, #4caf50);
+}
+
+.service-manager-session__svc-btn--start:hover {
+  background: color-mix(in srgb, var(--color-success, #4caf50) 15%, transparent);
+}
+
+.service-manager-session__svc-btn--stop {
+  color: var(--color-danger, #d9534f);
+  border-color: var(--color-danger, #d9534f);
+}
+
+.service-manager-session__svc-btn--stop:hover {
+  background: color-mix(in srgb, var(--color-danger, #d9534f) 15%, transparent);
+}
+
+.service-manager-session__svc-btn--restart {
+  color: var(--color-warning, #ff9800);
+  border-color: var(--color-warning, #ff9800);
+}
+
+.service-manager-session__svc-btn--restart:hover {
+  background: color-mix(in srgb, var(--color-warning, #ff9800) 15%, transparent);
+}
+
+.service-manager-session__svc-btn--install {
+  color: var(--color-accent, #6366f1);
+  border-color: var(--color-accent, #6366f1);
+}
+
+.service-manager-session__svc-btn--install:hover {
+  background: color-mix(in srgb, var(--color-accent, #6366f1) 15%, transparent);
+}
+
+/* ── Loading spinner ── */
+.service-manager-session__spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-top-color: var(--color-accent, #6366f1);
+  border-radius: 50%;
+  animation: service-manager-session-spin 0.6s linear infinite;
+}
+
+/* ── Status bar ── */
+.service-manager-session__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 12px;
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-bg-alt, #1e1e1e);
+  font-size: 11px;
+  color: var(--color-fg-muted, #888);
+  flex-shrink: 0;
+}
+
+.service-manager-session__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-fg-muted, #888);
+  flex-shrink: 0;
+}
+
+.service-manager-session__status-dot--connected {
+  background: var(--color-success, #4caf50);
+}
+
+.service-manager-session__status-dot--connecting {
+  background: var(--color-warning, #ff9800);
+  animation: service-manager-session-pulse 1s ease-in-out infinite;
+}
+
+.service-manager-session__status-dot--error {
+  background: var(--color-danger, #d9534f);
+}
+
+.service-manager-session__status-count {
+  flex-shrink: 0;
+}
+
+.service-manager-session__status-state {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ── Animations ── */
+@keyframes service-manager-session-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes service-manager-session-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Compact variant
+   ══════════════════════════════════════════════════════════════════════ */
+[data-variant='compact'] .service-manager-session__connection-form {
+  padding: 16px;
+  gap: 8px;
+}
+
+[data-variant='compact'] .service-manager-session__form-title {
+  font-size: 13px;
+}
+
+[data-variant='compact'] .service-manager-session__toolbar {
+  padding: 4px 8px;
+}
+
+[data-variant='compact'] .service-manager-session__stacks {
+  padding: 8px;
+}
+
+[data-variant='compact'] .service-manager-session__stacks-grid {
+  gap: 6px;
+}
+
+[data-variant='compact'] .service-manager-session__stack-card {
+  padding: 8px;
+  gap: 4px;
+}
+
+[data-variant='compact'] .service-manager-session__stack-name {
+  font-size: 12px;
+}
+
+[data-variant='compact'] .service-manager-session__row {
+  padding: 6px 8px;
+  gap: 8px;
+}
+
+[data-variant='compact'] .service-manager-session__svc-name {
+  font-size: 12px;
+}
+
+[data-variant='compact'] .service-manager-session__svc-btn {
+  padding: 2px 6px;
+  font-size: 9px;
+}
+
+[data-variant='compact'] .service-manager-session__status {
+  padding: 1px 8px;
+  font-size: 10px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Modern variant
+   ══════════════════════════════════════════════════════════════════════ */
+[data-variant='modern'] .service-manager-session__connection-form {
+  padding: 32px;
+  gap: 16px;
+  max-width: 480px;
+}
+
+[data-variant='modern'] .service-manager-session__form-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+[data-variant='modern'] .service-manager-session__form-desc {
+  font-size: 13px;
+}
+
+[data-variant='modern'] .service-manager-session__connect-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+[data-variant='modern'] .service-manager-session__toolbar {
+  padding: 8px 16px;
+}
+
+[data-variant='modern'] .service-manager-session__toolbar-title {
+  font-size: 15px;
+}
+
+[data-variant='modern'] .service-manager-session__stack-card {
+  padding: 14px;
+  border-radius: 10px;
+  gap: 8px;
+}
+
+[data-variant='modern'] .service-manager-session__stack-name {
+  font-size: 14px;
+}
+
+[data-variant='modern'] .service-manager-session__row {
+  padding: 10px 16px;
+}
+
+[data-variant='modern'] .service-manager-session__svc-name {
+  font-size: 14px;
+}
+
+[data-variant='modern'] .service-manager-session__svc-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+[data-variant='modern'] .service-manager-session__status {
+  padding: 4px 16px;
+  font-size: 12px;
+}

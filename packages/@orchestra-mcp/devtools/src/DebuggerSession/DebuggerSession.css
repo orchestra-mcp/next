@@ -1,0 +1,1246 @@
+/* DebuggerSession — DAP debug interface */
+/* Design system: --color-fg, --color-fg-muted, --color-border, --color-bg,
+   --color-bg-alt, --color-bg-hover, --color-accent */
+
+.debugger-session {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-bg, #1a1a1a);
+  color: var(--color-fg, #e0e0e0);
+}
+
+/* ══════════════════════════════════════════════
+   Connection form (disconnected state)
+   ══════════════════════════════════════════════ */
+
+.debugger-session__connection-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+  flex: 1;
+  justify-content: center;
+}
+
+.debugger-session__form-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-fg, #e0e0e0);
+}
+
+.debugger-session__form-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-fg-muted, #888);
+  line-height: 1.5;
+}
+
+.debugger-session__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-fg-muted, #888);
+}
+
+.debugger-session__input {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  background: var(--color-bg-alt, #1e1e1e);
+  color: var(--color-fg, #e0e0e0);
+  font-size: 13px;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.debugger-session__input:focus {
+  border-color: var(--color-accent, #6366f1);
+}
+
+.debugger-session__input--port {
+  max-width: 120px;
+}
+
+.debugger-session__select {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  background: var(--color-bg-alt, #1e1e1e);
+  color: var(--color-fg, #e0e0e0);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.debugger-session__select:focus {
+  border-color: var(--color-accent, #6366f1);
+}
+
+/* ── Mode toggle (Launch / Attach) ── */
+
+.debugger-session__mode-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  overflow: hidden;
+  align-self: flex-start;
+}
+
+.debugger-session__mode-btn {
+  padding: 5px 14px;
+  border: none;
+  background: var(--color-bg-alt, #1e1e1e);
+  color: var(--color-fg-muted, #888);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.debugger-session__mode-btn:not(:last-child) {
+  border-right: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+}
+
+.debugger-session__mode-btn:hover {
+  color: var(--color-fg, #e0e0e0);
+}
+
+.debugger-session__mode-btn--active {
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+}
+
+.debugger-session__mode-btn--active:hover {
+  color: #fff;
+}
+
+/* ── Connect / Launch / Attach button ── */
+
+.debugger-session__connect-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  margin-top: 4px;
+}
+
+.debugger-session__connect-btn:hover {
+  opacity: 0.85;
+}
+
+/* ── Error messages ── */
+
+.debugger-session__error {
+  padding: 8px 24px;
+  font-size: 12px;
+  color: var(--color-danger, #d9534f);
+}
+
+.debugger-session__error-banner {
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--color-danger, #d9534f) 15%, transparent);
+  border-bottom: 1px solid var(--color-danger, #d9534f);
+  color: var(--color-danger, #d9534f);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════
+   Toolbar with step controls
+   ══════════════════════════════════════════════ */
+
+.debugger-session__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-bg-alt, #1e1e1e);
+  flex-shrink: 0;
+}
+
+.debugger-session__step-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.debugger-session__step-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-fg, #e0e0e0);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+  padding: 0;
+}
+
+.debugger-session__step-btn:hover:not(:disabled) {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.debugger-session__step-btn:disabled {
+  color: var(--color-fg-muted, #888);
+  cursor: default;
+  opacity: 0.5;
+}
+
+.debugger-session__step-btn--pause:hover:not(:disabled) {
+  color: var(--color-warning, #ff9800);
+}
+
+.debugger-session__step-btn--stop:hover:not(:disabled) {
+  color: var(--color-danger, #d9534f);
+}
+
+.debugger-session__step-separator {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: var(--color-border, rgba(255, 255, 255, 0.08));
+  margin: 0 4px;
+}
+
+/* ── Debug status indicator ── */
+
+.debugger-session__debug-status {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex: 1;
+  text-align: center;
+}
+
+.debugger-session__debug-status--running {
+  color: var(--color-success, #4caf50);
+}
+
+.debugger-session__debug-status--paused {
+  color: var(--color-warning, #ff9800);
+}
+
+.debugger-session__debug-status--stopped {
+  color: var(--color-danger, #d9534f);
+}
+
+.debugger-session__debug-status--idle {
+  color: var(--color-fg-muted, #888);
+}
+
+/* ── Disconnect button ── */
+
+.debugger-session__disconnect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  background: var(--color-danger, #d9534f);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.debugger-session__disconnect-btn:hover {
+  opacity: 0.85;
+}
+
+/* ══════════════════════════════════════════════
+   Main panels layout
+   ══════════════════════════════════════════════ */
+
+.debugger-session__panels {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.debugger-session__left-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 6;
+  min-width: 0;
+  border-right: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+}
+
+.debugger-session__right-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 4;
+  min-width: 0;
+}
+
+/* ── Panel header (reusable) ── */
+
+.debugger-session__panel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-fg-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-bg-alt, #1e1e1e);
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════
+   Source panel
+   ══════════════════════════════════════════════ */
+
+.debugger-session__source-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.debugger-session__source-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  color: var(--color-fg-muted, #888);
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-bg-alt, #1e1e1e);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.debugger-session__source-viewer {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.debugger-session__source-code {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.debugger-session__source-line {
+  display: flex;
+  align-items: stretch;
+  min-height: 20px;
+}
+
+.debugger-session__source-line--current {
+  background: color-mix(in srgb, var(--color-warning, #ff9800) 15%, transparent);
+}
+
+/* ── Gutter (line numbers + breakpoints) ── */
+
+.debugger-session__gutter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 52px;
+  padding: 0 8px 0 4px;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.debugger-session__gutter:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.debugger-session__line-num {
+  font-size: 11px;
+  color: var(--color-fg-muted, #888);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  text-align: right;
+  min-width: 24px;
+}
+
+.debugger-session__source-line--current .debugger-session__line-num {
+  color: var(--color-warning, #ff9800);
+}
+
+.debugger-session__line-text {
+  flex: 1;
+  padding: 0 12px 0 8px;
+  white-space: pre;
+  color: var(--color-fg, #e0e0e0);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  font-size: 12px;
+}
+
+.debugger-session__source-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-fg-muted, #888);
+  font-size: 13px;
+  padding: 24px;
+  text-align: center;
+}
+
+/* ── Breakpoint marker (red dot) ── */
+
+.debugger-session__bp-marker {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-danger, #d9534f);
+  flex-shrink: 0;
+}
+
+.debugger-session__bp-marker--inline {
+  width: 6px;
+  height: 6px;
+}
+
+/* ══════════════════════════════════════════════
+   Breakpoints panel
+   ══════════════════════════════════════════════ */
+
+.debugger-session__breakpoints-panel {
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+  max-height: 140px;
+  display: flex;
+  flex-direction: column;
+}
+
+.debugger-session__breakpoints-list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.debugger-session__breakpoints-empty {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--color-fg-muted, #888);
+}
+
+.debugger-session__bp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 12px;
+  font-size: 11px;
+  transition: background 0.1s ease;
+}
+
+.debugger-session__bp-row:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.debugger-session__bp-location {
+  flex: 1;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  color: var(--color-fg, #e0e0e0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debugger-session__bp-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-fg-muted, #888);
+  cursor: pointer;
+  transition: color 0.1s ease, background 0.1s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.debugger-session__bp-remove:hover {
+  color: var(--color-danger, #d9534f);
+  background: color-mix(in srgb, var(--color-danger, #d9534f) 12%, transparent);
+}
+
+/* ══════════════════════════════════════════════
+   Right panel tabs
+   ══════════════════════════════════════════════ */
+
+.debugger-session__right-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-bg-alt, #1e1e1e);
+  flex-shrink: 0;
+}
+
+.debugger-session__tab-btn {
+  padding: 6px 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-fg-muted, #888);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.debugger-session__tab-btn:hover {
+  color: var(--color-fg, #e0e0e0);
+}
+
+.debugger-session__tab-btn--active {
+  color: var(--color-fg, #e0e0e0);
+  border-bottom-color: var(--color-accent, #6366f1);
+}
+
+.debugger-session__right-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.debugger-session__tab-empty {
+  padding: 16px 12px;
+  font-size: 12px;
+  color: var(--color-fg-muted, #888);
+  text-align: center;
+}
+
+/* ══════════════════════════════════════════════
+   Variables tree
+   ══════════════════════════════════════════════ */
+
+.debugger-session__variables {
+  font-size: 12px;
+}
+
+.debugger-session__var-tree {
+  padding: 4px 0;
+}
+
+.debugger-session__var-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  min-height: 22px;
+  transition: background 0.1s ease;
+}
+
+.debugger-session__var-row:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.debugger-session__var-row[role='button'] {
+  cursor: pointer;
+}
+
+.debugger-session__var-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  flex-shrink: 0;
+  color: var(--color-fg-muted, #888);
+}
+
+.debugger-session__var-name {
+  font-weight: 500;
+  color: var(--color-accent, #6366f1);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  flex-shrink: 0;
+}
+
+.debugger-session__var-value {
+  flex: 1;
+  color: var(--color-fg, #e0e0e0);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debugger-session__var-type {
+  font-size: 10px;
+  color: var(--color-fg-muted, #888);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════
+   Call stack
+   ══════════════════════════════════════════════ */
+
+.debugger-session__callstack {
+  font-size: 12px;
+}
+
+.debugger-session__frame-list {
+  padding: 4px 0;
+}
+
+.debugger-session__frame-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.debugger-session__frame-row:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.debugger-session__frame-row--active {
+  background: color-mix(in srgb, var(--color-accent, #6366f1) 15%, transparent);
+  border-left: 2px solid var(--color-accent, #6366f1);
+}
+
+.debugger-session__frame-name {
+  font-weight: 500;
+  color: var(--color-fg, #e0e0e0);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debugger-session__frame-location {
+  font-size: 10px;
+  color: var(--color-fg-muted, #888);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════
+   Watch tab
+   ══════════════════════════════════════════════ */
+
+.debugger-session__watch {
+  font-size: 12px;
+}
+
+.debugger-session__watch-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+}
+
+.debugger-session__watch-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 3px;
+  background: var(--color-bg, #1a1a1a);
+  color: var(--color-fg, #e0e0e0);
+  font-size: 12px;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.debugger-session__watch-input:focus {
+  border-color: var(--color-accent, #6366f1);
+}
+
+.debugger-session__watch-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 3px;
+  background: var(--color-bg, #1a1a1a);
+  color: var(--color-success, #4caf50);
+  cursor: pointer;
+  transition: background 0.1s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.debugger-session__watch-add-btn:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.debugger-session__watch-list {
+  padding: 4px 0;
+}
+
+.debugger-session__watch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 12px;
+  min-height: 22px;
+  transition: background 0.1s ease;
+}
+
+.debugger-session__watch-row:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.debugger-session__watch-expr {
+  font-weight: 500;
+  color: var(--color-accent, #6366f1);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  flex-shrink: 0;
+}
+
+.debugger-session__watch-value {
+  flex: 1;
+  color: var(--color-fg, #e0e0e0);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debugger-session__watch-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-fg-muted, #888);
+  cursor: pointer;
+  transition: color 0.1s ease, background 0.1s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.debugger-session__watch-remove:hover {
+  color: var(--color-danger, #d9534f);
+  background: color-mix(in srgb, var(--color-danger, #d9534f) 12%, transparent);
+}
+
+/* ══════════════════════════════════════════════
+   Output panel
+   ══════════════════════════════════════════════ */
+
+.debugger-session__output {
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+  max-height: 120px;
+  display: flex;
+  flex-direction: column;
+}
+
+.debugger-session__output-text {
+  margin: 0;
+  padding: 6px 12px;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  font-size: 11px;
+  color: var(--color-fg, #e0e0e0);
+  overflow-y: auto;
+  flex: 1;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ══════════════════════════════════════════════
+   Status bar
+   ══════════════════════════════════════════════ */
+
+.debugger-session__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 12px;
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-bg-alt, #1e1e1e);
+  font-size: 11px;
+  color: var(--color-fg-muted, #888);
+  flex-shrink: 0;
+}
+
+.debugger-session__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-fg-muted, #888);
+  flex-shrink: 0;
+}
+
+.debugger-session__status-dot--connected {
+  background: var(--color-success, #4caf50);
+}
+
+.debugger-session__status-dot--connecting {
+  background: var(--color-warning, #ff9800);
+  animation: debugger-session-pulse 1s ease-in-out infinite;
+}
+
+.debugger-session__status-dot--error {
+  background: var(--color-danger, #d9534f);
+}
+
+.debugger-session__status-adapter {
+  flex-shrink: 0;
+}
+
+.debugger-session__status-state {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ══════════════════════════════════════════════
+   Animations
+   ══════════════════════════════════════════════ */
+
+@keyframes debugger-session-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   Variant: compact
+   Tighter spacing, smaller fonts, reduced chrome
+   ══════════════════════════════════════════════ */
+
+[data-variant='compact'] .debugger-session__connection-form {
+  gap: 8px;
+  padding: 16px;
+}
+
+[data-variant='compact'] .debugger-session__form-title {
+  font-size: 13px;
+}
+
+[data-variant='compact'] .debugger-session__form-desc {
+  font-size: 11px;
+}
+
+[data-variant='compact'] .debugger-session__label {
+  font-size: 11px;
+  gap: 2px;
+}
+
+[data-variant='compact'] .debugger-session__input,
+[data-variant='compact'] .debugger-session__select {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+[data-variant='compact'] .debugger-session__mode-btn {
+  padding: 3px 10px;
+  font-size: 11px;
+}
+
+[data-variant='compact'] .debugger-session__connect-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+[data-variant='compact'] .debugger-session__toolbar {
+  padding: 2px 8px;
+  gap: 4px;
+}
+
+[data-variant='compact'] .debugger-session__step-btn {
+  width: 24px;
+  height: 24px;
+}
+
+[data-variant='compact'] .debugger-session__debug-status {
+  font-size: 10px;
+}
+
+[data-variant='compact'] .debugger-session__disconnect-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+[data-variant='compact'] .debugger-session__panel-header {
+  padding: 2px 8px;
+  font-size: 10px;
+}
+
+[data-variant='compact'] .debugger-session__source-file {
+  padding: 2px 8px;
+  font-size: 10px;
+}
+
+[data-variant='compact'] .debugger-session__source-code {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+[data-variant='compact'] .debugger-session__source-line {
+  min-height: 17px;
+}
+
+[data-variant='compact'] .debugger-session__gutter {
+  min-width: 44px;
+  padding: 0 6px 0 2px;
+}
+
+[data-variant='compact'] .debugger-session__line-num {
+  font-size: 10px;
+  min-width: 20px;
+}
+
+[data-variant='compact'] .debugger-session__line-text {
+  font-size: 11px;
+  padding: 0 8px 0 6px;
+}
+
+[data-variant='compact'] .debugger-session__bp-marker {
+  width: 6px;
+  height: 6px;
+}
+
+[data-variant='compact'] .debugger-session__bp-marker--inline {
+  width: 5px;
+  height: 5px;
+}
+
+[data-variant='compact'] .debugger-session__breakpoints-panel {
+  max-height: 100px;
+}
+
+[data-variant='compact'] .debugger-session__bp-row {
+  padding: 2px 8px;
+  font-size: 10px;
+  gap: 6px;
+}
+
+[data-variant='compact'] .debugger-session__tab-btn {
+  padding: 4px 10px;
+  font-size: 10px;
+}
+
+[data-variant='compact'] .debugger-session__var-row {
+  min-height: 18px;
+  padding: 1px 6px;
+  gap: 4px;
+}
+
+[data-variant='compact'] .debugger-session__var-name,
+[data-variant='compact'] .debugger-session__var-value {
+  font-size: 11px;
+}
+
+[data-variant='compact'] .debugger-session__var-type {
+  font-size: 9px;
+}
+
+[data-variant='compact'] .debugger-session__frame-row {
+  padding: 3px 8px;
+}
+
+[data-variant='compact'] .debugger-session__frame-name {
+  font-size: 11px;
+}
+
+[data-variant='compact'] .debugger-session__frame-location {
+  font-size: 9px;
+}
+
+[data-variant='compact'] .debugger-session__watch-form {
+  padding: 4px 6px;
+  gap: 3px;
+}
+
+[data-variant='compact'] .debugger-session__watch-input {
+  padding: 3px 6px;
+  font-size: 11px;
+}
+
+[data-variant='compact'] .debugger-session__watch-add-btn {
+  width: 20px;
+  height: 20px;
+}
+
+[data-variant='compact'] .debugger-session__watch-row {
+  padding: 2px 8px;
+  min-height: 18px;
+  gap: 6px;
+}
+
+[data-variant='compact'] .debugger-session__watch-expr,
+[data-variant='compact'] .debugger-session__watch-value {
+  font-size: 11px;
+}
+
+[data-variant='compact'] .debugger-session__output {
+  max-height: 80px;
+}
+
+[data-variant='compact'] .debugger-session__output-text {
+  font-size: 10px;
+  padding: 4px 8px;
+}
+
+[data-variant='compact'] .debugger-session__status {
+  padding: 1px 8px;
+  font-size: 10px;
+  gap: 6px;
+}
+
+[data-variant='compact'] .debugger-session__status-dot {
+  width: 5px;
+  height: 5px;
+}
+
+[data-variant='compact'] .debugger-session__tab-empty {
+  padding: 12px 8px;
+  font-size: 11px;
+}
+
+[data-variant='compact'] .debugger-session__source-empty {
+  font-size: 12px;
+  padding: 16px;
+}
+
+/* ══════════════════════════════════════════════
+   Variant: modern
+   Softer borders, more rounded corners, subtle
+   background shifts, larger touch targets
+   ══════════════════════════════════════════════ */
+
+[data-variant='modern'] .debugger-session {
+  gap: 1px;
+  background: var(--color-border, rgba(255, 255, 255, 0.08));
+}
+
+[data-variant='modern'] .debugger-session__connection-form {
+  gap: 14px;
+  padding: 28px;
+}
+
+[data-variant='modern'] .debugger-session__form-title {
+  font-size: 15px;
+}
+
+[data-variant='modern'] .debugger-session__input,
+[data-variant='modern'] .debugger-session__select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+[data-variant='modern'] .debugger-session__mode-toggle {
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .debugger-session__mode-btn {
+  padding: 6px 16px;
+  font-size: 12px;
+}
+
+[data-variant='modern'] .debugger-session__connect-btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+[data-variant='modern'] .debugger-session__toolbar {
+  padding: 6px 14px;
+  gap: 10px;
+  border-bottom: none;
+  background: var(--color-bg-alt, #1e1e1e);
+}
+
+[data-variant='modern'] .debugger-session__step-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .debugger-session__step-separator {
+  height: 20px;
+  margin: 0 6px;
+}
+
+[data-variant='modern'] .debugger-session__disconnect-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+}
+
+[data-variant='modern'] .debugger-session__panels {
+  background: var(--color-bg, #1a1a1a);
+}
+
+[data-variant='modern'] .debugger-session__panel-header {
+  padding: 6px 14px;
+  border-bottom: none;
+}
+
+[data-variant='modern'] .debugger-session__source-file {
+  padding: 6px 14px;
+  border-bottom: none;
+}
+
+[data-variant='modern'] .debugger-session__source-line {
+  min-height: 22px;
+}
+
+[data-variant='modern'] .debugger-session__source-line--current {
+  border-radius: 2px;
+}
+
+[data-variant='modern'] .debugger-session__bp-marker {
+  width: 9px;
+  height: 9px;
+}
+
+[data-variant='modern'] .debugger-session__breakpoints-panel {
+  border-top: none;
+  max-height: 160px;
+}
+
+[data-variant='modern'] .debugger-session__bp-row {
+  padding: 4px 14px;
+  border-radius: 4px;
+  margin: 0 4px;
+}
+
+[data-variant='modern'] .debugger-session__bp-remove {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+[data-variant='modern'] .debugger-session__right-tabs {
+  border-bottom: none;
+  gap: 2px;
+  padding: 2px 4px;
+}
+
+[data-variant='modern'] .debugger-session__tab-btn {
+  padding: 8px 16px;
+  border-radius: 6px 6px 0 0;
+  border-bottom: 2px solid transparent;
+}
+
+[data-variant='modern'] .debugger-session__tab-btn--active {
+  background: color-mix(in srgb, var(--color-accent, #6366f1) 8%, transparent);
+}
+
+[data-variant='modern'] .debugger-session__var-row {
+  min-height: 26px;
+  border-radius: 4px;
+  margin: 0 4px;
+}
+
+[data-variant='modern'] .debugger-session__frame-row {
+  padding: 6px 14px;
+  border-radius: 4px;
+  margin: 0 4px;
+}
+
+[data-variant='modern'] .debugger-session__frame-row--active {
+  border-left: 3px solid var(--color-accent, #6366f1);
+  border-radius: 0 4px 4px 0;
+}
+
+[data-variant='modern'] .debugger-session__watch-form {
+  padding: 8px 10px;
+  gap: 6px;
+  border-bottom: none;
+}
+
+[data-variant='modern'] .debugger-session__watch-input {
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .debugger-session__watch-add-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .debugger-session__watch-row {
+  padding: 4px 14px;
+  min-height: 26px;
+  border-radius: 4px;
+  margin: 0 4px;
+}
+
+[data-variant='modern'] .debugger-session__watch-remove {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+[data-variant='modern'] .debugger-session__output {
+  border-top: none;
+  max-height: 140px;
+}
+
+[data-variant='modern'] .debugger-session__output-text {
+  padding: 8px 14px;
+}
+
+[data-variant='modern'] .debugger-session__status {
+  border-top: none;
+  padding: 4px 14px;
+  gap: 10px;
+}
+
+[data-variant='modern'] .debugger-session__status-dot {
+  width: 7px;
+  height: 7px;
+}
+
+[data-variant='modern'] .debugger-session__error-banner {
+  border-radius: 4px;
+  margin: 4px 8px 0;
+  border-bottom: none;
+  border: 1px solid var(--color-danger, #d9534f);
+}

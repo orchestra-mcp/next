@@ -1,0 +1,32 @@
+/**
+ * ChatStreamMessage — streaming content with typewriter cursor
+ */
+
+.chat-stream {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-fg);
+}
+
+.chat-stream__body {
+  display: inline;
+}
+
+.chat-stream__text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+
+
+/* --- Compact variant --- */
+[data-variant='compact'] .chat-stream {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* --- Modern variant --- */
+[data-variant='modern'] .chat-stream {
+  font-size: 14px;
+  line-height: 1.6;
+}

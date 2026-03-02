@@ -1,0 +1,99 @@
+.lifecycle-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lifecycle-bar__track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* ── Dots ────────────────────────────────────────────── */
+
+.lifecycle-bar__dot {
+  flex-shrink: 0;
+  border-radius: 50%;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.lifecycle-bar__dot--past {
+  opacity: 1;
+}
+
+.lifecycle-bar__dot--current {
+  opacity: 1;
+  transform: scale(1.35);
+  animation: lifecycle-pulse 1.6s ease-in-out infinite;
+}
+
+.lifecycle-bar__dot--future {
+  opacity: 0.25;
+  background-color: #6b7280;
+}
+
+/* ── Lines ───────────────────────────────────────────── */
+
+.lifecycle-bar__line {
+  flex: 1 1 0%;
+  min-width: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.lifecycle-bar__line--past {
+  background-color: var(--color-border-active, #555);
+}
+
+.lifecycle-bar__line--future {
+  background-color: var(--color-border, #333);
+}
+
+/* ── Special status label ────────────────────────────── */
+
+.lifecycle-bar__special {
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+/* ── Size: sm ────────────────────────────────────────── */
+
+.lifecycle-bar--sm .lifecycle-bar__dot {
+  width: 6px;
+  height: 6px;
+}
+
+.lifecycle-bar--sm .lifecycle-bar__line {
+  height: 1.5px;
+}
+
+.lifecycle-bar--sm .lifecycle-bar__special {
+  font-size: 10px;
+}
+
+/* ── Size: md ────────────────────────────────────────── */
+
+.lifecycle-bar--md .lifecycle-bar__dot {
+  width: 8px;
+  height: 8px;
+}
+
+.lifecycle-bar--md .lifecycle-bar__line {
+  height: 2px;
+}
+
+.lifecycle-bar--md .lifecycle-bar__special {
+  font-size: 11px;
+}
+
+/* ── Pulse animation ─────────────────────────────────── */
+
+@keyframes lifecycle-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    box-shadow: 0 0 0 3px currentColor;
+  }
+}

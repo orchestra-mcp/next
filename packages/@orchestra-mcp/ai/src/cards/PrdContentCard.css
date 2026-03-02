@@ -1,0 +1,14 @@
+.prd-content-card__body {
+  font-size: 12px;
+  line-height: 1.6;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.prd-content-card__body pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-foreground);
+  font-family: inherit;
+  margin: 0;
+}

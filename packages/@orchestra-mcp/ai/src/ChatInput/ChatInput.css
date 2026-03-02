@@ -1,0 +1,270 @@
+/**
+ * ChatInput Component Styles
+ * Auto-resizing textarea with send button and keyboard hints
+ */
+
+.chat-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  flex-shrink: 0;
+  padding: 6px 0;
+}
+
+/* Prefix slot (quick actions, attachments) */
+.chat-input__prefix {
+  padding: 8px 14px 0;
+}
+
+/* File preview strip (between prefix and bar) */
+.chat-input__files {
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Input bar row — textarea only */
+.chat-input__bar {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px 2px;
+}
+
+/* Textarea */
+.chat-input__textarea {
+  flex: 1;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background-color: var(--color-bg-alt);
+  color: var(--color-fg);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 22px;
+  resize: none;
+  outline: none;
+  overflow-y: hidden;
+  min-height: 42px;
+  transition: border-color 0.15s ease;
+}
+
+.chat-input__textarea:focus {
+  border-color: var(--color-accent);
+}
+
+.chat-input__textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chat-input__textarea::placeholder {
+  color: var(--color-fg-muted);
+}
+
+/* Leading slot (+ button left of textarea) */
+.chat-input__leading {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Suffix slot (extra buttons beside send) */
+.chat-input__suffix {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Tray row below textarea ── */
+.chat-input__tray {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px 4px 12px;
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  min-height: 34px;
+}
+
+.chat-input__tray-spacer {
+  flex: 1;
+}
+
+/* Status bar — separate row below the action tray, aligned to tray padding */
+.chat-input__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px 4px 12px;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+  margin: 0;
+}
+
+/* ── Unified tray button base ──
+   Used by: attach, and as the base for chatbox toggle buttons */
+.chat-input__attach {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.chat-input__attach svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+.chat-input__attach:hover {
+  background: var(--color-bg-active);
+  color: var(--color-fg);
+}
+
+/* ── Send button (primary CTA) ──
+   Same 26x26 footprint, 6px radius — distinguished by filled accent bg */
+.chat-input__send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-accent);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 4px;
+  transition: background 0.12s ease;
+}
+
+.chat-input__send svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+.chat-input__send:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 85%, #fff);
+}
+
+.chat-input__send:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 80%, #000 8%);
+}
+
+.chat-input__send:disabled {
+  background: var(--color-bg-active);
+  color: var(--color-fg-muted);
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ── Stop button — neutral muted style, not red ── */
+.chat-input__stop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-bg-active);
+  color: var(--color-fg);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 4px;
+  transition: background 0.12s ease;
+}
+
+.chat-input__stop svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+.chat-input__stop:hover {
+  background: color-mix(in srgb, var(--color-bg-active) 80%, var(--color-fg) 8%);
+}
+
+/* Drag-over state */
+.chat-input--drag-over {
+  outline: 2px dashed var(--color-accent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+}
+
+/* (attach button moved to unified tray button section above) */
+
+/* ── Mention highlight overlay ── */
+
+.chat-input__field {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+/* The highlights div mirrors the textarea content exactly */
+.chat-input__highlights {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 22px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: hidden;
+  color: transparent;
+}
+
+/* Allow pointer events on mention tokens for remove button */
+.chat-input__highlights .mention-token {
+  pointer-events: auto;
+}
+
+/* When mentions exist, make textarea text transparent so overlay shows through */
+.chat-input__textarea--has-mentions {
+  color: transparent;
+  caret-color: var(--color-fg);
+}
+
+/* Since textarea is now inside .chat-input__field, it needs full width */
+.chat-input__field .chat-input__textarea {
+  width: 100%;
+}
+
+/* MentionTokens overlay sits behind the text but shows colored highlights */
+.chat-input__field .mention-tokens {
+  z-index: 0;
+}
+
+.chat-input__field .chat-input__textarea {
+  position: relative;
+  z-index: 1;
+}
+
+/* When has-mentions is active, textarea becomes transparent so overlays show through */
+.chat-input__field .chat-input__textarea--has-mentions {
+  background: transparent;
+}
+
+/* Compact variant */
+[data-variant='compact'] .chat-input__bar { padding: 4px 8px 0; }
+[data-variant='compact'] .chat-input__tray { padding: 2px 6px; gap: 1px; font-size: 11px; min-height: 28px; }
+[data-variant='compact'] .chat-input__textarea { padding: 6px 10px; font-size: 13px; min-height: 32px; border-radius: 8px; }
+[data-variant='compact'] .chat-input__highlights { padding: 6px 10px; font-size: 13px; border-radius: 8px; }
+[data-variant='compact'] .chat-input__send,
+[data-variant='compact'] .chat-input__stop,
+[data-variant='compact'] .chat-input__attach { width: 22px; height: 22px; border-radius: 5px; }
+[data-variant='compact'] .chat-input__prefix { padding: 6px 10px 0; }
+
+/* Modern variant */
+[data-variant='modern'] .chat-input__textarea {
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}

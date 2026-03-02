@@ -1,0 +1,26 @@
+/**
+ * Deep Ocean Color Theme
+ */
+
+--color-bg: #0f111a;
+--color-bg-alt: #34324a;
+--color-bg-contrast: #202331;
+--color-bg-active: #414863;
+--color-bg-selection: #717cb480;
+--color-fg: #8f93a2;
+--color-fg-dim: #4b526d;
+--color-fg-muted: #676e95;
+--color-fg-bright: #eeffff;
+--color-border: #2b2a3e;
+--color-accent: #ab47bc;
+
+/* Syntax colors */
+--syntax-blue: #82aaff;
+--syntax-cyan: #89ddff;
+--syntax-green: #c3e88d;
+--syntax-yellow: #ffcb6b;
+--syntax-orange: #f78c6c;
+--syntax-red: #ff5370;
+--syntax-purple: #c792ea;
+--syntax-teal: #4fd6be;
+--syntax-error: #ff5370;

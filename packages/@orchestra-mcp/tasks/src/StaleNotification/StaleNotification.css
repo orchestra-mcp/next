@@ -1,0 +1,56 @@
+.stale-notification {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  margin-bottom: 12px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--color-fg, #ccc);
+  animation: stale-slide-in 0.2s ease-out;
+}
+
+@keyframes stale-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stale-notification__text {
+  flex: 1;
+}
+
+.stale-notification__btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.stale-notification__btn--refresh {
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--color-accent, #3b82f6);
+}
+
+.stale-notification__btn--refresh:hover {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+.stale-notification__btn--dismiss {
+  color: var(--color-fg-muted, #888);
+  font-size: 14px;
+  padding: 2px 4px;
+}
+
+.stale-notification__btn--dismiss:hover {
+  color: var(--color-fg, #ccc);
+}

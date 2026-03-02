@@ -1,0 +1,307 @@
+/* FilesChangedPanel — Codex-style right-side split panel */
+
+.fcp {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 340px;
+  max-width: 50vw;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+/* ── Header ── */
+
+.fcp__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.fcp__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-fg);
+  white-space: nowrap;
+}
+
+.fcp__stats {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.fcp__stat--add { color: #22c55e; }
+.fcp__stat--del { color: #ef4444; }
+
+.fcp__header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.fcp__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.fcp__btn:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--color-fg);
+}
+
+.fcp__btn--accept-all:hover {
+  border-color: #22c55e;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.fcp__btn--dismiss:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ── File list (scrollable) ── */
+
+.fcp__list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ── Single file entry ── */
+
+.fcp-file {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fcp-file--accepted {
+  opacity: 0.6;
+}
+
+.fcp-file--rejected {
+  opacity: 0.4;
+}
+
+.fcp-file__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s ease;
+}
+
+.fcp-file__header:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.03));
+}
+
+.fcp-file__chevron {
+  flex-shrink: 0;
+  color: var(--color-fg-muted);
+  transition: transform 0.15s ease;
+}
+
+.fcp-file__chevron--open {
+  transform: rotate(90deg);
+}
+
+.fcp-file__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.fcp-file__dir {
+  font-weight: 400;
+  color: var(--color-fg-muted);
+}
+
+.fcp-file__stats {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.fcp-file__stat--add { color: #22c55e; }
+.fcp-file__stat--del { color: #ef4444; }
+
+/* ── Per-file accept/reject buttons ── */
+
+.fcp-file__actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.fcp-file__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.fcp-file__btn--reject {
+  color: var(--color-fg-muted);
+}
+
+.fcp-file__btn--reject:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.fcp-file__btn--accept {
+  color: var(--color-fg-muted);
+}
+
+.fcp-file__btn--accept:hover {
+  border-color: #22c55e;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+/* ── Decision indicator ── */
+
+.fcp-file__decision {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.fcp-file__decision--accepted {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.fcp-file__decision--rejected {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+/* ── Diff area ── */
+
+.fcp-file__diff {
+  border-top: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+/* Monaco diff inside the panel */
+.fcp-file__diff .code-diff-editor {
+  border-radius: 0;
+  border: none;
+}
+
+.fcp-file__diff .code-diff-editor__header {
+  display: none;
+}
+
+/* ── New file content (green lines) ── */
+
+.fcp-file__new-content {
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  line-height: 1.6;
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.fcp-file__line {
+  display: flex;
+  padding: 0 12px 0 0;
+}
+
+.fcp-file__line--add {
+  background: rgba(34, 197, 94, 0.08);
+  color: #22c55e;
+}
+
+.fcp-file__line-num {
+  flex-shrink: 0;
+  width: 40px;
+  padding-right: 8px;
+  text-align: right;
+  color: var(--color-fg-muted);
+  opacity: 0.5;
+  user-select: none;
+}
+
+.fcp-file__line-prefix {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  font-weight: 600;
+  user-select: none;
+}
+
+.fcp-file__line-text {
+  flex: 1;
+  white-space: pre;
+}
+
+/* ── Compact variant ── */
+
+[data-variant='compact'] .fcp__header {
+  padding: 6px 10px;
+}
+
+[data-variant='compact'] .fcp__title {
+  font-size: 12px;
+}
+
+[data-variant='compact'] .fcp-file__header {
+  padding: 5px 10px;
+}
+
+[data-variant='compact'] .fcp-file__name {
+  font-size: 12px;
+}
+
+/* ── Modern variant ── */
+
+[data-variant='modern'] .fcp__header {
+  padding: 12px 16px;
+}
+
+[data-variant='modern'] .fcp-file__header {
+  padding: 10px 16px;
+}

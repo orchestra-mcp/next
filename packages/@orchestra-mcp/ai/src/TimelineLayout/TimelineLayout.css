@@ -1,0 +1,268 @@
+/* TimelineLayout — connected vertical timeline for tool cards
+ *
+ * Layout model (default variant):
+ *
+ *   .timeline-layout
+ *     └── .timeline-node  (display: flex; flex-direction: row)
+ *           ├── .timeline-node__rail  (flex: 0 0 24px — holds dot + connecting lines)
+ *           │     ├── .timeline-node__line-top   (connector from prev card)
+ *           │     ├── .timeline-node__dot        (status circle with ring)
+ *           │     └── .timeline-node__line-bot   (connector to next card)
+ *           └── .timeline-node__content  (flex: 1 — the tool card)
+ *
+ * The dot and track share the same column element so alignment is always
+ * mathematically exact — no absolute positioning needed.
+ */
+
+/* ── Container ────────────────────────────────────────────────────── */
+
+.timeline-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Node row ─────────────────────────────────────────────────────── */
+
+.timeline-node {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
+  padding-bottom: 6px;
+}
+
+.timeline-node:last-child {
+  padding-bottom: 0;
+}
+
+/* ── Rail (dot + connecting lines) ───────────────────────────────── */
+
+.timeline-node__rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 16px;
+}
+
+/* Connector line above the dot (links to the card above).
+ * Height = top padding of card header (10px) + half dot height (5px) = 15px
+ * so the dot aligns with the visual center of the header's first text line. */
+.timeline-node__line-top {
+  flex: 0 0 auto;
+  width: 1.5px;
+  height: 15px;
+  background: color-mix(in srgb, var(--color-border, rgba(255,255,255,0.12)) 60%, transparent);
+  border-radius: 1px;
+}
+
+/* First node has no connector above it */
+.timeline-node:first-child .timeline-node__line-top {
+  background: transparent;
+}
+
+/* Status dot — 8px core + 2px transparent ring gap + 1.5px colored ring.
+ * Achieved with box-shadow so the dot stays the same intrinsic size and
+ * alignment is unaffected. */
+.timeline-node__dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border, rgba(255,255,255,0.2));
+  /* ring: 1.5px gap then 1.5px border in same color as fill — overridden per status */
+  box-shadow: 0 0 0 1.5px var(--color-bg-alt, #1e1e1e), 0 0 0 3px var(--color-border, rgba(255,255,255,0.15));
+  z-index: 1;
+}
+
+/* Connector line below the dot (links to the card below) */
+.timeline-node__line-bot {
+  flex: 1 1 auto;
+  width: 1.5px;
+  min-height: 8px;
+  background: color-mix(in srgb, var(--color-border, rgba(255,255,255,0.12)) 60%, transparent);
+  border-radius: 1px;
+}
+
+/* Last node has no connector below */
+.timeline-node:last-child .timeline-node__line-bot {
+  background: transparent;
+}
+
+/* ── Node content (the tool card) ─────────────────────────────────── */
+
+.timeline-node__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ── Status colors ────────────────────────────────────────────────── */
+
+.timeline-node__dot--running {
+  background: var(--color-accent, #3b82f6);
+  box-shadow:
+    0 0 0 1.5px var(--color-bg-alt, #1e1e1e),
+    0 0 0 3px color-mix(in srgb, var(--color-accent, #3b82f6) 50%, transparent);
+  animation: timeline-dot-pulse 1.6s ease-in-out infinite;
+}
+
+.timeline-node__dot--done {
+  background: #22c55e;
+  box-shadow:
+    0 0 0 1.5px var(--color-bg-alt, #1e1e1e),
+    0 0 0 3px color-mix(in srgb, #22c55e 35%, transparent);
+}
+
+.timeline-node__dot--error {
+  background: #ef4444;
+  box-shadow:
+    0 0 0 1.5px var(--color-bg-alt, #1e1e1e),
+    0 0 0 3px color-mix(in srgb, #ef4444 35%, transparent);
+}
+
+.timeline-node__dot--pending {
+  background: var(--color-fg-muted, #888);
+  opacity: 0.45;
+  box-shadow:
+    0 0 0 1.5px var(--color-bg-alt, #1e1e1e),
+    0 0 0 3px color-mix(in srgb, var(--color-fg-muted, #888) 20%, transparent);
+}
+
+/* Running dot: expand + fade the outer ring */
+@keyframes timeline-dot-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1.5px var(--color-bg-alt, #1e1e1e),
+      0 0 0 3px color-mix(in srgb, var(--color-accent, #3b82f6) 50%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1.5px var(--color-bg-alt, #1e1e1e),
+      0 0 0 5px color-mix(in srgb, var(--color-accent, #3b82f6) 0%, transparent);
+  }
+}
+
+/* Connecting lines also pick up a subtle running accent tint on the adjacent
+ * lines so the active node stands out in the chain. */
+.timeline-node:has(.timeline-node__dot--running) .timeline-node__line-top,
+.timeline-node:has(.timeline-node__dot--running) .timeline-node__line-bot {
+  background: color-mix(in srgb, var(--color-accent, #3b82f6) 30%, transparent);
+}
+
+/* ── Message node (smaller neutral dot) ──────────────────────────── */
+
+.timeline-node--message .timeline-node__rail {
+  width: 12px;
+}
+
+.timeline-node--message .timeline-node__dot {
+  width: 6px;
+  height: 6px;
+  background: var(--color-fg-muted, #888);
+  opacity: 0.5;
+  box-shadow:
+    0 0 0 1px var(--color-bg-alt, #1e1e1e),
+    0 0 0 2px color-mix(in srgb, var(--color-fg-muted, #888) 20%, transparent);
+}
+
+/* ── System node (tiny dot) ──────────────────────────────────────── */
+
+.timeline-node--system .timeline-node__rail {
+  width: 10px;
+}
+
+.timeline-node--system .timeline-node__dot {
+  width: 4px;
+  height: 4px;
+  background: var(--color-fg-muted, #888);
+  opacity: 0.35;
+  box-shadow: none;
+}
+
+/* ── Compact variant ─────────────────────────────────────────────── */
+
+[data-variant='compact'] .timeline-node {
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+[data-variant='compact'] .timeline-node__rail {
+  width: 12px;
+}
+
+[data-variant='compact'] .timeline-node__dot {
+  width: 7px;
+  height: 7px;
+}
+
+/* In compact, header padding is 6px so: 6px + half-dot (3.5px) ≈ 10px */
+[data-variant='compact'] .timeline-node__line-top {
+  height: 10px;
+}
+
+[data-variant='compact'] .timeline-node--message .timeline-node__dot {
+  width: 5px;
+  height: 5px;
+}
+
+[data-variant='compact'] .timeline-node--system .timeline-node__dot {
+  width: 3px;
+  height: 3px;
+}
+
+/* ── Modern variant ──────────────────────────────────────────────── */
+
+[data-variant='modern'] .timeline-node {
+  gap: 14px;
+  padding-bottom: 10px;
+}
+
+[data-variant='modern'] .timeline-node__rail {
+  width: 20px;
+}
+
+[data-variant='modern'] .timeline-node__dot {
+  width: 10px;
+  height: 10px;
+}
+
+/* Modern header padding is 12px so: 12px + half-dot (5px) = 17px */
+[data-variant='modern'] .timeline-node__line-top {
+  height: 17px;
+}
+
+/* Gradient fade on connecting lines for the modern variant */
+[data-variant='modern'] .timeline-node__line-top {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--color-border, rgba(255,255,255,0.12)) 60%, transparent)
+  );
+}
+
+[data-variant='modern'] .timeline-node:first-child .timeline-node__line-top {
+  background: transparent;
+}
+
+[data-variant='modern'] .timeline-node__line-bot {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-border, rgba(255,255,255,0.12)) 60%, transparent),
+    transparent
+  );
+}
+
+[data-variant='modern'] .timeline-node:last-child .timeline-node__line-bot {
+  background: transparent;
+}
+
+[data-variant='modern'] .timeline-node--message .timeline-node__dot {
+  width: 8px;
+  height: 8px;
+}
+
+[data-variant='modern'] .timeline-node--system .timeline-node__dot {
+  width: 6px;
+  height: 6px;
+}

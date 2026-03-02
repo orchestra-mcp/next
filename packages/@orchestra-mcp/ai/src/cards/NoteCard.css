@@ -1,0 +1,42 @@
+.note-card__content {
+  font-size: 12px;
+  color: var(--color-foreground);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 160px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
+
+.note-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.note-card__tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+  font-weight: 500;
+}
+
+.note-card__date {
+  font-size: 10px;
+  color: var(--color-muted-foreground);
+  margin-left: auto;
+}
+
+.note-card__pinned {
+  font-size: 10px;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}

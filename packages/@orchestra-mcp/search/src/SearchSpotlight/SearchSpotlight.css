@@ -1,0 +1,197 @@
+/**
+ * SearchSpotlight Component Styles
+ * Uses CSS variables from theme system
+ */
+
+.spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+  z-index: 9999;
+}
+
+.spotlight-modal {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 480px;
+  overflow-y: auto;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
+
+.spotlight-input {
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 16px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-fg);
+  outline: none;
+  font-family: system-ui, -apple-system, sans-serif;
+  box-sizing: border-box;
+}
+
+.spotlight-input::placeholder {
+  color: var(--color-fg);
+  opacity: 0.5;
+}
+
+.spotlight-loading {
+  padding: 12px 20px;
+  font-size: 13px;
+  color: var(--color-fg);
+  opacity: 0.6;
+}
+
+.spotlight-empty {
+  padding: 24px 20px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-fg);
+  opacity: 0.5;
+}
+
+.spotlight-section {
+  padding: 4px 0;
+}
+
+.spotlight-section-label {
+  padding: 8px 20px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-fg);
+  opacity: 0.5;
+}
+
+.spotlight-recent {
+  display: block;
+  width: 100%;
+  padding: 8px 20px;
+  font-size: 14px;
+  text-align: left;
+  background: transparent;
+  color: var(--color-fg);
+  border: none;
+  cursor: pointer;
+}
+
+.spotlight-recent:hover {
+  background: var(--color-bg-active);
+}
+
+.spotlight-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 20px;
+  font-size: 14px;
+  text-align: left;
+  background: transparent;
+  color: var(--color-fg);
+  border: none;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.spotlight-result:hover,
+.spotlight-result--active {
+  background: var(--color-bg-active);
+}
+
+.spotlight-result-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--color-accent);
+}
+
+.spotlight-result-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.spotlight-result-title {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spotlight-result-desc {
+  font-size: 12px;
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spotlight-result-shortcut {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Compact variant */
+[data-variant='compact'] .spotlight-modal {
+  border-radius: 8px;
+  max-width: 560px;
+  max-height: 400px;
+}
+
+[data-variant='compact'] .spotlight-input {
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+[data-variant='compact'] .spotlight-result {
+  padding: 6px 16px;
+  font-size: 13px;
+  gap: 8px;
+}
+
+[data-variant='compact'] .spotlight-section-label {
+  padding: 6px 16px 2px;
+  font-size: 10px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .spotlight-modal {
+  border-radius: 16px;
+  max-width: 720px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+}
+
+[data-variant='modern'] .spotlight-input {
+  padding: 20px 24px;
+  font-size: 18px;
+}
+
+[data-variant='modern'] .spotlight-result {
+  padding: 14px 24px;
+  font-size: 15px;
+  gap: 14px;
+}
+
+[data-variant='modern'] .spotlight-section-label {
+  padding: 10px 24px 4px;
+  font-size: 12px;
+}

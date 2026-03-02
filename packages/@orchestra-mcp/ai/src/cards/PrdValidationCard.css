@@ -1,0 +1,78 @@
+.prd-validation-card__score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.prd-validation-card__score-bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-muted);
+  overflow: hidden;
+}
+
+.prd-validation-card__score-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.prd-validation-card__score-bar--success { background: #22c55e; }
+.prd-validation-card__score-bar--warning { background: #f59e0b; }
+.prd-validation-card__score-bar--danger  { background: #ef4444; }
+
+.prd-validation-card__score-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  flex-shrink: 0;
+  width: 36px;
+  text-align: right;
+}
+
+.prd-validation-card__section {
+  margin-top: 8px;
+}
+
+.prd-validation-card__section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted-foreground);
+  margin-bottom: 4px;
+}
+
+.prd-validation-card__items {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.prd-validation-card__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-foreground);
+  line-height: 1.4;
+}
+
+.prd-validation-card__item--warning {
+  color: #f59e0b;
+}
+
+.prd-validation-card__item--missing {
+  color: #ef4444;
+}
+
+.prd-validation-card__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  margin-top: 5px;
+}

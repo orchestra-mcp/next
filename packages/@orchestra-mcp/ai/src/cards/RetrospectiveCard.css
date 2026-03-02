@@ -1,0 +1,53 @@
+/* RetrospectiveCard — sprint retro summary */
+
+.retro-card__section {
+  margin-bottom: 8px;
+}
+
+.retro-card__section:last-child {
+  margin-bottom: 0;
+}
+
+.retro-card__section-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.retro-card__section-header--good {
+  color: #22c55e;
+}
+
+.retro-card__section-header--bad {
+  color: #ef4444;
+}
+
+.retro-card__section-header--action {
+  color: var(--color-accent);
+}
+
+.retro-card__item {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.retro-card__indicator--good {
+  color: #22c55e;
+}
+
+.retro-card__indicator--bad {
+  color: #ef4444;
+}
+
+.retro-card__assignee {
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 3px;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--color-accent);
+}

@@ -1,0 +1,60 @@
+{
+  "name": "@orchestra-mcp/icons",
+  "version": "0.1.0",
+  "description": "React SVG icon components for Orchestra MCP",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./code": {
+      "import": "./dist/code/index.js",
+      "types": "./dist/code/index.d.ts"
+    },
+    "./launcher": {
+      "import": "./dist/launcher/index.js",
+      "types": "./dist/launcher/index.d.ts"
+    },
+    "./boxicons": {
+      "import": "./dist/boxicons/index.js",
+      "types": "./dist/boxicons/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "generate:boxicons": "node scripts/generate-icons.mjs",
+    "generate:boxicon-components": "node scripts/generate-boxicon-components.mjs",
+    "generate:tray": "node scripts/generate-tray-icon.mjs",
+    "generate:os-icons": "node scripts/generate-os-icons.mjs",
+    "generate": "pnpm generate:boxicons && pnpm generate:tray && pnpm generate:os-icons"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "typescript": "^5.3.0"
+  },
+  "keywords": [
+    "react",
+    "icons",
+    "svg",
+    "orchestra",
+    "mcp"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "boxicons": "^2.1.4"
+  }
+}

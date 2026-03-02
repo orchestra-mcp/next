@@ -1,0 +1,54 @@
+.connection-status {
+  display: contents;
+}
+
+/* Dot indicator */
+.connection-status__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.connection-status__dot--connected {
+  background-color: var(--color-status-connected, #22c55e);
+}
+
+.connection-status__dot--reconnecting {
+  background-color: var(--color-status-reconnecting, #f59e0b);
+  animation: connection-pulse 1.5s ease-in-out infinite;
+}
+
+.connection-status__dot--disconnected {
+  background-color: var(--color-status-disconnected, #ef4444);
+}
+
+@keyframes connection-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Banner */
+.connection-status__banner {
+  font-size: 11px;
+  padding: 4px 12px;
+  border-bottom: 1px solid transparent;
+  flex-shrink: 0;
+}
+
+.connection-status__banner--reconnecting {
+  color: var(--color-status-reconnecting, #f59e0b);
+  background-color: var(--color-status-reconnecting-bg, rgba(245, 158, 11, 0.08));
+  border-bottom-color: var(--color-status-reconnecting-border, rgba(245, 158, 11, 0.15));
+}
+
+.connection-status__banner--disconnected {
+  color: var(--color-status-disconnected, #ef4444);
+  background-color: var(--color-status-disconnected-bg, rgba(239, 68, 68, 0.08));
+  border-bottom-color: var(--color-status-disconnected-border, rgba(239, 68, 68, 0.15));
+}

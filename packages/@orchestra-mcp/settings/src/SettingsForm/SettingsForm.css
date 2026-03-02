@@ -1,0 +1,1013 @@
+/**
+ * SettingsForm Component Styles
+ * Uses CSS variables from theme system
+ */
+
+/* ── Settings Form ──────────────────────────────── */
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+/* ── Settings Group ─────────────────────────────── */
+
+.settings-group {
+  margin-bottom: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg-contrast, var(--color-bg-alt));
+  width: 100%;
+}
+
+.settings-group__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: default;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-alt);
+  border-radius: 10px 10px 0 0;
+}
+
+.settings-group__header--collapsible {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.settings-group__header--collapsible:hover {
+  background: var(--color-bg-active);
+}
+
+.settings-group__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.settings-group__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.settings-group__header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-group__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-fg-bright);
+  margin: 0;
+}
+
+.settings-group__description {
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  margin: 1px 0 0;
+  line-height: 1.4;
+}
+
+.settings-group__chevron {
+  transition: transform 0.2s ease;
+  color: var(--color-fg-muted);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.settings-group__chevron--collapsed {
+  transform: rotate(-90deg);
+}
+
+.settings-group__body {
+  padding: 16px 20px;
+}
+
+.settings-group--collapsed .settings-group__header {
+  border-bottom: none;
+  border-radius: 10px;
+}
+
+.settings-group--collapsed .settings-group__body {
+  display: none;
+}
+
+/* ── Setting Field ──────────────────────────────── */
+
+.setting-field {
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.setting-field__label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-fg-bright);
+  margin-bottom: 6px;
+}
+
+.setting-field__required {
+  color: var(--syntax-red, #ff5370);
+  margin-left: 4px;
+}
+
+.setting-field__description {
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* ── Input Base ─────────────────────────────────── */
+
+.setting-field__input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, sans-serif;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  outline: none;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.setting-field__input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-alpha, rgba(59, 130, 246, 0.1));
+}
+
+.setting-field__input:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.setting-field__input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--color-bg-alt);
+}
+
+.setting-field__input::placeholder {
+  color: var(--color-fg-muted);
+}
+
+/* ── Searchable Select ──────────────────────────── */
+
+.setting-field__select-wrapper {
+  position: relative;
+}
+
+.setting-field__select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, sans-serif;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  text-align: left;
+}
+
+.setting-field__select-trigger:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.setting-field__select-trigger--open {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-alpha, rgba(59, 130, 246, 0.1));
+}
+
+.setting-field__select-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--color-bg-alt);
+}
+
+.setting-field__select-placeholder {
+  color: var(--color-fg-muted);
+}
+
+.setting-field__select-chevron {
+  flex-shrink: 0;
+  color: var(--color-fg-muted);
+}
+
+.setting-field__select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.setting-field__select-search-box {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.setting-field__select-search {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, sans-serif;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg-alt);
+  color: var(--color-fg);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.setting-field__select-search:focus {
+  border-color: var(--color-accent);
+}
+
+.setting-field__select-search::placeholder {
+  color: var(--color-fg-muted);
+}
+
+.setting-field__select-options {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.setting-field__select-option {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, sans-serif;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-fg);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s ease;
+}
+
+.setting-field__select-option:hover {
+  background: var(--color-bg-active);
+}
+
+.setting-field__select-option--active {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.setting-field__select-option--active:hover {
+  background: var(--color-accent);
+}
+
+.setting-field__select-option-desc {
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  margin-top: 2px;
+}
+
+.setting-field__select-option--active .setting-field__select-option-desc {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.setting-field__select-empty {
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-fg-muted);
+}
+
+/* ── Toggle Switch (Boolean) ────────────────────── */
+
+.setting-field__toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-contrast, var(--color-bg-alt));
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.setting-field__toggle-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.setting-field__toggle-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-fg-bright);
+}
+
+.setting-field__toggle-desc {
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+
+.setting-field__toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.setting-field__toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.setting-field__toggle--on {
+  background: var(--color-accent);
+}
+
+.setting-field__toggle--off {
+  background: var(--color-border);
+}
+
+.setting-field__toggle-knob {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 3px;
+  transition: left 0.2s ease;
+}
+
+.setting-field__toggle-knob--on {
+  left: 21px;
+}
+
+.setting-field__toggle-knob--off {
+  left: 3px;
+}
+
+/* ── Color Picker ───────────────────────────────── */
+
+.setting-field__color-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.setting-field__color-picker {
+  width: 48px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 2px;
+  background: var(--color-bg);
+  flex-shrink: 0;
+}
+
+.setting-field__color-picker:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.setting-field__color-text {
+  flex: 1;
+}
+
+.setting-field__color-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setting-field__color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.setting-field__color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 2px solid var(--color-border);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.setting-field__color-swatch:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  transform: scale(1.1);
+}
+
+.setting-field__color-swatch--active {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-alpha, rgba(59, 130, 246, 0.3));
+}
+
+.setting-field__color-swatch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Range Slider ───────────────────────────────── */
+
+.setting-field__range-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.setting-field__range {
+  flex: 1;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.setting-field__range:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.setting-field__range-value {
+  font-size: 13px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--color-fg);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* ── Multi-select Checkboxes ────────────────────── */
+
+.setting-field__checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-field__checkbox-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-contrast, var(--color-bg-alt));
+  cursor: pointer;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--color-fg);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.setting-field__checkbox-card:hover:not(.setting-field__checkbox-card--disabled) {
+  border-color: var(--color-accent);
+}
+
+.setting-field__checkbox-card--checked {
+  border-color: var(--color-accent);
+}
+
+.setting-field__checkbox-card--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.setting-field__checkbox-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--color-bg-active);
+  color: var(--color-fg-bright);
+  flex-shrink: 0;
+}
+
+.setting-field__checkbox-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.setting-field__checkbox-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.setting-field__checkbox-title {
+  font-weight: 600;
+  color: var(--color-fg-bright);
+}
+
+.setting-field__checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-bg);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.setting-field__checkbox:checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.setting-field__checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  width: 4px;
+  height: 7px;
+  border: solid #fff;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+
+.setting-field__checkbox:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.setting-field__checkbox:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.setting-field__checkbox-desc {
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  line-height: 1.4;
+}
+
+/* ── Date Picker ───────────────────────────────── */
+
+.setting-field__date {
+  color-scheme: dark;
+}
+
+/* ── Key-Value Pairs ───────────────────────────── */
+
+.setting-field__kv {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-field__kv-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.setting-field__kv-key {
+  flex: 1;
+}
+
+.setting-field__kv-value {
+  flex: 2;
+}
+
+.setting-field__kv-remove,
+.setting-field__repeater-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.setting-field__kv-remove:hover,
+.setting-field__repeater-remove:hover {
+  background: var(--syntax-red, #ff5370);
+  color: #fff;
+  border-color: transparent;
+}
+
+.setting-field__kv-remove:disabled,
+.setting-field__repeater-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.setting-field__kv-add,
+.setting-field__repeater-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, sans-serif;
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: fit-content;
+}
+
+.setting-field__kv-add:hover,
+.setting-field__repeater-add:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.setting-field__kv-add:disabled,
+.setting-field__repeater-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Repeater ──────────────────────────────────── */
+
+.setting-field__repeater {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-field__repeater-header {
+  display: flex;
+  gap: 8px;
+  padding: 0 0 4px;
+}
+
+.setting-field__repeater-col-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.setting-field__repeater-col-action {
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.setting-field__repeater-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.setting-field__repeater-cell {
+  flex: 1;
+}
+
+/* ── Code Input ────────────────────────────────── */
+
+.setting-field__code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  tab-size: 2;
+  resize: vertical;
+  min-height: 120px;
+  white-space: pre;
+}
+
+/* ── Markdown Input ────────────────────────────── */
+
+.setting-field__markdown {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* ── Empty State ───────────────────────────────── */
+
+.settings-form__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--color-fg-muted);
+}
+
+.settings-form__empty-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.settings-form__empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-fg-bright);
+  margin: 0 0 4px;
+}
+
+.settings-form__empty-desc {
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ── Compact Variant ────────────────────────────── */
+
+[data-variant='compact'] .settings-group {
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+[data-variant='compact'] .settings-group__header {
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px 8px 0 0;
+}
+
+[data-variant='compact'] .settings-group--collapsed .settings-group__header {
+  border-radius: 8px;
+}
+
+[data-variant='compact'] .settings-group__icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+[data-variant='compact'] .settings-group__icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+[data-variant='compact'] .settings-group__title {
+  font-size: 14px;
+}
+
+[data-variant='compact'] .settings-group__description {
+  font-size: 11px;
+}
+
+[data-variant='compact'] .settings-group__body {
+  padding: 12px 14px;
+}
+
+[data-variant='compact'] .setting-field {
+  margin-bottom: 12px;
+}
+
+[data-variant='compact'] .setting-field__label {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+[data-variant='compact'] .setting-field__description {
+  font-size: 11px;
+}
+
+[data-variant='compact'] .setting-field__input {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+[data-variant='compact'] .setting-field__select-trigger {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+[data-variant='compact'] .setting-field__select-dropdown {
+  border-radius: 6px;
+}
+
+[data-variant='compact'] .setting-field__select-search {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+[data-variant='compact'] .setting-field__select-option {
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+[data-variant='compact'] .setting-field__toggle-row {
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+[data-variant='compact'] .setting-field__toggle-label {
+  font-size: 13px;
+}
+
+[data-variant='compact'] .setting-field__toggle-desc {
+  font-size: 11px;
+}
+
+[data-variant='compact'] .setting-field__color-picker {
+  width: 40px;
+  height: 34px;
+  border-radius: 4px;
+}
+
+[data-variant='compact'] .setting-field__color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+[data-variant='compact'] .setting-field__color-swatches {
+  gap: 4px;
+}
+
+[data-variant='compact'] .setting-field__range-value,
+[data-variant='compact'] .setting-field__checkbox-card {
+  font-size: 12px;
+}
+
+[data-variant='compact'] .setting-field__checkbox-card {
+  padding: 10px 12px;
+  gap: 10px;
+  border-radius: 6px;
+}
+
+/* ── Modern Variant ─────────────────────────────── */
+
+[data-variant='modern'] .settings-group {
+  margin-bottom: 32px;
+  border-radius: 14px;
+}
+
+[data-variant='modern'] .settings-group__header {
+  gap: 14px;
+  padding: 20px 24px;
+  border-radius: 14px 14px 0 0;
+}
+
+[data-variant='modern'] .settings-group--collapsed .settings-group__header {
+  border-radius: 14px;
+}
+
+[data-variant='modern'] .settings-group__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+[data-variant='modern'] .settings-group__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+[data-variant='modern'] .settings-group__title {
+  font-size: 17px;
+}
+
+[data-variant='modern'] .settings-group__description {
+  font-size: 13px;
+}
+
+[data-variant='modern'] .settings-group__body {
+  padding: 20px 24px;
+}
+
+[data-variant='modern'] .setting-field {
+  margin-bottom: 20px;
+}
+
+[data-variant='modern'] .setting-field__label {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+[data-variant='modern'] .setting-field__description {
+  font-size: 13px;
+}
+
+[data-variant='modern'] .setting-field__input {
+  padding: 10px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+[data-variant='modern'] .setting-field__input:focus {
+  box-shadow: 0 0 0 4px var(--color-accent-alpha, rgba(59, 130, 246, 0.15));
+}
+
+[data-variant='modern'] .setting-field__select-trigger {
+  padding: 10px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+[data-variant='modern'] .setting-field__select-trigger--open {
+  box-shadow: 0 0 0 4px var(--color-accent-alpha, rgba(59, 130, 246, 0.15));
+}
+
+[data-variant='modern'] .setting-field__select-dropdown {
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+[data-variant='modern'] .setting-field__select-search {
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .setting-field__select-option {
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .setting-field__toggle-row {
+  padding: 16px 20px;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+[data-variant='modern'] .setting-field__toggle-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+[data-variant='modern'] .setting-field__toggle-desc {
+  font-size: 13px;
+}
+
+[data-variant='modern'] .setting-field__color-picker {
+  width: 52px;
+  height: 44px;
+  border-radius: 8px;
+}
+
+[data-variant='modern'] .setting-field__color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+[data-variant='modern'] .setting-field__color-swatches {
+  gap: 8px;
+}
+
+[data-variant='modern'] .setting-field__range-value {
+  font-size: 14px;
+}
+
+[data-variant='modern'] .setting-field__checkbox-card {
+  font-size: 14px;
+  padding: 14px 18px;
+  gap: 14px;
+  border-radius: 10px;
+}

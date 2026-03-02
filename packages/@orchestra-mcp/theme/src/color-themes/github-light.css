@@ -1,0 +1,26 @@
+/**
+ * GitHub Light Color Theme
+ */
+
+--color-bg: #ffffff;
+--color-bg-alt: #f6f8fa;
+--color-bg-contrast: #f3f4f6;
+--color-bg-active: #dfe2e5;
+--color-bg-selection: #0366d620;
+--color-fg: #24292e;
+--color-fg-dim: #6a737d;
+--color-fg-muted: #586069;
+--color-fg-bright: #1b1f23;
+--color-border: #e1e4e8;
+--color-accent: #0366d6;
+
+/* Syntax colors (light) */
+--syntax-blue: #0366d6;
+--syntax-cyan: #0598bc;
+--syntax-green: #22863a;
+--syntax-yellow: #b08800;
+--syntax-orange: #d73a49;
+--syntax-red: #d73a49;
+--syntax-purple: #6f42c1;
+--syntax-teal: #0598bc;
+--syntax-error: #d73a49;

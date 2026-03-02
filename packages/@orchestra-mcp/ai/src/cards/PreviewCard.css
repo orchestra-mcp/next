@@ -1,0 +1,43 @@
+.preview-card .card-base__content {
+  padding: 0;
+}
+
+.preview-card__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.preview-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.preview-card__error-banner {
+  padding: 8px 12px;
+  background: color-mix(in srgb, #ef4444 12%, var(--color-bg-alt, #141927));
+  border-bottom: 1px solid color-mix(in srgb, #ef4444 30%, transparent);
+  color: #fca5a5;
+  font-size: 12px;
+  font-family: var(--font-family-mono, monospace);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.preview-card__frame {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.preview-card__open-btn {
+  flex-shrink: 0;
+}
+
+/* Ensure the preview-frame__viewport inside the card can scroll horizontally */
+.preview-card .preview-frame__viewport {
+  max-width: 100%;
+}

@@ -1,0 +1,28 @@
+.read-card__editor {
+  margin: 0;
+}
+
+.read-card__editor .code-editor {
+  border-radius: 0;
+  border: none;
+}
+
+.read-card__editor .code-editor__header {
+  display: none;
+}
+
+.read-card__loading {
+  color: var(--color-fg-muted);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+/* Compact variant */
+[data-variant='compact'] .read-card__editor {
+  margin: -2px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .read-card__editor {
+  margin: -4px -8px;
+}

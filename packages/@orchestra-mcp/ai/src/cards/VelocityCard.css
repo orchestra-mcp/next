@@ -1,0 +1,65 @@
+/* VelocityCard — pure CSS horizontal bar chart */
+
+.velocity-card__chart {
+  position: relative;
+}
+
+.velocity-card__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.velocity-card__bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.velocity-card__bar-label {
+  width: 80px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.velocity-card__bar-track {
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  background: var(--color-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.velocity-card__bar {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.velocity-card__bar-value {
+  flex-shrink: 0;
+  width: 28px;
+  text-align: right;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--color-fg-muted);
+}
+
+.velocity-card__avg-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* offset for label column + gap */
+  margin-left: 88px;
+  width: 0;
+  border-left: 1px dashed var(--color-fg-muted);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1;
+}

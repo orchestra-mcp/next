@@ -1,0 +1,71 @@
+/* CIStatusCard -- CI/CD status checks */
+
+.ci-status-card__ref {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.ci-status-card__ref code {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--color-border);
+  color: var(--color-fg);
+}
+
+.ci-status-card__sha {
+  font-size: 10px;
+  color: var(--color-fg-muted);
+}
+
+.ci-status-card__checks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ci-status-card__check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 3px 0;
+}
+
+.ci-status-card__dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.ci-status-card__context {
+  font-weight: 600;
+  color: var(--color-fg);
+  white-space: nowrap;
+}
+
+.ci-status-card__desc {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ci-status-card__link {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.ci-status-card__link:hover {
+  text-decoration: underline;
+}

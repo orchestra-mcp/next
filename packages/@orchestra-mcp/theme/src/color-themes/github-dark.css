@@ -1,0 +1,26 @@
+/**
+ * GitHub Dark Color Theme
+ */
+
+--color-bg: #0d1117;
+--color-bg-alt: #161b22;
+--color-bg-contrast: #010409;
+--color-bg-active: #21262d;
+--color-bg-selection: #388bfd26;
+--color-fg: #c9d1d9;
+--color-fg-dim: #484f58;
+--color-fg-muted: #8b949e;
+--color-fg-bright: #f0f6fc;
+--color-border: #30363d;
+--color-accent: #58a6ff;
+
+/* Syntax colors */
+--syntax-blue: #82aaff;
+--syntax-cyan: #89ddff;
+--syntax-green: #c3e88d;
+--syntax-yellow: #ffcb6b;
+--syntax-orange: #f78c6c;
+--syntax-red: #ff5370;
+--syntax-purple: #c792ea;
+--syntax-teal: #4fd6be;
+--syntax-error: #ff5370;

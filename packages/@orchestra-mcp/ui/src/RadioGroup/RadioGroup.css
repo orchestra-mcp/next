@@ -1,0 +1,174 @@
+/**
+ * RadioGroup Component Styles
+ * Uses CSS variables from theme system
+ */
+
+.radio-group {
+  display: flex;
+  gap: 8px;
+}
+
+.radio-group--vertical {
+  flex-direction: column;
+}
+
+.radio-group--horizontal {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* Option row */
+.radio-group__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  padding: 6px 4px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.radio-group__option:hover:not(.radio-group__option--disabled) {
+  background-color: var(--color-bg-alt, #f5f5f5);
+}
+
+.radio-group__option--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Hidden native input */
+.radio-group__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Visible circle */
+.radio-group__circle {
+  position: relative;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border, #ccc);
+  background-color: var(--color-bg, #fff);
+  margin-top: 1px;
+  transition: border-color 0.15s ease;
+}
+
+.radio-group__circle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-accent, #3b82f6);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.15s ease;
+}
+
+/* Selected state */
+.radio-group__option--selected .radio-group__circle {
+  border-color: var(--color-accent, #3b82f6);
+}
+
+.radio-group__option--selected .radio-group__circle::after {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Focus ring */
+.radio-group__input:focus-visible + .radio-group__circle {
+  outline: 2px solid var(--color-accent, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Text */
+.radio-group__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.radio-group__label {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-fg, #111);
+  line-height: 1.4;
+}
+
+.radio-group__description {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  color: var(--color-fg-muted, #666);
+  line-height: 1.4;
+}
+
+/* Error */
+.radio-group__error {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: var(--color-error, #ef4444);
+  margin-top: 4px;
+}
+
+/* Compact variant */
+[data-variant='compact'] .radio-group {
+  gap: 4px;
+}
+
+[data-variant='compact'] .radio-group__option {
+  padding: 4px 2px;
+  gap: 8px;
+  border-radius: 4px;
+}
+
+[data-variant='compact'] .radio-group__circle {
+  width: 16px;
+  height: 16px;
+}
+
+[data-variant='compact'] .radio-group__circle::after {
+  width: 6px;
+  height: 6px;
+}
+
+[data-variant='compact'] .radio-group__label {
+  font-size: 13px;
+}
+
+[data-variant='compact'] .radio-group__description {
+  font-size: 11px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .radio-group__option {
+  padding: 10px 8px;
+  border-radius: 8px;
+  gap: 12px;
+}
+
+[data-variant='modern'] .radio-group__circle {
+  width: 20px;
+  height: 20px;
+}
+
+[data-variant='modern'] .radio-group__circle::after {
+  width: 10px;
+  height: 10px;
+}
+
+[data-variant='modern'] .radio-group__label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+[data-variant='modern'] .radio-group__description {
+  font-size: 13px;
+}

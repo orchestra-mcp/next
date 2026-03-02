@@ -1,0 +1,128 @@
+/**
+ * FilePreview Component Styles
+ * Horizontal scrollable strip showing attached file thumbnails
+ */
+
+.file-preview {
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.file-preview::-webkit-scrollbar {
+  display: none;
+}
+
+.file-preview__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  min-width: 0;
+  flex-shrink: 0;
+  max-width: 200px;
+}
+
+.file-preview__thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.file-preview__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  background: var(--color-bg);
+  flex-shrink: 0;
+  color: var(--color-fg-muted);
+}
+
+.file-preview__icon--loading {
+  opacity: 0.5;
+  animation: file-preview-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes file-preview-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+.file-preview__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.file-preview__name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-preview__size {
+  font-size: 11px;
+  color: var(--color-fg-muted);
+}
+
+.file-preview__size--large {
+  color: #ef4444;
+}
+
+.file-preview__remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-alt);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-fg-muted);
+  font-size: 10px;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.file-preview__remove:hover {
+  color: #ef4444;
+}
+
+/* Compact variant */
+[data-variant='compact'] .file-preview {
+  padding: 6px 10px;
+  gap: 6px;
+}
+
+[data-variant='compact'] .file-preview__item {
+  padding: 4px 6px;
+  max-width: 160px;
+}
+
+[data-variant='compact'] .file-preview__thumb {
+  width: 36px;
+  height: 36px;
+}
+
+[data-variant='compact'] .file-preview__icon {
+  width: 36px;
+  height: 36px;
+}

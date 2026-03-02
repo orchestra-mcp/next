@@ -1,0 +1,423 @@
+.ssh-session {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-bg, #1a1a1a);
+}
+
+/* ── Connection form ── */
+.ssh-session__connection-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  max-width: 400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.ssh-session__form-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-fg, #e0e0e0);
+}
+
+.ssh-session__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-fg-muted, #888);
+}
+
+.ssh-session__input,
+.ssh-session__select,
+.ssh-session__textarea {
+  padding: 6px 8px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  background: var(--color-bg, #1a1a1a);
+  color: var(--color-fg, #e0e0e0);
+  font-size: 13px;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+}
+
+.ssh-session__input:focus,
+.ssh-session__select:focus,
+.ssh-session__textarea:focus {
+  outline: 1px solid var(--color-accent, #6366f1);
+  outline-offset: -1px;
+}
+
+.ssh-session__input::placeholder,
+.ssh-session__textarea::placeholder {
+  color: var(--color-fg-muted, #888);
+}
+
+.ssh-session__input--port {
+  max-width: 100px;
+}
+
+.ssh-session__textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.ssh-session__error {
+  padding: 8px 24px;
+  font-size: 12px;
+  color: var(--color-danger, #d9534f);
+}
+
+/* ── Toolbar ── */
+.ssh-session__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-bg-alt, #1e1e1e);
+  flex-shrink: 0;
+}
+
+.ssh-session__toolbar-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  color: var(--color-fg, #e0e0e0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ssh-session__sftp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  background: var(--color-bg, #1a1a1a);
+  color: var(--color-fg-muted, #888);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ssh-session__sftp-btn:hover {
+  color: var(--color-fg, #e0e0e0);
+}
+
+.ssh-session__sftp-btn--active {
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+  border-color: var(--color-accent, #6366f1);
+}
+
+/* ── Connect / Disconnect button ── */
+.ssh-session__connect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.ssh-session__connect-btn:hover {
+  opacity: 0.85;
+}
+
+.ssh-session__connect-btn--disconnect {
+  background: var(--color-danger, #d9534f);
+}
+
+.ssh-session__connect-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Body (terminal + SFTP side-by-side) ── */
+.ssh-session__body {
+  flex: 1;
+  position: relative;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Terminal container ── */
+.ssh-session__terminal {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  padding: 4px;
+}
+
+/* Hidden terminal container: kept in DOM for dimension measurement but invisible */
+.ssh-session__terminal--hidden {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ssh-session__terminal .xterm {
+  height: 100%;
+}
+
+.ssh-session__terminal .xterm-viewport {
+  overflow-y: auto;
+}
+
+/* ── SFTP panel (right side overlay) ── */
+.ssh-session__sftp {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-bg-alt, #1e1e1e);
+  z-index: 10;
+}
+
+.ssh-session__sftp-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+}
+
+.ssh-session__sftp-up {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 3px;
+  background: var(--color-bg, #1a1a1a);
+  color: var(--color-fg-muted, #888);
+  font-size: 12px;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  cursor: pointer;
+}
+
+.ssh-session__sftp-up:hover {
+  color: var(--color-fg, #e0e0e0);
+}
+
+.ssh-session__sftp-up:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ssh-session__sftp-path {
+  flex: 1;
+  font-size: 11px;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+  color: var(--color-fg-muted, #888);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ssh-session__sftp-list {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.ssh-session__sftp-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--color-fg, #e0e0e0);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.ssh-session__sftp-item:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.ssh-session__sftp-item--dir .ssh-session__sftp-name {
+  color: var(--color-accent, #6366f1);
+  font-weight: 500;
+}
+
+.ssh-session__sftp-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+}
+
+.ssh-session__sftp-meta {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--color-fg-muted, #888);
+  font-family: var(--font-mono, 'Menlo', 'Consolas', monospace);
+}
+
+.ssh-session__sftp-perms {
+  min-width: 72px;
+}
+
+.ssh-session__sftp-size {
+  min-width: 56px;
+  text-align: right;
+}
+
+.ssh-session__sftp-empty {
+  padding: 16px 10px;
+  font-size: 12px;
+  color: var(--color-fg-muted, #888);
+  text-align: center;
+}
+
+/* ── Status bar ── */
+.ssh-session__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 12px;
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-bg-alt, #1e1e1e);
+  font-size: 11px;
+  color: var(--color-fg-muted, #888);
+  flex-shrink: 0;
+}
+
+.ssh-session__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-fg-muted, #888);
+}
+
+.ssh-session__status-dot--connected {
+  background: var(--color-success, #4caf50);
+}
+
+.ssh-session__status-dot--connecting {
+  background: var(--color-warning, #ff9800);
+  animation: ssh-session-pulse 1s ease-in-out infinite;
+}
+
+.ssh-session__status-dot--error {
+  background: var(--color-danger, #d9534f);
+}
+
+@keyframes ssh-session-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Loading placeholder ── */
+.ssh-session__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-fg-muted, #888);
+  font-size: 13px;
+}
+
+/* ── Compact variant ── */
+[data-variant='compact'] .ssh-session__toolbar {
+  padding: 4px 8px;
+  gap: 6px;
+}
+
+[data-variant='compact'] .ssh-session__connection-form {
+  padding: 16px;
+  gap: 8px;
+}
+
+[data-variant='compact'] .ssh-session__label {
+  font-size: 11px;
+}
+
+[data-variant='compact'] .ssh-session__status {
+  padding: 1px 8px;
+  font-size: 10px;
+}
+
+[data-variant='compact'] .ssh-session__sftp {
+  width: 240px;
+}
+
+[data-variant='compact'] .ssh-session__sftp-header {
+  padding: 4px 8px;
+}
+
+[data-variant='compact'] .ssh-session__sftp-item {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+/* ── Modern variant ── */
+[data-variant='modern'] .ssh-session__toolbar {
+  padding: 10px 16px;
+  gap: 10px;
+  border-bottom-width: 2px;
+}
+
+[data-variant='modern'] .ssh-session__connect-btn {
+  border-radius: 8px;
+  padding: 8px 18px;
+}
+
+[data-variant='modern'] .ssh-session__sftp-btn {
+  border-radius: 8px;
+}
+
+[data-variant='modern'] .ssh-session__sftp {
+  border-radius: 8px 0 0 8px;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+}
+
+[data-variant='modern'] .ssh-session__sftp-item:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+  border-radius: 4px;
+  margin: 0 4px;
+}
+
+[data-variant='modern'] .ssh-session__status {
+  padding: 4px 16px;
+}
+
+[data-variant='modern'] .ssh-session__connection-form {
+  gap: 16px;
+}
+
+[data-variant='modern'] .ssh-session__input,
+[data-variant='modern'] .ssh-session__select,
+[data-variant='modern'] .ssh-session__textarea {
+  border-radius: 8px;
+  padding: 8px 12px;
+}

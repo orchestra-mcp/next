@@ -1,0 +1,89 @@
+.list-card__empty {
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+  padding: 8px 0;
+  text-align: center;
+}
+
+.list-card__items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.list-card__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  min-width: 0;
+}
+
+.list-card__item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.list-card__item-id {
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--color-muted-foreground);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.list-card__item-title {
+  font-size: 12px;
+  color: var(--color-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.list-card__item-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.list-card__badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.list-card__badge--success {
+  background: color-mix(in srgb, #22c55e 15%, transparent);
+  color: #22c55e;
+}
+
+.list-card__badge--info {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+}
+
+.list-card__badge--warning {
+  background: color-mix(in srgb, #f59e0b 15%, transparent);
+  color: #f59e0b;
+}
+
+.list-card__badge--danger {
+  background: color-mix(in srgb, #ef4444 15%, transparent);
+  color: #ef4444;
+}
+
+.list-card__badge--muted {
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+}

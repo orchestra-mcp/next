@@ -1,0 +1,69 @@
+/**
+ * Shimmer Skeleton Loading Styles
+ * Uses CSS variables from theme system
+ */
+
+.shimmer {
+  background-color: var(--color-bg-alt);
+  overflow: hidden;
+  position: relative;
+}
+
+.shimmer--animate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-bg-active, rgba(255, 255, 255, 0.08)) 50%,
+    transparent 100%
+  );
+  animation: shimmer-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Variant: compact — smaller sizes */
+[data-variant='compact'] .shimmer--line {
+  height: 12px;
+}
+
+[data-variant='compact'] .shimmer--circle {
+  width: 36px;
+  height: 36px;
+}
+
+[data-variant='compact'] .shimmer--rect {
+  height: 72px;
+}
+
+[data-variant='compact'] .shimmer--card {
+  height: 148px;
+}
+
+/* Variant: modern — larger radii */
+[data-variant='modern'] .shimmer--line {
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .shimmer--rect {
+  border-radius: 8px;
+}
+
+[data-variant='modern'] .shimmer--card {
+  border-radius: 12px;
+}

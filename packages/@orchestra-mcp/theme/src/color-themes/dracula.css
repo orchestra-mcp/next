@@ -1,0 +1,26 @@
+/**
+ * Dracula Color Theme
+ */
+
+--color-bg: #282a36;
+--color-bg-alt: #2d303e;
+--color-bg-contrast: #21222c;
+--color-bg-active: #343746;
+--color-bg-selection: #44475a80;
+--color-fg: #f8f8f2;
+--color-fg-dim: #6272a4;
+--color-fg-muted: #6272a4;
+--color-fg-bright: #f8f8f2;
+--color-border: #343746;
+--color-accent: #bd93f9;
+
+/* Syntax colors */
+--syntax-blue: #82aaff;
+--syntax-cyan: #89ddff;
+--syntax-green: #c3e88d;
+--syntax-yellow: #ffcb6b;
+--syntax-orange: #f78c6c;
+--syntax-red: #ff5370;
+--syntax-purple: #c792ea;
+--syntax-teal: #4fd6be;
+--syntax-error: #ff5370;

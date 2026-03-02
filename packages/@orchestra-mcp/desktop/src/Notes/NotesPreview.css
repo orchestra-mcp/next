@@ -1,0 +1,193 @@
+.notes-preview {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.notes-preview__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.notes-preview__title-input {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: var(--color-fg);
+  outline: none;
+  padding: 4px 0;
+  transition: border-color 0.15s;
+}
+
+.notes-preview__title-input:focus {
+  border-bottom-color: var(--color-accent);
+}
+
+.notes-preview__title-text {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-fg);
+  padding: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-preview__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.notes-preview__btn:hover {
+  background: var(--color-bg-alt);
+  color: var(--color-fg);
+}
+
+.notes-preview__btn--active {
+  background: var(--color-accent);
+  color: var(--color-fg-bright, #fff);
+}
+
+.notes-preview__btn--active:hover {
+  opacity: 0.85;
+  background: var(--color-accent);
+  color: var(--color-fg-bright, #fff);
+}
+
+.notes-preview__btn--done {
+  color: var(--color-success, #22c55e);
+}
+
+.notes-preview__btn--done:hover {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--color-success, #22c55e);
+}
+
+.notes-preview__btn--danger:hover {
+  color: var(--color-danger, #e53e3e);
+  background: rgba(229, 62, 62, 0.1);
+}
+
+/* Export dropdown */
+.notes-preview__export-wrap {
+  position: relative;
+}
+
+.notes-preview__export-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 140px;
+  background: var(--color-bg-alt, #1e1e1e);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  animation: note-export-in 0.1s ease;
+}
+
+@keyframes note-export-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.notes-preview__export-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s ease;
+}
+
+.notes-preview__export-item:hover {
+  background: var(--color-bg-hover, rgba(255,255,255,0.06));
+}
+
+/* Body */
+.notes-preview__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* View-only mode */
+.notes-preview__view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.notes-preview__view-empty {
+  color: var(--color-fg-muted);
+  font-style: italic;
+  font-size: 14px;
+}
+
+.notes-preview__markdown {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+/* Empty */
+.notes-preview__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--color-fg-muted);
+  opacity: 0.5;
+}
+
+.notes-preview__empty span {
+  font-size: 14px;
+}
+
+/* Compact */
+[data-variant='compact'] .notes-preview__toolbar { padding: 8px 16px; }
+[data-variant='compact'] .notes-preview__title-input { font-size: 14px; }
+[data-variant='compact'] .notes-preview__title-text { font-size: 14px; }
+[data-variant='compact'] .notes-preview__btn { width: 24px; height: 24px; }
+[data-variant='compact'] .notes-preview__markdown { padding: 16px 18px; }
+[data-variant='compact'] .notes-preview__view { padding: 16px 18px; }
+
+/* Modern */
+[data-variant='modern'] .notes-preview__toolbar { padding: 16px 24px; }
+[data-variant='modern'] .notes-preview__title-input { font-size: 18px; }
+[data-variant='modern'] .notes-preview__title-text { font-size: 18px; }
+[data-variant='modern'] .notes-preview__btn { width: 32px; height: 32px; border-radius: 8px; }
+[data-variant='modern'] .notes-preview__markdown { padding: 24px 32px; }
+[data-variant='modern'] .notes-preview__view { padding: 24px 32px; }

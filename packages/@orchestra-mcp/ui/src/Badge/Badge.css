@@ -1,0 +1,197 @@
+/**
+ * Badge Component Styles
+ * High-contrast badges — text is always a lighter shade of the background.
+ * Filled: colored bg at ~18% opacity + bright same-hue text
+ * Soft: colored bg at ~10% opacity + same-hue text + subtle border
+ * Outlined: no bg, colored border + colored text
+ */
+
+.badge {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  transition: filter 0.15s ease;
+}
+
+/* ── Sizes ── */
+.badge--xs { font-size: 10px; padding: 3px 8px; }
+.badge--sm { font-size: 11px; padding: 4px 10px; }
+.badge--md { font-size: 12px; padding: 5px 12px; }
+.badge--lg { font-size: 14px; padding: 7px 16px; }
+
+/*
+ * ── Variant: filled ──
+ * Semi-transparent colored bg + bright same-hue text.
+ * Text is lighter than the bg — same hue family, higher luminance.
+ */
+.badge--filled { border: 1.5px solid transparent; }
+
+.badge--filled.badge--primary {
+  background-color: rgba(129, 140, 248, 0.18) !important;
+  color: #a5b4fc !important;
+}
+.badge--filled.badge--success {
+  background-color: rgba(34, 197, 94, 0.18) !important;
+  color: #86efac !important;
+}
+.badge--filled.badge--warning {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  color: #fcd34d !important;
+}
+.badge--filled.badge--danger {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+  color: #fca5a5 !important;
+}
+.badge--filled.badge--info {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+  color: #93c5fd !important;
+}
+.badge--filled.badge--gray {
+  background-color: rgba(156, 163, 175, 0.12) !important;
+  color: #d1d5db !important;
+}
+
+/*
+ * ── Variant: soft ──
+ * Lighter tinted bg + same-hue text + subtle same-hue border.
+ */
+.badge--soft { border: 1.5px solid; }
+
+.badge--soft.badge--primary {
+  background-color: rgba(129, 140, 248, 0.10) !important;
+  color: #a5b4fc !important;
+  border-color: rgba(129, 140, 248, 0.25);
+}
+.badge--soft.badge--success {
+  background-color: rgba(34, 197, 94, 0.10) !important;
+  color: #86efac !important;
+  border-color: rgba(34, 197, 94, 0.25);
+}
+.badge--soft.badge--warning {
+  background-color: rgba(245, 158, 11, 0.10) !important;
+  color: #fcd34d !important;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+.badge--soft.badge--danger {
+  background-color: rgba(239, 68, 68, 0.10) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+.badge--soft.badge--info {
+  background-color: rgba(59, 130, 246, 0.10) !important;
+  color: #93c5fd !important;
+  border-color: rgba(59, 130, 246, 0.25);
+}
+.badge--soft.badge--gray {
+  background-color: rgba(156, 163, 175, 0.08) !important;
+  color: #d1d5db !important;
+  border-color: rgba(156, 163, 175, 0.18);
+}
+
+/*
+ * ── Variant: outlined ──
+ * Transparent bg, colored border + colored text.
+ */
+.badge--outlined {
+  background-color: transparent;
+  border: 1.5px solid;
+}
+
+.badge--outlined.badge--primary {
+  color: #a5b4fc !important;
+  border-color: #818cf8;
+}
+.badge--outlined.badge--success {
+  color: #86efac !important;
+  border-color: #22c55e;
+}
+.badge--outlined.badge--warning {
+  color: #fcd34d !important;
+  border-color: #f59e0b;
+}
+.badge--outlined.badge--danger {
+  color: #fca5a5 !important;
+  border-color: #ef4444;
+}
+.badge--outlined.badge--info {
+  color: #93c5fd !important;
+  border-color: #3b82f6;
+}
+.badge--outlined.badge--gray {
+  color: #d1d5db !important;
+  border-color: rgba(156, 163, 175, 0.4);
+}
+
+/* ── Hover ── */
+.badge:hover { filter: brightness(1.15); }
+
+/* ── Dot indicator ── */
+.badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
+}
+.badge--lg .badge__dot { width: 8px; height: 8px; }
+
+/* ── Icon ── */
+.badge__icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.badge__icon svg { width: 1em; height: 1em; }
+.badge--xs .badge__icon svg,
+.badge--sm .badge__icon svg { width: 0.9em; height: 0.9em; }
+
+/* ── Remove button ── */
+.badge__remove {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  margin: -2px -4px -2px 0;
+  padding: 2px;
+  border-radius: 4px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+.badge__remove:hover { opacity: 1; }
+.badge__remove:focus-visible {
+  opacity: 1;
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+.badge__remove-icon { width: 14px; height: 14px; }
+.badge--xs .badge__remove-icon,
+.badge--sm .badge__remove-icon { width: 12px; height: 12px; }
+
+/* ── Disabled ── */
+.badge--disabled {
+  pointer-events: none;
+  opacity: 0.45;
+  filter: grayscale(0.4);
+}
+
+/* ── Compact variant override ── */
+[data-variant='compact'] .badge { border-radius: 4px; }
+[data-variant='compact'] .badge--xs { font-size: 9px; padding: 2px 6px; }
+[data-variant='compact'] .badge--sm { font-size: 10px; padding: 3px 7px; }
+[data-variant='compact'] .badge--md { font-size: 11px; padding: 3px 8px; }
+[data-variant='compact'] .badge--lg { font-size: 12px; padding: 4px 10px; }
+
+/* ── Modern variant override (pill) ── */
+[data-variant='modern'] .badge { border-radius: 9999px; }
+[data-variant='modern'] .badge--xs { padding: 3px 10px; }
+[data-variant='modern'] .badge--sm { padding: 4px 12px; }
+[data-variant='modern'] .badge--md { padding: 5px 14px; }
+[data-variant='modern'] .badge--lg { padding: 6px 18px; }

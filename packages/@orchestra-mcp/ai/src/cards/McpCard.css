@@ -1,0 +1,95 @@
+.mcp-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.mcp-card__section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mcp-card__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-fg-muted);
+}
+
+.mcp-card__pre {
+  margin: 0;
+  padding: 8px;
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.mcp-card__divider {
+  margin: 8px 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Compact variant */
+[data-variant='compact'] .mcp-card__label {
+  font-size: 10px;
+}
+
+[data-variant='compact'] .mcp-card__pre {
+  padding: 4px 6px;
+  font-size: 11px;
+  max-height: 200px;
+}
+
+[data-variant='compact'] .mcp-card__divider {
+  margin: 4px 0;
+}
+
+/* Modern variant */
+[data-variant='modern'] .mcp-card__pre {
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  max-height: 400px;
+}
+
+[data-variant='modern'] .mcp-card__divider {
+  margin: 10px 0;
+}
+
+/* Key-value argument display */
+.mcp-card__args {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mcp-card__arg {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mcp-card__arg-key {
+  font-weight: 600;
+  color: var(--color-fg-muted);
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.mcp-card__arg-val {
+  color: var(--color-fg);
+  word-break: break-word;
+}

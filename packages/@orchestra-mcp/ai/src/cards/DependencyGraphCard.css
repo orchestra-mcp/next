@@ -1,0 +1,129 @@
+.dep-graph-card__empty {
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+  text-align: center;
+  padding: 8px 0;
+}
+
+.dep-graph-card__stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.dep-graph-card__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.dep-graph-card__stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  line-height: 1;
+}
+
+.dep-graph-card__stat-label {
+  font-size: 10px;
+  color: var(--color-muted-foreground);
+}
+
+.dep-graph-card__section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 8px 0 4px;
+}
+
+.dep-graph-card__nodes {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.dep-graph-card__node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  font-size: 11px;
+}
+
+.dep-graph-card__node-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: var(--color-muted-foreground);
+  flex-shrink: 0;
+}
+
+.dep-graph-card__node-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-foreground);
+}
+
+.dep-graph-card__node-status {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.dep-graph-card__edge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+}
+
+.dep-graph-card__edge-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: var(--color-muted-foreground);
+}
+
+.dep-graph-card__edge-arrow {
+  color: var(--color-muted-foreground);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.dep-graph-card__edges {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.dep-graph-card__cycle-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+  border: 1px solid color-mix(in srgb, #ef4444 30%, transparent);
+  font-size: 11px;
+  color: #ef4444;
+  margin-top: 6px;
+}

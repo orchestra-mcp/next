@@ -1,0 +1,50 @@
+/**
+ * Desktop PanelTitleBar — draggable title bar for Wails panel windows.
+ * Uses theme vars from @orchestra-mcp/theme.
+ */
+
+.desktop-panel-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-contrast);
+  user-select: none;
+  --wails-draggable: drag;
+}
+
+.desktop-panel-titlebar__title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-fg);
+}
+
+.desktop-panel-titlebar__actions {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Compact variant ── */
+
+[data-variant='compact'] .desktop-panel-titlebar {
+  height: 36px;
+}
+
+[data-variant='compact'] .desktop-panel-titlebar__title {
+  font-size: 12px;
+}
+
+/* ── Modern variant ── */
+
+[data-variant='modern'] .desktop-panel-titlebar {
+  height: 48px;
+}
+
+[data-variant='modern'] .desktop-panel-titlebar__title {
+  font-size: 14px;
+  font-weight: 600;
+}

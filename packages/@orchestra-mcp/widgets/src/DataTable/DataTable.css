@@ -1,0 +1,314 @@
+/**
+ * DataTable Component Styles
+ * Uses CSS variables from theme system
+ */
+
+.data-table-container {
+  width: 100%;
+  position: relative;
+  overflow-x: auto;
+}
+
+/* Card mode: border + rounded corners like code-block */
+.data-table-container--card {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-bg-contrast);
+}
+
+.data-table-container--scrollable {
+  overflow-y: auto;
+}
+
+/* ── Code-block-style header ─────────────────────────────── */
+.data-table__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
+  min-height: 38px;
+}
+
+.data-table__header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* macOS window dots */
+.data-table__dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.data-table__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: block;
+}
+
+.data-table__dot--red { background: #ff5f57; }
+.data-table__dot--yellow { background: #febc2e; }
+.data-table__dot--green { background: #28c840; }
+
+.data-table__badge {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
+
+/* ── Action buttons: icon-only, show on hover ────────────── */
+.data-table__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.data-table-container:hover .data-table__actions {
+  opacity: 1;
+}
+
+.data-table__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.data-table__btn:hover {
+  background: var(--color-bg-active);
+  color: var(--color-fg);
+}
+
+.data-table__btn--copied {
+  color: var(--syntax-green, #c3e88d);
+}
+
+.data-table__btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ── Scrollable table body ───────────────────────────────── */
+.data-table__body {
+  overflow-x: auto;
+}
+
+/* ── Legacy toolbar (non-header mode) ────────────────────── */
+.data-table__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0 8px;
+}
+
+.data-table__export {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.data-table__export:hover {
+  background: var(--color-bg-active);
+}
+
+/* ── Table itself ────────────────────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Only add outer border when NOT in card mode (card has its own border) */
+.data-table-container:not(.data-table-container--card) .data-table {
+  border: 1px solid var(--color-border);
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-bg-alt);
+  border-bottom: 2px solid var(--color-border);
+  padding: 10px 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-fg);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.data-table__th--sortable { cursor: pointer; }
+.data-table__th--sortable:hover { background: var(--color-bg-active); }
+
+.data-table__th--left { text-align: left; }
+.data-table__th--center { text-align: center; }
+.data-table__th--right { text-align: right; }
+
+.data-table__sort {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 10px;
+  color: var(--color-accent);
+}
+
+.data-table tbody td {
+  padding: 8px 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: var(--color-fg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.data-table__td--left { text-align: left; }
+.data-table__td--center { text-align: center; }
+.data-table__td--right { text-align: right; }
+
+.data-table tbody tr:hover { background: var(--color-bg-active); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── Compact variant ─────────────────────────────────────── */
+[data-variant='compact'] .data-table-container--card { border-radius: 6px; }
+
+[data-variant='compact'] .data-table__header {
+  padding: 4px 8px;
+  min-height: 28px;
+}
+
+[data-variant='compact'] .data-table__dots { gap: 5px; }
+[data-variant='compact'] .data-table__dot { width: 10px; height: 10px; }
+[data-variant='compact'] .data-table__badge { font-size: 11px; }
+[data-variant='compact'] .data-table__btn { width: 24px; height: 24px; }
+[data-variant='compact'] .data-table__btn svg { width: 14px; height: 14px; }
+
+[data-variant='compact'] .data-table thead th {
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+[data-variant='compact'] .data-table tbody td {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+[data-variant='compact'] .data-table__export {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* ── Modern variant ──────────────────────────────────────── */
+[data-variant='modern'] .data-table-container--card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  border: none;
+}
+
+[data-variant='modern'] .data-table__header {
+  padding: 10px 16px;
+  min-height: 42px;
+}
+
+[data-variant='modern'] .data-table__dot { width: 13px; height: 13px; }
+
+[data-variant='modern'] .data-table__badge {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+[data-variant='modern'] .data-table__btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+[data-variant='modern'] .data-table__btn svg { width: 18px; height: 18px; }
+
+[data-variant='modern'] .data-table {
+  border-radius: 0;
+  overflow: hidden;
+  border: none;
+  box-shadow: none;
+}
+
+[data-variant='modern'] .data-table thead th {
+  padding: 14px 16px;
+  font-size: 14px;
+  border-bottom-width: 1px;
+}
+
+[data-variant='modern'] .data-table tbody td {
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+[data-variant='modern'] .data-table__export {
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* ── Inline markdown links inside cells ─────────────────────── */
+.data-table tbody td .markdown-renderer__link,
+.data-table tbody td a[data-md-link] {
+  color: var(--color-link, var(--color-primary, var(--primary, #6366f1)));
+  opacity: 0.75;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+  cursor: pointer;
+}
+
+.data-table tbody td .markdown-renderer__link:hover,
+.data-table tbody td a[data-md-link]:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* ── Exporting state: hide actions/toolbar, add vertical lines ── */
+.data-table--exporting .data-table__toolbar,
+.data-table--exporting .data-table__actions {
+  display: none !important;
+}
+
+.data-table--exporting .data-table thead th {
+  border-right: 1px solid var(--color-border);
+}
+
+.data-table--exporting .data-table thead th:last-child {
+  border-right: none;
+}
+
+.data-table--exporting .data-table tbody td {
+  border-right: 1px solid var(--color-border);
+}
+
+.data-table--exporting .data-table tbody td:last-child {
+  border-right: none;
+}

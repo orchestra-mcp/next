@@ -1,0 +1,112 @@
+.task-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.task-card__icon {
+  flex-shrink: 0;
+}
+
+.task-card__icon--gray {
+  color: var(--color-fg-muted);
+}
+
+.task-card__icon--info {
+  color: var(--color-accent);
+}
+
+.task-card__icon--success {
+  color: #22c55e;
+}
+
+.task-card__spinner {
+  animation: task-card-spin 0.8s linear infinite;
+}
+
+@keyframes task-card-spin {
+  to { transform: rotate(360deg); }
+}
+
+.task-card__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--color-fg);
+}
+
+.task-card__badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.task-card__badge--gray {
+  background: var(--color-border);
+  color: var(--color-fg-muted);
+}
+
+.task-card__badge--info {
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  color: var(--color-accent);
+}
+
+.task-card__badge--success {
+  background: color-mix(in srgb, #22c55e 18%, transparent);
+  color: #22c55e;
+}
+
+/* Compact variant */
+[data-variant='compact'] .task-card {
+  padding: 4px 8px;
+  gap: 6px;
+}
+
+[data-variant='compact'] .task-card__title {
+  font-size: 12px;
+}
+
+[data-variant='compact'] .task-card__badge {
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .task-card {
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Gemini glow effect for running task */
+.task-card[data-status="running"] {
+  position: relative;
+  z-index: 0;
+}
+
+.task-card[data-status="running"]::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--card-glow-angle, 0deg),
+    #4285f4 0%, #a855f7 25%, #ea4335 50%, #ec4899 75%, #4285f4 100%
+  );
+  animation: card-glow-spin 2.5s linear infinite;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+}

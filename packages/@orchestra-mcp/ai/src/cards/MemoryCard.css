@@ -1,0 +1,97 @@
+/* MemoryCard -- memory search results */
+
+.memory-card__query {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  font-style: italic;
+}
+
+.memory-card__result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.memory-card__result:last-child {
+  margin-bottom: 0;
+}
+
+.memory-card__result:hover {
+  background: var(--color-bg-hover);
+}
+
+.memory-card__result-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.memory-card__summary {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.memory-card__score {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  color: var(--color-accent);
+}
+
+.memory-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.memory-card__tag {
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--color-border);
+  color: var(--color-fg-muted);
+}
+
+.memory-card__source {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+  align-self: flex-start;
+}
+
+.memory-card__content {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-fg-muted);
+  border-top: 1px solid var(--color-border);
+  padding-top: 4px;
+}

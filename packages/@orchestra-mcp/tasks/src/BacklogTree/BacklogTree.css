@@ -1,0 +1,127 @@
+.backlog-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.backlog-sidebar__row {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  width: 100%;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--color-fg, #ccc);
+  border-radius: 4px;
+  transition: background 0.12s ease;
+  text-align: left;
+}
+
+.backlog-sidebar__row:hover {
+  background: var(--color-bg-active, #2a2a3a);
+}
+
+.backlog-sidebar__row--epic {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.backlog-sidebar__row--story {
+  padding-left: 24px;
+  font-size: 12px;
+}
+
+.backlog-sidebar__row--task {
+  padding-left: 44px;
+  font-size: 11px;
+  color: var(--color-fg-muted, #999);
+}
+
+.backlog-sidebar__row--task:hover {
+  color: var(--color-fg, #ccc);
+}
+
+.backlog-sidebar__chevron {
+  display: inline-flex;
+  align-items: center;
+  font-size: 8px;
+  color: var(--color-fg-muted, #888);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+  width: 12px;
+}
+
+.backlog-sidebar__chevron--open {
+  transform: rotate(90deg);
+}
+
+.backlog-sidebar__title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.backlog-sidebar__count {
+  font-size: 10px;
+  color: var(--color-fg-muted, #888);
+  flex-shrink: 0;
+}
+
+.backlog-sidebar__children {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.backlog-sidebar__assignee {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-accent, #6366f1);
+  color: var(--color-fg-bright, #fff);
+  font-size: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.backlog-sidebar__task-wrap {
+  position: relative;
+}
+
+.backlog-sidebar__task-wrap--pending {
+  opacity: 0.7;
+  pointer-events: none;
+  position: relative;
+}
+
+.backlog-sidebar__task-wrap--pending::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  animation: optimistic-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes optimistic-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.backlog-sidebar__loading,
+.backlog-sidebar__empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--color-fg-muted, #888);
+  font-size: 12px;
+}

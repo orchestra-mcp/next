@@ -1,0 +1,55 @@
+.status-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-overview__summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--color-fg-muted, #888);
+}
+
+.status-overview__total {
+  font-weight: 600;
+  color: var(--color-fg, #ccc);
+}
+
+.status-overview__percent {
+  font-weight: 600;
+  color: var(--color-accent, #7c3aed);
+}
+
+.status-overview__progress-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-bg-alt, #1e1e2e);
+  overflow: hidden;
+}
+
+.status-overview__progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--color-accent, #7c3aed);
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+
+/* Compact variant */
+[data-variant='compact'] .status-overview { gap: 8px; }
+[data-variant='compact'] .status-overview__summary { font-size: 12px; gap: 8px; }
+[data-variant='compact'] .status-overview__progress-track { height: 6px; }
+
+/* Modern variant */
+[data-variant='modern'] .status-overview__progress-track {
+  height: 10px;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+[data-variant='modern'] .status-overview__progress-bar {
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--color-accent, #7c3aed), var(--color-accent-light, #a78bfa));
+}

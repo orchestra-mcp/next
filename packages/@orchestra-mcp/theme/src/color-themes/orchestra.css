@@ -1,0 +1,27 @@
+/**
+ * Orchestra Color Theme
+ * Default Orchestra brand theme
+ */
+
+--color-bg: #0a0d14;
+--color-bg-alt: #141927;
+--color-bg-contrast: #181e2e;
+--color-bg-active: #283048;
+--color-bg-selection: #3a4a7080;
+--color-fg: #b8c5d9;
+--color-fg-dim: #4a5570;
+--color-fg-muted: #6b7b95;
+--color-fg-bright: #e8eef8;
+--color-border: #1e2535;
+--color-accent: #a900ff;
+
+/* Syntax colors */
+--syntax-blue: #82aaff;
+--syntax-cyan: #89ddff;
+--syntax-green: #c3e88d;
+--syntax-yellow: #ffcb6b;
+--syntax-orange: #f78c6c;
+--syntax-red: #ff5370;
+--syntax-purple: #c792ea;
+--syntax-teal: #4fd6be;
+--syntax-error: #ff5370;

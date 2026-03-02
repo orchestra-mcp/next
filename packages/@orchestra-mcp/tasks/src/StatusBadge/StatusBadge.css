@@ -1,0 +1,42 @@
+.status-badge--dot {
+  display: inline-block;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-badge--dot.status-badge--sm {
+  width: 8px;
+  height: 8px;
+}
+
+.status-badge--dot.status-badge--md {
+  width: 10px;
+  height: 10px;
+}
+
+.status-badge--pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 99px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-badge--pill.status-badge--sm {
+  padding: 1px 8px 1px 6px;
+  font-size: 11px;
+}
+
+.status-badge--pill.status-badge--md {
+  padding: 2px 10px 2px 8px;
+  font-size: 12px;
+}
+
+.status-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

@@ -1,0 +1,176 @@
+/**
+ * Switch Component Styles
+ * Uses CSS variables from theme system
+ */
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.switch--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Track — the pill background */
+.switch__track {
+  position: relative;
+  border-radius: 999px;
+  background-color: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  cursor: inherit;
+  outline: none;
+}
+
+.switch__track:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+/* Thumb — the sliding circle */
+.switch__thumb {
+  position: absolute;
+  top: 50%;
+  border-radius: 50%;
+  background-color: var(--color-fg);
+  transition: transform 0.2s ease;
+  transform: translate(2px, -50%);
+}
+
+/* Checked state */
+.switch--checked .switch__track {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.switch--checked .switch__thumb {
+  background-color: #ffffff;
+}
+
+/* Label */
+.switch__label {
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--color-fg);
+  cursor: inherit;
+  user-select: none;
+}
+
+/* ---- Small: track 28x16, thumb 12px ---- */
+.switch--small .switch__track {
+  width: 28px;
+  height: 16px;
+}
+
+.switch--small .switch__thumb {
+  width: 12px;
+  height: 12px;
+}
+
+.switch--small.switch--checked .switch__thumb {
+  transform: translate(14px, -50%);
+}
+
+.switch--small .switch__label {
+  font-size: 13px;
+}
+
+/* ---- Medium: track 36x20, thumb 16px ---- */
+.switch--medium .switch__track {
+  width: 36px;
+  height: 20px;
+}
+
+.switch--medium .switch__thumb {
+  width: 16px;
+  height: 16px;
+}
+
+.switch--medium.switch--checked .switch__thumb {
+  transform: translate(18px, -50%);
+}
+
+.switch--medium .switch__label {
+  font-size: 14px;
+}
+
+/* ---- Large: track 44x24, thumb 20px ---- */
+.switch--large .switch__track {
+  width: 44px;
+  height: 24px;
+}
+
+.switch--large .switch__thumb {
+  width: 20px;
+  height: 20px;
+}
+
+.switch--large.switch--checked .switch__thumb {
+  transform: translate(22px, -50%);
+}
+
+.switch--large .switch__label {
+  font-size: 16px;
+}
+
+/* ---- Compact variant ---- */
+[data-variant='compact'] .switch--small .switch__track {
+  width: 24px;
+  height: 14px;
+}
+
+[data-variant='compact'] .switch--small .switch__thumb {
+  width: 10px;
+  height: 10px;
+}
+
+[data-variant='compact'] .switch--small.switch--checked .switch__thumb {
+  transform: translate(12px, -50%);
+}
+
+[data-variant='compact'] .switch--medium .switch__track {
+  width: 30px;
+  height: 16px;
+}
+
+[data-variant='compact'] .switch--medium .switch__thumb {
+  width: 12px;
+  height: 12px;
+}
+
+[data-variant='compact'] .switch--medium.switch--checked .switch__thumb {
+  transform: translate(16px, -50%);
+}
+
+[data-variant='compact'] .switch--large .switch__track {
+  width: 36px;
+  height: 20px;
+}
+
+[data-variant='compact'] .switch--large .switch__thumb {
+  width: 16px;
+  height: 16px;
+}
+
+[data-variant='compact'] .switch--large.switch--checked .switch__thumb {
+  transform: translate(18px, -50%);
+}
+
+[data-variant='compact'] .switch__label {
+  font-size: 12px;
+}
+
+/* ---- Modern variant ---- */
+[data-variant='modern'] .switch__track {
+  border-width: 2px;
+}
+
+[data-variant='modern'] .switch__thumb {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-variant='modern'] .switch__label {
+  font-weight: 500;
+}

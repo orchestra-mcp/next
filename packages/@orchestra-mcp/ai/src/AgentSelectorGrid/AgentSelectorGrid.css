@@ -1,0 +1,91 @@
+/* AgentSelectorGrid — 3-column card grid for agent selection */
+
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.agent-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.agent-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.agent-grid::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+/* Card cell */
+.agent-grid__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100px;
+  height: 80px;
+  padding: 8px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  transition: background 0.12s ease, border-color 0.12s ease;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.agent-grid__card:hover,
+.agent-grid__card[data-active='true'] {
+  background: var(--color-bg-active);
+  border-color: var(--color-accent);
+}
+
+/* Icon */
+.agent-grid__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Label */
+.agent-grid__label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Description */
+.agent-grid__desc {
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Empty state */
+.agent-grid__empty {
+  padding: 16px 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-fg-muted);
+}

@@ -1,0 +1,88 @@
+/**
+ * Skeleton Component Styles
+ * Uses CSS variables from theme system
+ */
+
+.skeleton {
+  display: block;
+  background-color: var(--color-bg-alt);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Variants */
+.skeleton--text {
+  height: 16px;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.skeleton--circular {
+  border-radius: 50%;
+}
+
+.skeleton--rectangular {
+  border-radius: 4px;
+}
+
+/* Shimmer animation */
+.skeleton--animated::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-bg-active) 50%,
+    transparent 100%
+  );
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Group for multiple lines */
+.skeleton-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Compact variant overrides */
+[data-variant='compact'] .skeleton--text {
+  height: 14px;
+  border-radius: 3px;
+}
+
+[data-variant='compact'] .skeleton--rectangular {
+  border-radius: 3px;
+}
+
+[data-variant='compact'] .skeleton-group {
+  gap: 6px;
+}
+
+/* Modern variant overrides */
+[data-variant='modern'] .skeleton--text {
+  height: 18px;
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .skeleton--rectangular {
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .skeleton--animated::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-border) 50%,
+    transparent 100%
+  );
+}

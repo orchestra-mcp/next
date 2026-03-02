@@ -1,0 +1,224 @@
+/**
+ * Button Component Styles
+ * 4 variants (filled/soft/outlined/ghost) x 6 colors x 4 sizes
+ * Icon-only, loading, full-width, compact/modern platform overrides
+ * Same color system as Badge — text matches background hue
+ */
+
+.btn {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  line-height: 1;
+  position: relative;
+  user-select: none;
+}
+
+/* ── Sizes ── */
+.btn--xs { font-size: 12px; padding: 5px 10px; }
+.btn--sm { font-size: 13px; padding: 6px 12px; }
+.btn--md { font-size: 14px; padding: 8px 16px; }
+.btn--lg { font-size: 16px; padding: 10px 20px; }
+
+/* ── Icon sizing ── */
+.btn__icon { display: inline-flex; align-items: center; flex-shrink: 0; }
+.btn__icon svg { width: 1em; height: 1em; }
+.btn--xs .btn__icon svg { width: 14px; height: 14px; }
+.btn--sm .btn__icon svg { width: 15px; height: 15px; }
+.btn--md .btn__icon svg { width: 16px; height: 16px; }
+.btn--lg .btn__icon svg { width: 18px; height: 18px; }
+
+/* ── Icon-only (square) ── */
+.btn--icon-only { gap: 0; }
+.btn--icon-only.btn--xs { padding: 5px; }
+.btn--icon-only.btn--sm { padding: 6px; }
+.btn--icon-only.btn--md { padding: 8px; }
+.btn--icon-only.btn--lg { padding: 10px; }
+
+/* ── Full-width ── */
+.btn--full { width: 100%; }
+
+/*
+ * ══════════════════════════════════
+ *  VARIANT: filled
+ *  Tinted bg (rgba) + bright same-hue text
+ * ══════════════════════════════════
+ */
+.btn--filled { border: 1.5px solid transparent; }
+
+.btn--filled.btn--primary {
+  background-color: rgba(129, 140, 248, 0.18) !important;
+  color: #a5b4fc !important;
+}
+.btn--filled.btn--success {
+  background-color: rgba(34, 197, 94, 0.18) !important;
+  color: #86efac !important;
+}
+.btn--filled.btn--warning {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  color: #fcd34d !important;
+}
+.btn--filled.btn--danger {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+  color: #fca5a5 !important;
+}
+.btn--filled.btn--info {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+  color: #93c5fd !important;
+}
+.btn--filled.btn--gray {
+  background-color: rgba(156, 163, 175, 0.12) !important;
+  color: #d1d5db !important;
+}
+
+/*
+ * ══════════════════════════════════
+ *  VARIANT: soft
+ *  Lighter tint + same-hue text + subtle border
+ * ══════════════════════════════════
+ */
+.btn--soft { border: 1.5px solid; }
+
+.btn--soft.btn--primary {
+  background-color: rgba(129, 140, 248, 0.10) !important;
+  color: #a5b4fc !important;
+  border-color: rgba(129, 140, 248, 0.25);
+}
+.btn--soft.btn--success {
+  background-color: rgba(34, 197, 94, 0.10) !important;
+  color: #86efac !important;
+  border-color: rgba(34, 197, 94, 0.25);
+}
+.btn--soft.btn--warning {
+  background-color: rgba(245, 158, 11, 0.10) !important;
+  color: #fcd34d !important;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+.btn--soft.btn--danger {
+  background-color: rgba(239, 68, 68, 0.10) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+.btn--soft.btn--info {
+  background-color: rgba(59, 130, 246, 0.10) !important;
+  color: #93c5fd !important;
+  border-color: rgba(59, 130, 246, 0.25);
+}
+.btn--soft.btn--gray {
+  background-color: rgba(156, 163, 175, 0.08) !important;
+  color: #d1d5db !important;
+  border-color: rgba(156, 163, 175, 0.18);
+}
+
+/*
+ * ══════════════════════════════════
+ *  VARIANT: outlined
+ *  Transparent bg, colored border + text
+ * ══════════════════════════════════
+ */
+.btn--outlined {
+  background-color: transparent;
+  border: 1.5px solid;
+}
+
+.btn--outlined.btn--primary { color: #a5b4fc !important; border-color: #818cf8; }
+.btn--outlined.btn--success { color: #86efac !important; border-color: #22c55e; }
+.btn--outlined.btn--warning { color: #fcd34d !important; border-color: #f59e0b; }
+.btn--outlined.btn--danger { color: #fca5a5 !important; border-color: #ef4444; }
+.btn--outlined.btn--info { color: #93c5fd !important; border-color: #3b82f6; }
+.btn--outlined.btn--gray { color: #d1d5db !important; border-color: rgba(156, 163, 175, 0.4); }
+
+/*
+ * ══════════════════════════════════
+ *  VARIANT: ghost
+ *  No bg, no border, just colored text. Bg on hover.
+ * ══════════════════════════════════
+ */
+.btn--ghost {
+  background-color: transparent;
+  border: 1.5px solid transparent;
+}
+
+.btn--ghost.btn--primary { color: #a5b4fc !important; }
+.btn--ghost.btn--success { color: #86efac !important; }
+.btn--ghost.btn--warning { color: #fcd34d !important; }
+.btn--ghost.btn--danger { color: #fca5a5 !important; }
+.btn--ghost.btn--info { color: #93c5fd !important; }
+.btn--ghost.btn--gray { color: #d1d5db !important; }
+
+/* ── Hover ── */
+.btn--filled:hover:not(:disabled),
+.btn--soft:hover:not(:disabled) { filter: brightness(1.2); }
+.btn--outlined:hover:not(:disabled) { filter: brightness(1.15); }
+
+.btn--ghost.btn--primary:hover:not(:disabled) { background-color: rgba(129, 140, 248, 0.10); }
+.btn--ghost.btn--success:hover:not(:disabled) { background-color: rgba(34, 197, 94, 0.10); }
+.btn--ghost.btn--warning:hover:not(:disabled) { background-color: rgba(245, 158, 11, 0.10); }
+.btn--ghost.btn--danger:hover:not(:disabled) { background-color: rgba(239, 68, 68, 0.10); }
+.btn--ghost.btn--info:hover:not(:disabled) { background-color: rgba(59, 130, 246, 0.10); }
+.btn--ghost.btn--gray:hover:not(:disabled) { background-color: rgba(156, 163, 175, 0.08); }
+
+/* ── Active press ── */
+.btn:active:not(:disabled) { transform: scale(0.97); }
+
+/* ── Focus visible ── */
+.btn:focus-visible {
+  outline: 2px solid var(--color-accent, #818cf8);
+  outline-offset: 2px;
+}
+
+/* ── Disabled ── */
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.3);
+}
+
+/* ── Loading spinner ── */
+.btn--loading { cursor: wait; }
+
+.btn__spinner { display: inline-flex; align-items: center; }
+.btn__spinner-svg {
+  width: 1em;
+  height: 1em;
+  animation: btn-spin 0.8s linear infinite;
+}
+
+@keyframes btn-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ══════════════════════════════════
+ *  PLATFORM: compact (chrome sidebar, dense UIs)
+ * ══════════════════════════════════ */
+[data-variant='compact'] .btn { border-radius: 4px; }
+[data-variant='compact'] .btn--xs { font-size: 11px; padding: 3px 6px; }
+[data-variant='compact'] .btn--sm { font-size: 12px; padding: 4px 8px; }
+[data-variant='compact'] .btn--md { font-size: 13px; padding: 5px 10px; }
+[data-variant='compact'] .btn--lg { font-size: 14px; padding: 6px 14px; }
+[data-variant='compact'] .btn--icon-only.btn--xs { padding: 3px; }
+[data-variant='compact'] .btn--icon-only.btn--sm { padding: 4px; }
+[data-variant='compact'] .btn--icon-only.btn--md { padding: 5px; }
+[data-variant='compact'] .btn--icon-only.btn--lg { padding: 6px; }
+
+/* ══════════════════════════════════
+ *  PLATFORM: modern (desktop app, dashboard)
+ * ══════════════════════════════════ */
+[data-variant='modern'] .btn { border-radius: 8px; font-weight: 600; }
+[data-variant='modern'] .btn--xs { padding: 6px 12px; }
+[data-variant='modern'] .btn--sm { padding: 8px 14px; }
+[data-variant='modern'] .btn--md { padding: 10px 18px; }
+[data-variant='modern'] .btn--lg { padding: 14px 28px; }
+[data-variant='modern'] .btn--icon-only.btn--xs { padding: 6px; }
+[data-variant='modern'] .btn--icon-only.btn--sm { padding: 8px; }
+[data-variant='modern'] .btn--icon-only.btn--md { padding: 10px; }
+[data-variant='modern'] .btn--icon-only.btn--lg { padding: 14px; }

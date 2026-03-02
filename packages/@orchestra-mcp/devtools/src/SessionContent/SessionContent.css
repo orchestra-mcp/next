@@ -1,0 +1,45 @@
+.session-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.session-content__panel {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.session-content__panel--active {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.session-content__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 13px;
+  color: var(--color-fg-muted, #888);
+}
+
+.session-content__fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  padding: 32px;
+  text-align: center;
+  color: var(--color-fg-muted, #888);
+  font-size: 13px;
+}
+
+.session-content__fallback-icon {
+  font-size: 28px;
+  opacity: 0.5;
+}

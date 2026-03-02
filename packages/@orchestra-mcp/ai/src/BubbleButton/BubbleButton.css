@@ -1,0 +1,124 @@
+/**
+ * BubbleButton Component Styles
+ * Floating action button with drag support and animated actions
+ */
+
+/* Container -- fixed position in viewport */
+.bubble {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Legacy fixed-corner positions */
+.bubble--bottom-right { bottom: 24px; right: 24px; }
+.bubble--bottom-left  { bottom: 24px; left: 24px; }
+.bubble--top-right    { top: 24px; right: 24px; }
+.bubble--top-left     { top: 24px; left: 24px; }
+
+/* Draggable mode -- positioned via style prop */
+.bubble--draggable {
+  bottom: auto;
+  right: auto;
+  top: auto;
+  left: auto;
+  touch-action: none;
+  user-select: none;
+}
+
+/* Action menu -- vertical stack above trigger */
+.bubble__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.bubble--expanded .bubble__actions { pointer-events: auto; }
+
+/* Individual action button -- staggered scale+fade animation */
+.bubble__action {
+  border: none;
+  border-radius: 50%;
+  background-color: var(--color-bg-alt);
+  color: var(--color-fg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transform: scale(0.3);
+  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.bubble--expanded .bubble__action {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.bubble__action:hover {
+  background-color: var(--color-accent);
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+/* Main trigger button */
+.bubble__trigger {
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-accent), #a78bfa);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.bubble__trigger:hover:not(:disabled) { opacity: 0.85; transform: scale(1.05); }
+.bubble__trigger:active:not(:disabled) { transform: scale(0.97); }
+.bubble__trigger:disabled { opacity: 0.5; cursor: not-allowed; }
+.bubble__trigger--dragging { cursor: grabbing; }
+
+/* Sizes */
+.bubble__trigger--sm { width: 40px; height: 40px; font-size: 16px; }
+.bubble__trigger--md { width: 52px; height: 52px; font-size: 20px; }
+.bubble__trigger--lg { width: 64px; height: 64px; font-size: 24px; }
+
+/* Pulse animation */
+.bubble__trigger--pulse::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--color-accent);
+  animation: bubble-pulse 1.5s ease-out infinite;
+}
+
+@keyframes bubble-pulse {
+  0%   { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* Compact variant */
+[data-variant='compact'] .bubble { gap: 6px; }
+[data-variant='compact'] .bubble__trigger--sm { width: 34px; height: 34px; font-size: 14px; }
+[data-variant='compact'] .bubble__trigger--md { width: 44px; height: 44px; font-size: 18px; }
+[data-variant='compact'] .bubble__trigger--lg { width: 54px; height: 54px; font-size: 22px; }
+[data-variant='compact'] .bubble__action { width: 34px; height: 34px; }
+
+/* Modern variant */
+[data-variant='modern'] .bubble__trigger { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); }
+[data-variant='modern'] .bubble__trigger--sm { width: 44px; height: 44px; }
+[data-variant='modern'] .bubble__trigger--md { width: 56px; height: 56px; }
+[data-variant='modern'] .bubble__trigger--lg { width: 68px; height: 68px; }
+[data-variant='modern'] .bubble__action { width: 44px; height: 44px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }

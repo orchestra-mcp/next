@@ -1,0 +1,52 @@
+/**
+ * Desktop StatusBar — bottom info strip.
+ * Uses theme vars from @orchestra-mcp/theme.
+ */
+
+.desktop-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  padding: 0 12px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-contrast);
+  color: var(--color-fg-muted);
+  font-size: 11px;
+  user-select: none;
+}
+
+.desktop-statusbar__left,
+.desktop-statusbar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.desktop-statusbar__notification {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-warning);
+}
+
+/* ── Compact variant ── */
+
+[data-variant='compact'] .desktop-statusbar {
+  height: 20px;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+[data-variant='compact'] .desktop-statusbar__left,
+[data-variant='compact'] .desktop-statusbar__right {
+  gap: 8px;
+}
+
+/* ── Modern variant ── */
+
+[data-variant='modern'] .desktop-statusbar {
+  height: 28px;
+  padding: 0 16px;
+  font-size: 12px;
+}

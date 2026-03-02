@@ -1,0 +1,82 @@
+.project-status-card__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.project-status-card__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.project-status-card__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-success, #22c55e);
+  transition: width 0.3s ease;
+}
+
+.project-status-card__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-status-card__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 60px;
+  padding: 8px 6px;
+  border-radius: 6px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+
+.project-status-card__stat-count {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-fg);
+  line-height: 1.2;
+}
+
+.project-status-card__stat-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-top: 2px;
+}
+
+.project-status-card__stat--blocked .project-status-card__stat-count {
+  color: var(--color-danger, #ef4444);
+}
+
+.project-status-card__stat--progress .project-status-card__stat-count {
+  color: var(--color-accent);
+}
+
+.project-status-card__stat--done .project-status-card__stat-count {
+  color: var(--color-success, #22c55e);
+}
+
+/* Compact variant */
+[data-variant='compact'] .project-status-card__stat {
+  padding: 4px;
+}
+
+[data-variant='compact'] .project-status-card__stat-count {
+  font-size: 13px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .project-status-card__stat {
+  padding: 10px 8px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}

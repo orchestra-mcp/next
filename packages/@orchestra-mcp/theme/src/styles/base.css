@@ -1,0 +1,112 @@
+/**
+ * Base styles with Tailwind CSS v4 Oxide engine
+ * Import this file once in your application entry point
+ *
+ * Usage:
+ *   import '@orchestra-mcp/theme/styles';
+ *
+ * Two independent systems:
+ *   1. Color Themes: data-color-theme="dracula" (25 options)
+ *   2. Component Variants: data-variant="compact" (3 options)
+ *
+ * Example:
+ *   <html data-color-theme="deep-ocean" data-variant="compact">
+ */
+
+@import "tailwindcss";
+
+:root {
+  /* Default color theme: Orchestra */
+  @import "../color-themes/orchestra.css";
+}
+
+/* ── Color Theme Variants ────────────────────────────────── */
+/* Applied via setColorTheme() - CSS variables are set dynamically in JS */
+/* But we keep these for SSR/initial load fallback */
+
+:root[data-color-theme="orchestra"] { @import "../color-themes/orchestra.css"; }
+:root[data-color-theme="deep-ocean"] { @import "../color-themes/deep-ocean.css"; }
+:root[data-color-theme="dracula"] { @import "../color-themes/dracula.css"; }
+:root[data-color-theme="github-dark"] { @import "../color-themes/github-dark.css"; }
+:root[data-color-theme="github-light"] { @import "../color-themes/github-light.css"; }
+
+/* Add more as color-themes/*.css files are generated */
+
+/* ── Component Variants ──────────────────────────────────── */
+/* Layout and spacing modifications independent of color */
+
+:root[data-variant="default"] {
+  @import "../variants/default.css";
+}
+
+:root[data-variant="compact"] {
+  @import "../variants/compact.css";
+}
+
+:root[data-variant="modern"] {
+  @import "../variants/modern.css";
+}
+
+/* ── Legacy Support ──────────────────────────────────────── */
+/* Old API used data-theme for variants (compact/modern/default) */
+
+:root[data-theme="default"] {
+  @import "../variants/default.css";
+}
+
+:root[data-theme="compact"] {
+  @import "../variants/compact.css";
+}
+
+:root[data-theme="modern"] {
+  @import "../variants/modern.css";
+}
+
+/* ── Base Resets ─────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-base, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  font-size: var(--font-size-base, 14px);
+  line-height: var(--line-height-base, 1.6);
+  color: var(--color-fg, #e8e8ea);
+  background-color: var(--color-bg, #0a0a0f);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code,
+pre {
+  font-family: var(--font-family-mono, "SF Mono", Monaco, monospace);
+}
+
+/* ── Utility Classes ─────────────────────────────────────── */
+
+.orchestra-bg {
+  background-color: var(--color-bg);
+}
+
+.orchestra-fg {
+  color: var(--color-fg);
+}
+
+.orchestra-border {
+  border-color: var(--color-border);
+}
+
+.orchestra-accent {
+  color: var(--color-accent);
+}
+
+.orchestra-surface {
+  background-color: var(--color-bg-alt);
+}
+
+.orchestra-surface-hover:hover {
+  background-color: var(--color-bg-active);
+}

@@ -1,0 +1,103 @@
+/* Floating command palette popup */
+.command-palette {
+  position: fixed;
+  z-index: 1000;
+  min-width: 280px;
+  max-width: 400px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--color-bg-elevated, var(--color-bg));
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.command-palette__group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-fg-muted);
+}
+
+.command-palette__group-badge {
+  margin-left: auto;
+  font-size: 10px;
+  background: var(--color-bg-alt);
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.command-palette__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  color: var(--color-fg);
+  border-radius: 0;
+  transition: background 0.1s;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.command-palette__item:hover,
+.command-palette__item[data-active='true'] {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.command-palette__item-icon {
+  flex-shrink: 0;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.command-palette__item-label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.command-palette__item-desc {
+  flex: 1;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.command-palette__item-shortcut {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  font-family: inherit;
+  padding: 1px 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg-alt);
+}
+
+.command-palette__empty {
+  padding: 16px 12px;
+  text-align: center;
+  color: var(--color-fg-muted);
+  font-style: italic;
+}
+
+/* Compact variant */
+[data-variant='compact'] .command-palette {
+  font-size: 12px;
+  max-height: 240px;
+}

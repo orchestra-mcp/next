@@ -1,0 +1,112 @@
+/* ── ExportCard ──────────────────────────────────────────────────────────── */
+
+.export-card .card-base__content {
+  padding: 0;
+}
+
+.export-card__body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Row layout */
+
+.export-card__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.export-card__row-label {
+  flex-shrink: 0;
+  width: 72px;
+  color: var(--color-fg-muted);
+  font-weight: 500;
+}
+
+.export-card__row-value {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.export-card__row-value--mono {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+/* Action buttons */
+
+.export-card__actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.export-card__download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--color-accent);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  font-family: inherit;
+}
+
+.export-card__download-btn:hover {
+  opacity: 0.88;
+}
+
+.export-card__copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-fg-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.export-card__copy-btn:hover {
+  background: var(--color-bg-active);
+  color: var(--color-fg);
+}
+
+/* Compact variant */
+
+[data-variant='compact'] .export-card__body {
+  padding: 8px;
+  gap: 4px;
+}
+
+[data-variant='compact'] .export-card__row {
+  font-size: 11px;
+}
+
+[data-variant='compact'] .export-card__row-label {
+  width: 60px;
+}

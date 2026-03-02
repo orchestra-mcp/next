@@ -1,0 +1,598 @@
+/**
+ * ChatBox Orchestrator Styles
+ * Sub-components own their own styles; this file handles layout + shared utilities
+ */
+
+.chatbox {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 300px;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Empty state fallback */
+.chatbox__empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-fg-muted);
+  font-size: 14px;
+}
+
+/* (footer merged into ChatInput tray) */
+
+/* Status-line typing indicator — fixed between chat body and input */
+.chatbox__status-line {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--color-fg-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.chatbox__status-star {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* Typewriter animation on status text — fit-content, not full width */
+.chatbox__status-text {
+  color: var(--color-fg);
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: none;
+  max-width: 0;
+  animation: status-typewriter 1.2s steps(40, end) forwards;
+}
+
+@keyframes status-typewriter {
+  from { max-width: 0; }
+  to { max-width: 400px; }
+}
+
+.chatbox__status-timer {
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  opacity: 0.7;
+}
+
+/* Active-glow: rotating conic-gradient border on streaming messages */
+@property --glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes glow-spin {
+  to { --glow-angle: 360deg; }
+}
+
+.chat-msg__bubble[data-streaming="true"] {
+  position: relative;
+  z-index: 0;
+}
+
+.chat-msg__bubble[data-streaming="true"]::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--glow-angle),
+    #4285f4 0%,
+    #a855f7 25%,
+    #ea4335 50%,
+    #ec4899 75%,
+    #4285f4 100%
+  );
+  animation: glow-spin 2.5s linear infinite;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+}
+
+/* Plus button (left of textarea) */
+.chatbox__plus-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.chatbox__plus-btn:hover {
+  background: var(--color-bg-active);
+  color: var(--color-fg);
+}
+
+/* Plus menu popover content */
+.chatbox__plus-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 260px;
+  padding: 4px;
+}
+
+.chatbox__plus-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  color: var(--color-fg);
+  font-size: 13px;
+  font-family: inherit;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.12s ease;
+}
+
+.chatbox__plus-item:hover {
+  background: var(--color-bg-active);
+}
+
+.chatbox__plus-item-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.chatbox__plus-sep {
+  height: 1px;
+  background: var(--color-border);
+  margin: 4px 0;
+}
+
+/* ── Hover flyout submenu ── */
+
+.chatbox__submenu {
+  position: relative;
+}
+
+.chatbox__submenu-trigger {
+  cursor: default;
+}
+
+.chatbox__submenu-trigger:hover {
+  background: var(--color-bg-active);
+}
+
+.chatbox__submenu-arrow {
+  font-size: 9px;
+  color: var(--color-fg-muted);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Flyout panel — hidden by default, shown on parent hover */
+.chatbox__submenu-panel {
+  display: none;
+  position: absolute;
+  left: 100%;
+  bottom: 0;
+  min-width: 220px;
+  padding: 8px;
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  margin-left: 4px;
+}
+
+/* Match Popover variant overrides */
+[data-variant='compact'] .chatbox__submenu-panel {
+  padding: 4px;
+  border-radius: 6px;
+  min-width: 160px;
+  font-size: 13px;
+}
+
+[data-variant='modern'] .chatbox__submenu-panel {
+  padding: 10px;
+  border-radius: 10px;
+  min-width: 220px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background-color: var(--color-bg-alt);
+}
+
+.chatbox__submenu:hover > .chatbox__submenu-panel {
+  display: block;
+}
+
+/* Shared elements inside submenus */
+
+.chatbox__plus-item-label {
+  flex: 1;
+}
+
+.chatbox__plus-item-value {
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chatbox__plus-item-badge {
+  font-size: 10px;
+  color: var(--color-fg-muted);
+  background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+  border-radius: 9999px;
+  padding: 0 6px;
+  line-height: 1.6;
+}
+
+.chatbox__plus-search {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  outline: none;
+  margin-bottom: 4px;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.chatbox__plus-search:focus {
+  border-color: var(--color-accent);
+}
+
+.chatbox__submenu-scroll {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.chatbox__submenu-empty {
+  padding: 12px 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-fg-muted);
+}
+
+/* Model submenu specifics */
+
+.chatbox__plus-model-group {
+  margin-bottom: 2px;
+}
+
+.chatbox__plus-model-provider {
+  padding: 4px 10px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-fg-muted);
+  text-transform: capitalize;
+  letter-spacing: 0.03em;
+}
+
+.chatbox__plus-model-option {
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+  justify-content: space-between !important;
+}
+
+.chatbox__plus-model-option--active {
+  color: var(--color-accent) !important;
+  font-weight: 500;
+}
+
+/* ── Mode pills row ── */
+
+.chatbox__plus-mode-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+}
+
+.chatbox__plus-mode-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-fg);
+  white-space: nowrap;
+}
+
+.chatbox__plus-mode-pills {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.chatbox__plus-mode-pill {
+  border: none;
+  background: transparent;
+  color: var(--color-fg-muted);
+  font-size: 11px;
+  font-family: inherit;
+  padding: 3px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.chatbox__plus-mode-pill:hover {
+  color: var(--color-fg);
+}
+
+.chatbox__plus-mode-pill--active {
+  background: var(--color-accent);
+  color: #fff;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
+/* ── Thinking toggle row ── */
+
+.chatbox__plus-toggle-row {
+  justify-content: flex-start !important;
+}
+
+.chatbox__plus-switch {
+  margin-left: auto;
+  width: 34px;
+  height: 18px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-fg) 18%, transparent);
+  position: relative;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chatbox__plus-switch--on {
+  background: var(--color-accent);
+}
+
+.chatbox__plus-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.chatbox__plus-switch--on .chatbox__plus-switch-knob {
+  transform: translateX(16px);
+}
+
+/* ── Loading Skeleton ── */
+
+@keyframes chatbox-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.chatbox-skeleton {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Shared shimmer slab */
+.chatbox-skeleton__pill,
+.chatbox-skeleton__avatar,
+.chatbox-skeleton__line,
+.chatbox-skeleton__textarea,
+.chatbox-skeleton__send {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-alt) 25%,
+    color-mix(in srgb, var(--color-bg-alt) 60%, var(--color-border)) 37%,
+    var(--color-bg-alt) 63%
+  );
+  background-size: 800px 100%;
+  animation: chatbox-shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* Header skeleton */
+.chatbox-skeleton__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.chatbox-skeleton__pill--title { width: 120px; height: 16px; }
+.chatbox-skeleton__pill--action { width: 60px; height: 16px; border-radius: 4px; }
+.chatbox-skeleton__spacer { flex: 1; }
+
+/* Body skeleton */
+.chatbox-skeleton__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 24px 20px;
+  overflow: hidden;
+}
+
+.chatbox-skeleton__msg {
+  display: flex;
+  gap: 10px;
+  max-width: 75%;
+}
+
+.chatbox-skeleton__msg--left { align-self: flex-start; }
+.chatbox-skeleton__msg--right { align-self: flex-end; flex-direction: row-reverse; }
+
+.chatbox-skeleton__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chatbox-skeleton__bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  min-width: 180px;
+}
+
+.chatbox-skeleton__bubble--user {
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 25%, transparent);
+  min-width: 140px;
+}
+
+.chatbox-skeleton__line {
+  height: 12px;
+  border-radius: 4px;
+}
+
+.chatbox-skeleton__line--full { width: 100%; }
+.chatbox-skeleton__line--3q { width: 75%; }
+.chatbox-skeleton__line--half { width: 50%; }
+
+/* Stagger shimmer timing for visual depth */
+.chatbox-skeleton__msg:nth-child(2) .chatbox-skeleton__line { animation-delay: 0.15s; }
+.chatbox-skeleton__msg:nth-child(3) .chatbox-skeleton__line { animation-delay: 0.3s; }
+
+/* Input skeleton */
+.chatbox-skeleton__input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.chatbox-skeleton__textarea {
+  flex: 1;
+  height: 42px;
+  border-radius: 12px;
+}
+
+.chatbox-skeleton__send {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Tray items (rendered inside ChatInput tray) ── */
+
+/* Mode button — click to cycle */
+.chatbox__tray-mode {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 6px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.chatbox__tray-mode:hover {
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+}
+
+.chatbox__tray-mode--on {
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* ── Tray tool buttons (thinking, awareness, screenshot) ──
+   Unified 26x26, 6px radius — matches attach and send buttons */
+.chatbox__tray-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.chatbox__tray-toggle svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+.chatbox__tray-toggle:hover {
+  background: var(--color-bg-active);
+  color: var(--color-fg);
+}
+
+.chatbox__tray-toggle:focus-visible {
+  outline: 1.5px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* Toggle ON state — accent tint */
+.chatbox__tray-toggle--on {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.chatbox__tray-toggle--on:hover {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+
+/* Compact variant */
+[data-variant='compact'] .chatbox {
+  border-radius: 4px;
+  min-height: 240px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .chatbox {
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}

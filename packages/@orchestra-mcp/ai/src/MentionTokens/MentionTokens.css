@@ -1,0 +1,66 @@
+/**
+ * MentionTokens — Mirror overlay for rendering styled @mention chips
+ * on top of a textarea. Plain text is transparent; mentions get
+ * a colored background + text to show through the textarea.
+ */
+
+.mention-tokens {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  /* Must match textarea font/padding/line-height exactly */
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 22px;
+  padding: 10px 14px;
+  /* Border matching textarea (invisible — just for spacing parity) */
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: transparent;
+}
+
+.mention-tokens__chip {
+  color: var(--mention-color, #6366f1);
+  background: color-mix(in srgb, var(--mention-color, #6366f1) 12%, transparent);
+  border-radius: 4px;
+  padding: 0 2px;
+  pointer-events: none;
+}
+
+/* Group-specific token colors via CSS custom properties */
+.mention-tokens__chip[data-group="files"] {
+  --mention-color: #6366f1;
+}
+
+.mention-tokens__chip[data-group="tasks"] {
+  --mention-color: #22c55e;
+}
+
+.mention-tokens__chip[data-group="epics"] {
+  --mention-color: #f59e0b;
+}
+
+.mention-tokens__chip[data-group="sessions"] {
+  --mention-color: #3b82f6;
+}
+
+.mention-tokens__chip[data-group="agents"] {
+  --mention-color: #ec4899;
+}
+
+.mention-tokens__chip[data-group="skills"] {
+  --mention-color: #8b5cf6;
+}
+
+/* Compact variant — must match compact textarea sizing */
+[data-variant='compact'] .mention-tokens {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+}

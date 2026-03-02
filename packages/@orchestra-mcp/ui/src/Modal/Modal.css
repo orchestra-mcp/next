@@ -1,0 +1,588 @@
+/**
+ * Modal Component Styles
+ * Uses CSS variables from theme system
+ *
+ * Variants: center (default), sideover, sheet, confirm
+ */
+
+/* ------------------------------------------------------------------ */
+/*  Overlay                                                           */
+/* ------------------------------------------------------------------ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: modal-fade-in 0.2s ease-out;
+}
+
+/* Sideover overlay — push content to the right edge */
+.modal-overlay--sideover {
+  justify-content: flex-end;
+  align-items: stretch;
+  padding: 0;
+}
+
+/* Sheet overlay — push content to the bottom edge */
+.modal-overlay--sheet {
+  align-items: flex-end;
+  justify-content: stretch;
+  padding: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Keyframes                                                         */
+/* ------------------------------------------------------------------ */
+
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-slide-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-slide-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes modal-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Modal Container                                                   */
+/* ------------------------------------------------------------------ */
+
+.modal {
+  background-color: var(--color-bg);
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  animation: modal-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Size Variants                                                     */
+/* ------------------------------------------------------------------ */
+
+.modal--small {
+  width: 100%;
+  max-width: 400px;
+}
+
+.modal--medium {
+  width: 100%;
+  max-width: 600px;
+}
+
+.modal--large {
+  width: 100%;
+  max-width: 900px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Sideover Variant                                                  */
+/* ------------------------------------------------------------------ */
+
+.modal--variant-sideover {
+  width: 420px;
+  max-width: 100vw;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  border-left: 1px solid var(--color-border);
+  overflow-y: auto;
+  animation: modal-slide-from-right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Sheet Variant                                                     */
+/* ------------------------------------------------------------------ */
+
+.modal--variant-sheet {
+  width: 100%;
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 12px 12px 0 0;
+  animation: modal-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Drag handle */
+.modal--variant-sheet .modal-content::before {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 4px;
+  background-color: var(--color-border);
+  border-radius: 2px;
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Modal Content                                                     */
+/* ------------------------------------------------------------------ */
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Header                                                            */
+/* ------------------------------------------------------------------ */
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-fg);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Close Button                                                      */
+/* ------------------------------------------------------------------ */
+
+.modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background-color: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.modal-close:hover {
+  background-color: var(--color-bg-active);
+  color: var(--color-fg);
+}
+
+.modal-close:active {
+  transform: scale(0.95);
+}
+
+.modal-close:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Body                                                              */
+/* ------------------------------------------------------------------ */
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Scrollbar Styling                                                 */
+/* ------------------------------------------------------------------ */
+
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-fg-muted);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Confirm Variant — Icon Strip                                      */
+/* ------------------------------------------------------------------ */
+
+.modal-icon-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 24px 0;
+}
+
+.modal-icon-strip__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+/* Icon color variants */
+.modal-icon-strip--info .modal-icon-strip__icon {
+  background-color: rgba(37, 99, 235, 0.15);
+  color: var(--color-info, #2563eb);
+}
+
+.modal-icon-strip--success .modal-icon-strip__icon {
+  background-color: rgba(22, 163, 74, 0.15);
+  color: var(--color-success, #16a34a);
+}
+
+.modal-icon-strip--warning .modal-icon-strip__icon {
+  background-color: rgba(217, 119, 6, 0.15);
+  color: var(--color-warning, #d97706);
+}
+
+.modal-icon-strip--danger .modal-icon-strip__icon {
+  background-color: rgba(220, 38, 38, 0.15);
+  color: var(--color-error, #dc2626);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Confirm Variant — Centered Title (no header)                      */
+/* ------------------------------------------------------------------ */
+
+.modal-confirm-title {
+  margin: 0;
+  padding: 16px 24px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-fg);
+  font-family: system-ui, -apple-system, sans-serif;
+  text-align: center;
+}
+
+.modal--variant-confirm .modal-body {
+  text-align: center;
+  color: var(--color-fg-muted);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Confirm Variant — Footer                                          */
+/* ------------------------------------------------------------------ */
+
+.modal-footer {
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-footer__cancel {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background-color: transparent;
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.modal-footer__cancel:hover {
+  background-color: var(--color-bg-active);
+}
+
+.modal-footer__confirm {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  /* Default — no color modifier */
+  background-color: var(--color-accent);
+  color: #fff;
+}
+
+/* Confirm button color variants */
+.modal-footer__confirm--info {
+  background-color: var(--color-info, #2563eb);
+  color: #fff;
+}
+
+.modal-footer__confirm--success {
+  background-color: var(--color-success, #16a34a);
+  color: #fff;
+}
+
+.modal-footer__confirm--warning {
+  background-color: var(--color-warning, #d97706);
+  color: #fff;
+}
+
+.modal-footer__confirm--danger {
+  background-color: var(--color-error, #dc2626);
+  color: #fff;
+}
+
+.modal-footer__confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-footer__confirm:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+/* Spinner inside confirm button */
+.modal-footer__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: modal-btn-spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Responsive — Mobile (center + confirm only)                       */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 640px) {
+  .modal-overlay--center,
+  .modal-overlay--confirm {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal--variant-center,
+  .modal--variant-confirm {
+    max-height: 90vh;
+    border-radius: 8px 8px 0 0;
+    animation: modal-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .modal--variant-center.modal--small,
+  .modal--variant-center.modal--medium,
+  .modal--variant-center.modal--large,
+  .modal--variant-confirm.modal--small,
+  .modal--variant-confirm.modal--medium,
+  .modal--variant-confirm.modal--large {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-title {
+    font-size: 16px;
+  }
+}
+
+/* Sideover full-width on narrow screens */
+@media (max-width: 480px) {
+  .modal--variant-sideover {
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Theme Variant Overrides — Compact                                 */
+/* ------------------------------------------------------------------ */
+
+[data-variant='compact'] .modal {
+  border-radius: 6px;
+}
+
+[data-variant='compact'] .modal-header {
+  padding: 16px 20px;
+}
+
+[data-variant='compact'] .modal-body {
+  padding: 20px;
+}
+
+[data-variant='compact'] .modal-title {
+  font-size: 16px;
+}
+
+[data-variant='compact'] .modal--variant-sideover {
+  width: 380px;
+}
+
+[data-variant='compact'] .modal--variant-sheet {
+  max-height: 70vh;
+  border-radius: 8px 8px 0 0;
+}
+
+[data-variant='compact'] .modal-footer {
+  padding: 12px 20px 16px;
+}
+
+[data-variant='compact'] .modal-icon-strip {
+  padding: 16px 20px 0;
+}
+
+[data-variant='compact'] .modal-confirm-title {
+  font-size: 16px;
+  padding: 12px 20px 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Theme Variant Overrides — Modern                                  */
+/* ------------------------------------------------------------------ */
+
+[data-variant='modern'] .modal {
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+[data-variant='modern'] .modal-header {
+  padding: 24px 28px;
+}
+
+[data-variant='modern'] .modal-body {
+  padding: 28px;
+}
+
+[data-variant='modern'] .modal-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+[data-variant='modern'] .modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .modal--variant-sideover {
+  width: 480px;
+}
+
+[data-variant='modern'] .modal--variant-sheet {
+  max-height: 85vh;
+  border-radius: 16px 16px 0 0;
+}
+
+[data-variant='modern'] .modal-footer {
+  padding: 20px 28px 24px;
+}
+
+[data-variant='modern'] .modal-icon-strip {
+  padding: 24px 28px 0;
+}
+
+[data-variant='modern'] .modal-icon-strip__icon {
+  width: 56px;
+  height: 56px;
+  font-size: 26px;
+}
+
+[data-variant='modern'] .modal-confirm-title {
+  font-size: 20px;
+  font-weight: 700;
+  padding: 20px 28px 0;
+}
+
+[data-variant='modern'] .modal-footer__confirm {
+  padding: 10px 20px;
+}
+
+[data-variant='modern'] .modal-footer__cancel {
+  padding: 10px 20px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Dark Mode Adjustments                                             */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-color-scheme: dark) {
+  .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.75);
+  }
+
+  .modal {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Focus Visible Styles                                              */
+/* ------------------------------------------------------------------ */
+
+.modal:focus-visible {
+  outline: none;
+}

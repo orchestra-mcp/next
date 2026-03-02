@@ -1,0 +1,32 @@
+/**
+ * ResizeHandle Component Styles
+ */
+
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--color-fg-muted, #888);
+  border-bottom: 2px solid var(--color-fg-muted, #888);
+  border-radius: 0 0 2px 0;
+}
+
+/* Show on parent hover */
+.dashboard-grid__item:hover .resize-handle {
+  opacity: 1;
+}

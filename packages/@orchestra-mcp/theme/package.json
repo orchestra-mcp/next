@@ -1,0 +1,70 @@
+{
+  "name": "@orchestra-mcp/theme",
+  "version": "0.2.0",
+  "description": "25 color themes + 3 component variants using Tailwind CSS v4 Oxide",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./styles": "./src/styles/base.css",
+    "./themes": {
+      "types": "./dist/themes.d.ts",
+      "import": "./dist/themes.mjs",
+      "require": "./dist/themes.js"
+    },
+    "./variants": {
+      "types": "./dist/variants.d.ts",
+      "import": "./dist/variants.mjs",
+      "require": "./dist/variants.js"
+    },
+    "./theme-switcher": {
+      "types": "./dist/theme-switcher.d.ts",
+      "import": "./dist/theme-switcher.mjs",
+      "require": "./dist/theme-switcher.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/theme-switcher.ts src/themes.ts src/variants.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/theme-switcher.ts src/themes.ts src/variants.ts --format cjs,esm --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "generate-themes": "tsx scripts/generate-color-themes.ts"
+  },
+  "dependencies": {
+    "@sentry/react": "^10.39.0",
+    "firebase": "^12.9.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^4.0.0-alpha.30"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.0",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "keywords": [
+    "theme",
+    "tailwind",
+    "color-schemes",
+    "variants",
+    "css-variables",
+    "orchestra",
+    "material",
+    "dracula",
+    "github"
+  ],
+  "license": "MIT"
+}

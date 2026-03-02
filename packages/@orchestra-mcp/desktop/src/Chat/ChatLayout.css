@@ -1,0 +1,249 @@
+/**
+ * ChatLayout — WhatsApp-style 3-panel layout.
+ * Titlebar (full width) pushes all content down.
+ * Body row: IconSidebar | SessionSidebar | Chat Content
+ */
+
+.chat-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+/* Full-width titlebar — dragging handled natively by InvisibleTitleBarHeight (52px).
+   Double-click zoom handled natively via Objective-C clickCount detection. */
+.chat-layout__titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+  user-select: none;
+  position: relative;
+}
+
+.chat-layout__titlebar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-fg);
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+
+.chat-layout__titlebar-path {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-fg-dim, var(--color-fg-muted));
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: auto;
+  opacity: 0.7;
+  direction: rtl;
+  text-align: left;
+}
+
+/* 3-panel row below the titlebar */
+.chat-layout__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chat-layout__content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Settings container — fills content area, passes height to children */
+.chat-layout__settings {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chat-layout__settings > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Notes container — fills content area like settings */
+.chat-layout__notes {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Projects sidebar — width controlled by child component (matches session/notes sidebars) */
+.chat-layout__projects-sidebar {
+  display: flex;
+  flex-shrink: 0;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* Projects content — fills remaining space for the dashboard */
+.chat-layout__projects {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Tasks sidebar — matches projects sidebar pattern */
+.chat-layout__tasks-sidebar {
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* DevTools sidebar — matches projects/tasks sidebar pattern */
+.chat-layout__devtools-sidebar {
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Tasks content — fills remaining space for detail/dashboard */
+.chat-layout__tasks {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* DevTools container — fills content area with tab strip + session content */
+.chat-layout__devtools {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chat-layout__devtools > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Integrations container — mirrors settings layout */
+.chat-layout__integrations {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chat-layout__integrations > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Components browser — fills content area with its own internal sidebar */
+.chat-layout__components {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chat-layout__components > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Empty state when no session selected */
+.chat-layout__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--color-fg-muted);
+}
+
+.chat-layout__empty-icon {
+  opacity: 0.3;
+}
+
+.chat-layout__empty-text {
+  font-size: 14px;
+}
+
+/* ── Selection bar ── */
+
+.chat-layout__selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-accent, #6366f1) 12%, var(--color-bg, #1a1a1a));
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent, #6366f1);
+  animation: menu-in 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.chat-layout__selection-bar button {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.chat-layout__selection-bar button:hover {
+  background: var(--color-bg-hover, rgba(255,255,255,0.06));
+  color: var(--color-fg);
+}
+
+/* ── Compact variant ── */
+
+[data-variant='compact'] .chat-layout__titlebar {
+  height: 48px;
+  padding: 0 10px;
+}
+
+[data-variant='compact'] .chat-layout__titlebar-title {
+  font-size: 12px;
+}
+
+/* ── Modern variant ── */
+
+[data-variant='modern'] .chat-layout__titlebar {
+  height: 56px;
+  padding: 0 16px;
+}
+
+[data-variant='modern'] .chat-layout__titlebar-title {
+  font-size: 13px;
+  font-weight: 500;
+}

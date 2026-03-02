@@ -1,0 +1,118 @@
+.chart {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chart__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-fg, #0f172a);
+  margin: 0;
+}
+
+.chart__svg {
+  display: block;
+  overflow: visible;
+}
+
+.chart__grid-line {
+  stroke: var(--color-border, #e2e8f0);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.chart__axis-label {
+  font-size: 11px;
+  fill: var(--color-fg-muted, #94a3b8);
+  font-family: inherit;
+}
+
+.chart__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart__dot {
+  transition: r 0.15s ease;
+  cursor: pointer;
+}
+
+.chart__dot:hover { r: 6; }
+
+.chart__area { opacity: 0.2; }
+
+.chart__bar {
+  transition: opacity 0.15s ease;
+  cursor: pointer;
+}
+
+.chart__bar:hover { opacity: 0.8; }
+
+.chart__slice {
+  transition: opacity 0.15s ease;
+  cursor: pointer;
+}
+
+.chart__slice:hover { opacity: 0.75; }
+
+.chart__donut-label {
+  font-size: 18px;
+  font-weight: 700;
+  fill: var(--color-fg, #0f172a);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.chart__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-fg-muted, #94a3b8);
+}
+
+.chart__legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chart__tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--color-bg-contrast, #1e293b);
+  color: var(--color-fg-bright, #f8fafc);
+  border: 1px solid var(--color-border, #334155);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.chart__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-fg-muted, #94a3b8);
+  font-size: 13px;
+  border: 1px dashed var(--color-border, #e2e8f0);
+  border-radius: 8px;
+}
+
+[data-variant='compact'] .chart__title { font-size: 12px; }
+[data-variant='compact'] .chart__axis-label { font-size: 10px; }
+[data-variant='modern'] .chart__title { font-size: 16px; font-weight: 700; }

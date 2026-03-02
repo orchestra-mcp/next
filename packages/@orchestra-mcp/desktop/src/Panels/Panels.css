@@ -1,0 +1,124 @@
+/**
+ * Desktop Panel views — loading, error, and not-found states.
+ * Uses theme vars from @orchestra-mcp/theme.
+ */
+
+.desktop-panel-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.desktop-panel-loading__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.desktop-panel-loading__text {
+  font-size: 13px;
+  color: var(--color-fg-muted);
+}
+
+/* ── Centered state pages (error / not-found) ── */
+
+.desktop-panel-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: 32px;
+  gap: 16px;
+  text-align: center;
+}
+
+.desktop-panel-state__icon {
+  color: var(--color-fg-dim);
+  margin-bottom: 4px;
+}
+
+.desktop-panel-state__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-fg);
+  margin: 0;
+}
+
+.desktop-panel-state__title--error {
+  color: var(--color-danger, #ef4444);
+}
+
+.desktop-panel-state__message {
+  font-size: 13px;
+  color: var(--color-fg-muted);
+  max-width: 420px;
+  margin: 0;
+}
+
+.desktop-panel-state__route {
+  font-family: monospace;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--color-bg-alt);
+  color: var(--color-fg-muted);
+}
+
+.desktop-panel-state__stack {
+  width: 100%;
+  max-width: 560px;
+  border-radius: 6px;
+  background: var(--color-bg-alt);
+  padding: 12px;
+  text-align: left;
+}
+
+.desktop-panel-state__stack-error {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--color-danger, #ef4444);
+  margin: 0;
+}
+
+.desktop-panel-state__stack-toggle {
+  margin-top: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--color-fg-dim);
+}
+
+.desktop-panel-state__stack-trace {
+  margin-top: 8px;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--color-fg-dim);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* ── Compact variant ── */
+
+[data-variant='compact'] .desktop-panel-state {
+  padding: 20px;
+  gap: 12px;
+}
+
+[data-variant='compact'] .desktop-panel-state__title {
+  font-size: 16px;
+}
+
+/* ── Modern variant ── */
+
+[data-variant='modern'] .desktop-panel-state {
+  padding: 40px;
+  gap: 20px;
+}
+
+[data-variant='modern'] .desktop-panel-state__title {
+  font-size: 24px;
+}

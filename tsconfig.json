@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@orchestra-mcp/ui": ["./packages/@orchestra-mcp/ui/src/index.ts"],
+      "@orchestra-mcp/icons": ["./packages/@orchestra-mcp/icons/src/index.ts"],
+      "@orchestra-mcp/icons/code": ["./packages/@orchestra-mcp/icons/src/code/index.ts"],
+      "@orchestra-mcp/icons/boxicons": ["./packages/@orchestra-mcp/icons/src/boxicons/index.ts"],
+      "@orchestra-mcp/theme": ["./packages/@orchestra-mcp/theme/src/index.ts"],
+      "@orchestra-mcp/theme/styles": ["./packages/@orchestra-mcp/theme/src/styles/index.css"],
+      "@orchestra-mcp/tasks": ["./packages/@orchestra-mcp/tasks/src/index.ts"],
+      "@orchestra-mcp/editor": ["./packages/@orchestra-mcp/editor/src/index.ts"],
+      "@orchestra-mcp/widgets": ["./packages/@orchestra-mcp/widgets/src/index.ts"],
+      "@orchestra-mcp/shared": ["./packages/@orchestra-mcp/shared/src/index.ts"],
+      "@orchestra-mcp/marketplace": ["./packages/@orchestra-mcp/marketplace/src/index.ts"],
+      "@orchestra-mcp/explorer": ["./packages/@orchestra-mcp/explorer/src/index.ts"]
+    },
+    "target": "ES2017"
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

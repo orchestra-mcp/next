@@ -1,0 +1,52 @@
+/* StandupCard — daily standup summary */
+
+.standup-card__section {
+  margin-bottom: 8px;
+}
+
+.standup-card__section:last-child {
+  margin-bottom: 0;
+}
+
+.standup-card__section-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.standup-card__section-header--completed {
+  color: #22c55e;
+}
+
+.standup-card__section-header--progress {
+  color: var(--color-accent);
+}
+
+.standup-card__section-header--blocked {
+  color: #ef4444;
+}
+
+.standup-card__item {
+  font-size: 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.standup-card__item-id {
+  font-weight: 600;
+  color: var(--color-fg-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.standup-card__reason {
+  font-size: 11px;
+  color: #ef4444;
+  opacity: 0.8;
+  margin-left: 20px;
+}

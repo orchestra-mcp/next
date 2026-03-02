@@ -1,0 +1,57 @@
+.mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  margin-left: auto;
+  -webkit-app-region: no-drag;
+}
+
+.mode-toggle__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.mode-toggle__btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+.mode-toggle--sm .mode-toggle__btn {
+  width: 20px;
+  height: 20px;
+}
+
+.mode-toggle--md .mode-toggle__btn {
+  width: 24px;
+  height: 24px;
+}
+
+.mode-toggle--md .mode-toggle__btn svg { width: 14px; height: 14px; }
+
+.mode-toggle__btn:hover {
+  background: var(--color-bg-active);
+  color: var(--color-fg);
+}
+
+.mode-toggle__btn:focus-visible {
+  outline: 1.5px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* Active — accent tint matching tray toggle ON pattern */
+.mode-toggle__btn--active {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.mode-toggle__btn--active:hover {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+}

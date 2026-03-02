@@ -1,0 +1,145 @@
+/**
+ * ChatModelSelector Component Styles
+ * Custom dropdown for AI model selection
+ */
+
+.model-sel {
+  position: relative;
+  display: inline-block;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Trigger button */
+.model-sel__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.model-sel__trigger:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.model-sel__trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.model-sel__trigger-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.model-sel__chevron {
+  font-size: 10px;
+  color: var(--color-fg-muted);
+  line-height: 1;
+}
+
+/* Dropdown panel */
+.model-sel__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 200px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  padding: 4px;
+}
+
+/* Provider group */
+.model-sel__group {
+  padding: 2px 0;
+}
+
+.model-sel__group-label {
+  padding: 6px 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-fg-muted);
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+}
+
+/* Option */
+.model-sel__option {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-fg);
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.model-sel__option:hover {
+  background: var(--color-bg-alt);
+}
+
+.model-sel__option--active {
+  background: var(--color-bg-active);
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+/* Compact variant */
+[data-variant='compact'] .model-sel__trigger {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+[data-variant='compact'] .model-sel__dropdown {
+  min-width: 170px;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+[data-variant='compact'] .model-sel__option {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+[data-variant='compact'] .model-sel__group-label {
+  padding: 4px 8px 2px;
+  font-size: 10px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .model-sel__trigger {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+[data-variant='modern'] .model-sel__dropdown {
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+  padding: 6px;
+}
+
+[data-variant='modern'] .model-sel__option {
+  padding: 8px 12px;
+  border-radius: 6px;
+}

@@ -1,0 +1,93 @@
+.edit-card__body {
+  margin: -2px -4px;
+}
+
+.edit-card__body .git-diff {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.edit-card__body .git-diff__header {
+  border-radius: 0;
+}
+
+/* Accept/Reject action buttons */
+.edit-card__actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+.edit-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.edit-card__btn:hover {
+  background: var(--color-bg-hover);
+}
+
+.edit-card__btn--accept {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.edit-card__btn--accept:hover {
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+}
+
+.edit-card__btn--reject {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.edit-card__btn--reject:hover {
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+}
+
+/* Decision state */
+.edit-card__decision {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-top: 1px solid var(--color-border);
+}
+
+.edit-card__decision--accepted {
+  color: var(--color-success);
+}
+
+.edit-card__decision--rejected {
+  color: var(--color-danger);
+}
+
+/* Compact variant */
+[data-variant='compact'] .edit-card__body {
+  margin: -2px;
+}
+
+[data-variant='compact'] .edit-card__body .git-diff__line {
+  font-size: 11px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .edit-card__body {
+  margin: -4px -8px;
+}
+
+[data-variant='modern'] .edit-card__body .git-diff__body {
+  max-height: 500px;
+  overflow-y: auto;
+}

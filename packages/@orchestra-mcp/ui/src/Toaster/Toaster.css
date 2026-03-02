@@ -1,0 +1,177 @@
+/**
+ * Toaster Component Styles
+ * Uses CSS variables from theme system
+ */
+
+/* Container */
+.toaster {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  max-height: 100vh;
+  padding: 16px;
+}
+
+.toaster--top-right { top: 0; right: 0; align-items: flex-end; }
+.toaster--top-left { top: 0; left: 0; align-items: flex-start; }
+.toaster--bottom-right { bottom: 0; right: 0; align-items: flex-end; flex-direction: column-reverse; }
+.toaster--bottom-left { bottom: 0; left: 0; align-items: flex-start; flex-direction: column-reverse; }
+.toaster--top-center { top: 0; left: 50%; transform: translateX(-50%); align-items: center; }
+.toaster--bottom-center { bottom: 0; left: 50%; transform: translateX(-50%); align-items: center; flex-direction: column-reverse; }
+
+/* Toast item */
+.toast {
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  min-width: 300px;
+  max-width: 420px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--color-bg-alt, #1e1e2e);
+  color: var(--color-fg, #cdd6f4);
+  border: 1px solid var(--color-border, #45475a);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  font-family: system-ui, -apple-system, sans-serif;
+  animation: toast-enter 0.25s ease-out;
+}
+
+.toast--exit {
+  animation: toast-exit 0.2s ease-in forwards;
+}
+
+/* Type colors */
+.toast--success .toast__icon { color: #22c55e; }
+.toast--error .toast__icon { color: #ef4444; }
+.toast--warning .toast__icon { color: #f59e0b; }
+.toast--info .toast__icon { color: #3b82f6; }
+.toast--loading .toast__icon { color: var(--color-accent, #cba6f7); }
+
+.toast--success .toast__countdown { background: #22c55e; }
+.toast--error .toast__countdown { background: #ef4444; }
+.toast--warning .toast__countdown { background: #f59e0b; }
+.toast--info .toast__countdown { background: #3b82f6; }
+.toast--loading .toast__countdown { background: var(--color-accent, #cba6f7); }
+
+/* Icon */
+.toast__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  margin-top: 1px;
+}
+
+.toast__spinner {
+  animation: toast-spin 1s linear infinite;
+}
+
+/* Content */
+.toast__content { flex: 1; min-width: 0; }
+
+.toast__title {
+  font-weight: 600;
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.toast__message {
+  font-size: 12px;
+  margin: 2px 0 0;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+.toast__action {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  color: var(--color-accent, #cba6f7);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.toast__action:hover { text-decoration: none; }
+
+/* Close */
+.toast__close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--color-fg, #cdd6f4);
+  opacity: 0.5;
+  cursor: pointer;
+  padding: 2px;
+  transition: opacity 0.15s ease;
+}
+
+.toast__close:hover { opacity: 1; }
+
+/* Countdown bar */
+.toast__countdown {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  opacity: 0.6;
+  animation: toast-countdown linear forwards;
+  transform-origin: left;
+}
+
+/* Animations */
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toast-exit {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(20px); }
+}
+
+@keyframes toast-countdown {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@keyframes toast-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Compact variant */
+[data-variant='compact'] .toast {
+  min-width: 260px;
+  max-width: 360px;
+  padding: 8px 10px;
+  gap: 8px;
+  border-radius: 6px;
+}
+
+[data-variant='compact'] .toast__title { font-size: 12px; }
+[data-variant='compact'] .toast__message { font-size: 11px; }
+[data-variant='compact'] .toast__countdown { height: 2px; }
+
+/* Modern variant */
+[data-variant='modern'] .toast {
+  min-width: 340px;
+  max-width: 460px;
+  padding: 14px 18px;
+  gap: 12px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+[data-variant='modern'] .toast__title { font-size: 14px; font-weight: 700; }
+[data-variant='modern'] .toast__message { font-size: 13px; }
+[data-variant='modern'] .toast__countdown { height: 4px; }

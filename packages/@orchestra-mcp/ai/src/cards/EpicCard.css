@@ -1,0 +1,158 @@
+.epic-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.epic-card__status {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.epic-card__priority {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  background: var(--color-border);
+  color: var(--color-fg-muted);
+}
+
+.epic-card__count {
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  margin-left: auto;
+}
+
+/* Progress bar */
+.epic-card__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.epic-card__progress-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.epic-card__progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-success, #22c55e);
+  transition: width 0.3s ease;
+}
+
+.epic-card__progress-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-fg-muted);
+}
+
+/* Story list */
+.epic-card__stories {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.epic-card__story-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  min-width: 0;
+}
+
+.epic-card__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-fg-muted);
+}
+
+.epic-card__dot--done {
+  background: #22c55e;
+}
+
+.epic-card__dot--active {
+  background: #3b82f6;
+}
+
+.epic-card__story-id {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--color-border);
+  color: var(--color-fg-muted);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.epic-card__story-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--color-fg);
+}
+
+/* Description */
+.epic-card__desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Compact variant */
+[data-variant='compact'] .epic-card__meta {
+  margin-bottom: 4px;
+}
+
+[data-variant='compact'] .epic-card__status,
+[data-variant='compact'] .epic-card__priority {
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+[data-variant='compact'] .epic-card__story-title {
+  font-size: 11px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .epic-card__progress-bar {
+  height: 8px;
+  border-radius: 4px;
+}
+
+[data-variant='modern'] .epic-card__story-row {
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+[data-variant='modern'] .epic-card__story-row:hover {
+  background: var(--color-bg);
+}

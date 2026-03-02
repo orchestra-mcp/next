@@ -1,0 +1,13 @@
+/* PRDPreviewCard — PRD markdown preview */
+
+.prd-preview__content {
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.prd-preview__score {
+  font-size: 11px;
+  color: var(--color-fg-muted);
+}

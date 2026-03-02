@@ -1,0 +1,55 @@
+/**
+ * Desktop MainLayout — full IDE chrome wrapper.
+ * Uses theme vars from @orchestra-mcp/theme.
+ */
+
+.desktop-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.desktop-layout__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.desktop-layout__main {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+/* ── Compact variant ── */
+
+[data-variant='compact'] .desktop-layout__main {
+  padding: 10px;
+}
+
+/* ── Modern variant ── */
+
+[data-variant='modern'] .desktop-layout__main {
+  padding: 20px;
+}
+
+/* Scrollbar styling */
+.desktop-layout__main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.desktop-layout__main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.desktop-layout__main::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.desktop-layout__main::-webkit-scrollbar-thumb:hover {
+  background: var(--color-fg-dim);
+}

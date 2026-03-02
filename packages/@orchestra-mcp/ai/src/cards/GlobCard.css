@@ -1,0 +1,116 @@
+/* ---- GlobCard ---- */
+
+.glob-card__tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Directory section */
+.glob-card__dir-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  color: var(--color-fg);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 4px;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.glob-card__dir-header:hover {
+  background: var(--color-bg);
+}
+
+.glob-card__dir-name {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-fg-muted);
+}
+
+.glob-card__dir-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-fg-muted);
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+.glob-card__dir-files {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 20px;
+}
+
+/* File item */
+.glob-card__match {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: none;
+  background: transparent;
+  color: var(--color-fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.glob-card__match:hover {
+  background: var(--color-bg);
+}
+
+.glob-card__filename {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.glob-card__loading,
+.glob-card__empty {
+  color: var(--color-fg-muted);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+/* Compact variant */
+[data-variant='compact'] .glob-card__dir-header {
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+[data-variant='compact'] .glob-card__match {
+  padding: 2px 6px;
+  font-size: 11px;
+}
+
+[data-variant='compact'] .glob-card__dir-files {
+  padding-left: 16px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .glob-card__dir-header {
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+[data-variant='modern'] .glob-card__match {
+  padding: 4px 10px;
+  border-radius: 6px;
+}

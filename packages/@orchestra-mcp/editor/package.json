@@ -1,0 +1,33 @@
+{
+  "name": "@orchestra-mcp/editor",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@orchestra-mcp/theme": "workspace:*",
+    "@orchestra-mcp/ui": "workspace:*",
+    "@orchestra-mcp/widgets": "workspace:*",
+    "monaco-editor": "^0.52.2",
+    "html-to-image": "^1.11.13"
+  },
+  "optionalDependencies": {
+    "monaco-languageclient": "^9.0.0",
+    "vscode-ws-jsonrpc": "^3.3.2"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.8.0"
+  }
+}

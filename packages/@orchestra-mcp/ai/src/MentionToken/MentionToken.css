@@ -1,0 +1,43 @@
+/**
+ * MentionToken — inline chip for @mentions
+ * Uses --mention-color CSS variable set per-instance for group coloring.
+ */
+
+.mention-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--mention-color, #6366f1) 15%, transparent);
+  color: var(--mention-color, #6366f1);
+  font-size: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+
+.mention-token__label {
+  font-weight: 500;
+}
+
+.mention-token__remove {
+  display: none;
+  border: none;
+  background: none;
+  color: var(--mention-color, #6366f1);
+  cursor: pointer;
+  padding: 0 1px;
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.mention-token__remove:hover {
+  opacity: 1;
+}
+
+.mention-token:hover .mention-token__remove {
+  display: inline-flex;
+}

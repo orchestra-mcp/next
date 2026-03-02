@@ -1,0 +1,233 @@
+/**
+ * ChatMessage Component Styles
+ * Row layout: avatar beside bubble column
+ */
+
+.chat-msg {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  max-width: 90%;
+  position: relative;
+}
+
+/* Role alignment */
+.chat-msg--user { align-self: flex-end; flex-direction: row-reverse; }
+.chat-msg--assistant { align-self: flex-start; }
+.chat-msg--system { align-self: center; max-width: 70%; }
+
+/* Avatar */
+.chat-msg__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+/* Body column: sender + bubble + events + timestamp */
+.chat-msg__body-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.chat-msg--user .chat-msg__body-col { align-items: flex-end; }
+.chat-msg--assistant .chat-msg__body-col { align-items: flex-start; }
+
+/* Sender name */
+.chat-msg__sender {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-fg-muted);
+  padding: 0 2px;
+}
+
+/* Bubble */
+.chat-msg__bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  position: relative;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.chat-msg--user .chat-msg__bubble {
+  background-color: var(--color-accent);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-msg--assistant .chat-msg__bubble {
+  background-color: var(--color-bg-alt);
+  color: var(--color-fg);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-msg--system .chat-msg__bubble {
+  background-color: transparent;
+  color: var(--color-fg-muted);
+  font-style: italic;
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+/* Content area */
+.chat-msg__content { line-height: 1.75; overflow: hidden; min-width: 0; }
+
+/* Thinking section — OUTSIDE the bubble, right below it */
+.chat-msg__thinking {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  /* Match events padding for consistency */
+  padding: 2px;
+}
+
+/* Events section — OUTSIDE the bubble, contains the timeline */
+.chat-msg__events {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  /* Extra horizontal padding so the animated glow box-shadow on running cards
+     is never clipped by overflow. Vertical padding keeps the timeline line
+     from visually touching the section edges. */
+  padding: 4px 2px;
+  /* No margin-left: the timeline rail column provides its own left offset and
+     adding a margin here shifts the rail calculation off, misaligning dots. */
+}
+
+/* Timestamp */
+.chat-msg__time {
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  padding: 0 2px;
+}
+
+/* Compact variant */
+[data-variant='compact'] .chat-msg__bubble { padding: 6px 10px; border-radius: 8px; gap: 6px; }
+[data-variant='compact'] .chat-msg__sender { font-size: 11px; }
+[data-variant='compact'] .chat-msg__time { font-size: 10px; }
+[data-variant='compact'] .chat-msg { max-width: 90%; gap: 6px; }
+[data-variant='compact'] .chat-msg__avatar { width: 24px; height: 24px; }
+
+/* Modern variant */
+[data-variant='modern'] .chat-msg__bubble {
+  border-radius: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+[data-variant='modern'] .chat-msg--user .chat-msg__bubble { border-bottom-right-radius: 4px; }
+[data-variant='modern'] .chat-msg--assistant .chat-msg__bubble { border-bottom-left-radius: 4px; }
+[data-variant='modern'] .chat-msg__avatar { width: 32px; height: 32px; }
+
+/* Meta row: badges + timestamp */
+.chat-msg__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+/* Star/Pin badges */
+.chat-msg__badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-msg__badge {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.chat-msg__badge--star {
+  color: #f59e0b;
+}
+
+.chat-msg__badge--pin {
+  color: #6366f1;
+}
+
+/* Attachments in sent messages */
+.chat-msg__attachments {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chat-msg__attachment {
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.chat-msg__attachment-img {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+}
+
+.chat-msg--user .chat-msg__attachment-img {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.chat-msg--assistant .chat-msg__attachment-img {
+  border: 1px solid var(--color-border);
+}
+
+.chat-msg__attachment-file {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  min-width: 80px;
+}
+
+.chat-msg--assistant .chat-msg__attachment-file {
+  background: var(--color-bg);
+}
+
+.chat-msg__attachment-name {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.chat-msg__attachment-size {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+[data-variant='compact'] .chat-msg__attachment-img {
+  max-width: 120px;
+  max-height: 90px;
+}
+
+/* Forwarded indicator */
+.chat-msg__forwarded {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  padding: 0 2px 2px;
+  opacity: 0.7;
+}

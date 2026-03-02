@@ -1,0 +1,111 @@
+/**
+ * Breadcrumbs Component Styles
+ * Uses CSS variables from theme system
+ */
+
+.breadcrumbs {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+}
+
+.breadcrumbs__list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.breadcrumbs__entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.breadcrumbs__item {
+  color: var(--color-fg-muted);
+  text-decoration: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breadcrumbs__item:hover {
+  color: var(--color-accent);
+  background-color: var(--color-bg-active);
+}
+
+.breadcrumbs__separator {
+  color: var(--color-fg-muted);
+  opacity: 0.5;
+  user-select: none;
+}
+
+.breadcrumbs__current {
+  color: var(--color-fg);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+}
+
+.breadcrumbs__ellipsis {
+  color: var(--color-fg-muted);
+  padding: 2px 4px;
+  user-select: none;
+}
+
+.breadcrumbs__icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Compact variant */
+[data-variant='compact'] .breadcrumbs {
+  font-size: 12px;
+}
+
+[data-variant='compact'] .breadcrumbs__list {
+  gap: 4px;
+}
+
+[data-variant='compact'] .breadcrumbs__entry {
+  gap: 4px;
+}
+
+[data-variant='compact'] .breadcrumbs__item,
+[data-variant='compact'] .breadcrumbs__current {
+  padding: 1px 3px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .breadcrumbs {
+  font-size: 14px;
+}
+
+[data-variant='modern'] .breadcrumbs__list {
+  gap: 8px;
+}
+
+[data-variant='modern'] .breadcrumbs__entry {
+  gap: 8px;
+}
+
+[data-variant='modern'] .breadcrumbs__item {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+[data-variant='modern'] .breadcrumbs__current {
+  padding: 4px 8px;
+  font-weight: 700;
+}

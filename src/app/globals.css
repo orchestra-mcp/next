@@ -1,0 +1,245 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-cyan: var(--brand-cyan);
+  --color-purple: var(--brand-purple);
+  --font-sans: 'Instrument Sans', system-ui, sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+}
+
+@layer base {
+  :root {
+    /* Orchestra dark theme — matches orchestra-mcp.dev */
+    --background: 240 10% 5%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 100% / 0.04;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 8% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 277 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 100% / 0.06;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 100% / 0.06;
+    --muted-foreground: 0 0% 55%;
+    --accent: 186 100% 50%;
+    --accent-foreground: 240 10% 5%;
+    --destructive: 0 84% 60%;
+    --border: 0 0% 100% / 0.08;
+    --input: 0 0% 100% / 0.06;
+    --ring: 277 100% 50%;
+    --radius: 0.625rem;
+
+    /* Brand colors */
+    --brand-cyan: #00e5ff;
+    --brand-purple: #a900ff;
+    --brand-gradient: linear-gradient(135deg, #00e5ff, #a900ff);
+
+    /* Legacy vars kept for backward compat */
+    --bg: #0f0f12;
+    --bg-card: rgba(255,255,255,0.04);
+    --bg-input: rgba(255,255,255,0.06);
+    --bg-sidebar: #1a1520;
+    --bg-hover: rgba(255,255,255,0.06);
+    --text: #f8f8f8;
+    --text-muted: #8a8a8a;
+    --border-old: rgba(255,255,255,0.08);
+    --accent-old: #a900ff;
+    --accent-hover: #c040ff;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --warning: #f59e0b;
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Styled scrollbars — always visible with subtle dark track */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) rgba(255,255,255,0.04);
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.04);
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+body {
+  background-color: #0f0f12;
+  color: #f8f8f8;
+  font-family: 'Instrument Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* Brand gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #00e5ff, #a900ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass card */
+.glass {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Gradient button */
+.btn-gradient {
+  background: linear-gradient(135deg, #00e5ff, #a900ff);
+  color: #fff;
+  font-weight: 600;
+}
+.btn-gradient:hover {
+  background: linear-gradient(135deg, #00cfeb, #9200dd);
+}
+
+/* Fade-up animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.7s ease-out forwards; }
+.fade-up-1 { animation: fadeUp 0.7s ease-out 0.1s both; }
+.fade-up-2 { animation: fadeUp 0.7s ease-out 0.2s both; }
+.fade-up-3 { animation: fadeUp 0.7s ease-out 0.3s both; }
+.fade-up-4 { animation: fadeUp 0.7s ease-out 0.4s both; }
+
+/* Hero mesh gradient */
+@keyframes meshMove {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Cursor blink */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink { animation: blink 1s step-end infinite; }
+
+/* Glow effects */
+.glow-purple { box-shadow: 0 0 30px rgba(169, 0, 255, 0.25), 0 0 80px rgba(0, 229, 255, 0.1); }
+.glow-cyan { box-shadow: 0 0 20px rgba(0, 229, 255, 0.3); }
+
+/* ─── Light Theme ────────────────────────────────────────────────────── */
+/*
+ * Nav, footer: handled via React theme state (theme-aware components).
+ * Dashboard app shell uses var(--bg/--bg-sidebar/--border) CSS variables
+ * which are updated by applyTheme() in store/theme.ts.
+ * Auth pages: use .auth-card / .auth-page-bg class selectors below.
+ */
+
+/* Auth pages (light) */
+[data-theme="light"] .auth-card {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #0f0f12 !important;
+}
+[data-theme="light"] .auth-page-bg {
+  background: #f0f2f5 !important;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────── */
+
+/* Nav */
+@media (max-width: 768px) {
+  .nav-links { display: none !important; }
+  .nav-mobile-btn { display: flex !important; }
+}
+
+/* Marketing sections */
+@media (max-width: 640px) {
+  /* Reduce horizontal padding on small screens */
+  section { padding-left: 16px !important; padding-right: 16px !important; }
+
+  /* Hero */
+  .hero-terminal { font-size: 11px !important; }
+  .hero-terminal pre, .hero-terminal div { white-space: pre-wrap; word-break: break-word; }
+
+  /* Feature section alternating layout → stack */
+  .feature-section-grid { flex-direction: column !important; }
+  .feature-section-grid > * { width: 100% !important; }
+
+  /* Stats bar: 2×2 grid */
+  .stats-bar-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Platform grid: 3 cols on mobile */
+  .platform-grid { grid-template-columns: repeat(3, 1fr) !important; }
+
+  /* Pricing: stack */
+  .pricing-grid { grid-template-columns: 1fr !important; }
+
+  /* Blog preview: stack */
+  .blog-grid { grid-template-columns: 1fr !important; }
+
+  /* Footer: stack all columns */
+  .footer-grid { grid-template-columns: 1fr !important; }
+
+  /* Carousel: single card */
+  .embla-slide { flex: 0 0 100% !important; min-width: unset !important; }
+}
+
+@media (max-width: 900px) and (min-width: 641px) {
+  /* Carousel: 2 cards */
+  .embla-slide { flex: 0 0 calc(50% - 8px) !important; }
+
+  /* Pricing: 2 cols */
+  .pricing-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Blog preview: 2 cols */
+  .blog-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Footer: 2 cols */
+  .footer-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* Terminal text wrapping on mobile */
+@media (max-width: 640px) {
+  .terminal-line { font-size: 10.5px !important; line-height: 1.7 !important; word-break: break-all; }
+}
+
+/* Dashboard sidebar: hide on mobile, show toggle */
+@media (max-width: 768px) {
+  .app-sidebar { transform: translateX(-100%); transition: transform 0.25s ease; }
+  .app-sidebar.open { transform: translateX(0); }
+  .app-main { margin-left: 0 !important; }
+}

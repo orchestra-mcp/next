@@ -1,0 +1,42 @@
+/* GitHubIssueCard -- issue details */
+
+.gh-issue-card__labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.gh-issue-card__label {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  color: var(--color-accent);
+}
+
+.gh-issue-card__assignees {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-fg);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.gh-issue-card__link {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-accent);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gh-issue-card__link:hover {
+  text-decoration: underline;
+}

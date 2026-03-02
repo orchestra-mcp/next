@@ -1,0 +1,256 @@
+/**
+ * ChatMarkdown — chat-specific markdown overrides
+ * Optimized for readability in desktop chat context
+ */
+
+.chat-markdown {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--color-fg);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  letter-spacing: 0.01em;
+}
+
+/* --- Headings --- */
+.chat-markdown h1 {
+  font-size: 1.4em;
+  margin: 20px 0 10px;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 700;
+}
+
+.chat-markdown h2 {
+  font-size: 1.25em;
+  margin: 18px 0 10px;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 600;
+}
+
+.chat-markdown h3 { font-size: 1.1em; margin: 16px 0 8px; font-weight: 600; }
+.chat-markdown h4,
+.chat-markdown h5,
+.chat-markdown h6 { font-size: 1em; margin: 14px 0 6px; font-weight: 600; }
+
+/* First heading — no top margin */
+.chat-markdown > .markdown-renderer > h1:first-child,
+.chat-markdown > .markdown-renderer > h2:first-child,
+.chat-markdown > .markdown-renderer > h3:first-child {
+  margin-top: 0;
+}
+
+/* --- Paragraphs --- */
+.chat-markdown p {
+  margin: 0 0 14px;
+}
+
+.chat-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+/* --- Lists --- */
+.chat-markdown ul {
+  margin: 0 0 14px;
+  padding-left: 1.5em;
+  list-style-type: disc;
+}
+
+.chat-markdown ol {
+  margin: 0 0 14px;
+  padding-left: 1.5em;
+  list-style-type: decimal;
+}
+
+.chat-markdown li {
+  margin: 6px 0;
+  padding-left: 4px;
+}
+
+.chat-markdown li::marker {
+  color: var(--color-fg-muted);
+}
+
+.chat-markdown li > ul,
+.chat-markdown li > ol {
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+/* Nested list markers */
+.chat-markdown li > ul { list-style-type: circle; }
+.chat-markdown li > ul > li > ul { list-style-type: square; }
+
+/* --- Blockquote --- */
+.chat-markdown blockquote {
+  margin: 0 0 14px;
+  padding: 4px 16px;
+  border-left: 3px solid var(--color-border);
+  color: var(--color-fg-dim);
+}
+
+/* --- Links --- */
+.chat-markdown a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.chat-markdown a:hover {
+  text-decoration: underline;
+}
+
+/* --- Inline code --- */
+.chat-markdown code {
+  font-size: 0.85em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--color-bg-contrast);
+  border: 1px solid var(--color-border);
+  color: var(--color-fg);
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+}
+
+/* --- Code blocks --- */
+.chat-markdown pre {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--color-bg-contrast);
+  border: 1px solid var(--color-border);
+  overflow-x: auto;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.chat-markdown pre code {
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: inherit;
+}
+
+/* Code blocks inside bubble — macOS window look */
+.chat-markdown .code-block {
+  background: var(--color-bg-contrast);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Hide line-number gutter inside chat */
+.chat-markdown .code-block__gutter {
+  display: none;
+}
+
+/* Code body: flush content, no inner rounding or border */
+.chat-markdown .code-block__body {
+  border-radius: 0;
+  border: none;
+}
+
+.chat-markdown .code-block__code {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+}
+
+/* DataTable inside bubble: contrast bg, macOS window look */
+.chat-markdown .data-table-container--card {
+  background: var(--color-bg-contrast);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Window-bar header distinct from table body */
+.chat-markdown .data-table__header {
+  background: var(--color-bg-active);
+}
+
+/* Column headers: darker bg to stand out from rows */
+.chat-markdown .data-table thead th {
+  background: var(--color-bg-active);
+  border-right: 1px solid var(--color-border);
+}
+
+.chat-markdown .data-table thead th:last-child {
+  border-right: none;
+}
+
+/* Vertical column separators on body cells */
+.chat-markdown .data-table tbody td {
+  border-right: 1px solid var(--color-border);
+}
+
+.chat-markdown .data-table tbody td:last-child {
+  border-right: none;
+}
+
+/* --- Tables --- */
+.chat-markdown .data-table-container {
+  margin: 12px 0;
+}
+
+/* --- Horizontal rule --- */
+.chat-markdown hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 20px 0;
+}
+
+/* --- Constrain images --- */
+.chat-markdown img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+/* --- Strong --- */
+.chat-markdown strong {
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+/* --- Strikethrough --- */
+.chat-markdown del {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+/* --- Compact variant --- */
+[data-variant='compact'] .chat-markdown {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+[data-variant='compact'] .chat-markdown p { margin: 0 0 8px; }
+[data-variant='compact'] .chat-markdown ul,
+[data-variant='compact'] .chat-markdown ol { margin: 0 0 8px; }
+[data-variant='compact'] .chat-markdown li { margin: 3px 0; }
+[data-variant='compact'] .chat-markdown pre { padding: 8px 10px; font-size: 12px; }
+[data-variant='compact'] .chat-markdown img { max-height: 200px; }
+
+/* --- Modern variant --- */
+[data-variant='modern'] .chat-markdown {
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+[data-variant='modern'] .chat-markdown pre {
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+[data-variant='modern'] .chat-markdown blockquote {
+  border-left-width: 4px;
+  padding: 6px 18px;
+}
+
+[data-variant='modern'] .chat-markdown img {
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}

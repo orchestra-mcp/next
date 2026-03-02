@@ -1,0 +1,44 @@
+.tasks-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tasks-sidebar__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border, #333);
+  flex-shrink: 0;
+}
+
+.tasks-sidebar__back,
+.tasks-sidebar__refresh {
+  all: unset;
+  cursor: pointer;
+  color: var(--color-fg-muted, #888);
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.tasks-sidebar__back:hover,
+.tasks-sidebar__refresh:hover {
+  color: var(--color-fg, #ccc);
+  background: var(--color-bg-active, #2a2a3a);
+}
+
+.tasks-sidebar__project-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-fg, #e2e8f0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

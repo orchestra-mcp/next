@@ -1,0 +1,46 @@
+{
+  "name": "@orchestra-mcp/cli",
+  "version": "0.1.0",
+  "description": "Interactive CLI with rich TUI for Orchestra MCP",
+  "type": "module",
+  "bin": {
+    "orchestra": "./bin/orchestra.js"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "enquirer": "^2.4.1",
+    "ink": "^5.2.0",
+    "ink-text-input": "^6.0.0",
+    "ink-select-input": "^6.0.0",
+    "ink-spinner": "^5.0.0",
+    "ora": "^8.1.1",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "keywords": [
+    "cli",
+    "tui",
+    "terminal",
+    "interactive",
+    "orchestra",
+    "mcp"
+  ],
+  "license": "MIT"
+}

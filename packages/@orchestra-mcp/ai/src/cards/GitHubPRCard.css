@@ -1,0 +1,58 @@
+/* GitHubPRCard -- pull request details */
+
+.gh-pr-card__branch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.gh-pr-card__branch code {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--color-border);
+  color: var(--color-fg);
+}
+
+.gh-pr-card__arrow {
+  color: var(--color-fg-muted);
+  opacity: 0.5;
+}
+
+.gh-pr-card__author {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+  font-size: 11px;
+  color: var(--color-fg);
+  font-weight: 500;
+}
+
+.gh-pr-card__draft {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--color-border);
+  color: var(--color-fg-muted);
+}
+
+.gh-pr-card__link {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-accent);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gh-pr-card__link:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,59 @@
+/* BurndownChartCard — pure SVG burndown chart */
+
+.burndown-chart__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.burndown-chart__label {
+  font-size: 9px;
+  fill: var(--color-fg-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.burndown-chart__line--ideal {
+  stroke: var(--color-fg-muted);
+  stroke-dasharray: 4 3;
+  opacity: 0.6;
+}
+
+.burndown-chart__line--actual {
+  stroke: var(--color-accent);
+}
+
+.burndown-chart__legend {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+}
+
+.burndown-chart__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.burndown-chart__legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 2px;
+}
+
+.burndown-chart__legend-item--ideal::before {
+  background: var(--color-fg-muted);
+  opacity: 0.6;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--color-fg-muted) 0 4px,
+    transparent 4px 7px
+  );
+  background-color: transparent;
+}
+
+.burndown-chart__legend-item--actual::before {
+  background: var(--color-accent);
+}

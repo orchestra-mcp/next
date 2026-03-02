@@ -1,0 +1,27 @@
+/* SkillCard — skill activation display */
+
+.skill-card__desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-fg-muted);
+}
+
+.skill-card__techs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.skill-card__tech {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.1);
+  white-space: nowrap;
+}

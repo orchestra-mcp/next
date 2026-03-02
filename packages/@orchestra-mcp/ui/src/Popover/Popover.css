@@ -1,0 +1,60 @@
+/**
+ * Popover Component Styles
+ * Uses position: fixed via JS for proper overflow escape
+ */
+
+.popover {
+  position: relative;
+  display: inline-flex;
+}
+
+.popover__trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+}
+
+.popover__content {
+  position: fixed;
+  z-index: 9999;
+  min-width: 200px;
+  padding: 8px;
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  pointer-events: none;
+}
+
+.popover__content--open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Compact variant */
+[data-variant='compact'] .popover__content {
+  padding: 4px;
+  border-radius: 6px;
+  min-width: 160px;
+  font-size: 13px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .popover__content {
+  padding: 10px;
+  border-radius: 10px;
+  min-width: 220px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background-color: var(--color-bg-alt);
+}

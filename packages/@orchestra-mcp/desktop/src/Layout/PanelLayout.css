@@ -1,0 +1,106 @@
+/**
+ * Desktop PanelLayout — standard layout for panel windows.
+ * Uses theme vars from @orchestra-mcp/theme.
+ */
+
+.desktop-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.desktop-panel__body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.desktop-panel__sidebar {
+  flex: none;
+  width: 240px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg-alt);
+  overflow-y: auto;
+}
+
+.desktop-panel__content-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.desktop-panel__header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.desktop-panel__description {
+  font-size: 13px;
+  color: var(--color-fg-muted);
+}
+
+.desktop-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.desktop-panel__content {
+  flex: 1;
+  overflow: auto;
+}
+
+/* ── Scrollbar ── */
+
+.desktop-panel__sidebar::-webkit-scrollbar,
+.desktop-panel__content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.desktop-panel__sidebar::-webkit-scrollbar-track,
+.desktop-panel__content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.desktop-panel__sidebar::-webkit-scrollbar-thumb,
+.desktop-panel__content::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+/* ── Compact variant ── */
+
+[data-variant='compact'] .desktop-panel__sidebar {
+  width: 200px;
+}
+
+[data-variant='compact'] .desktop-panel__header {
+  padding: 8px 12px;
+}
+
+[data-variant='compact'] .desktop-panel__description {
+  font-size: 12px;
+}
+
+/* ── Modern variant ── */
+
+[data-variant='modern'] .desktop-panel__sidebar {
+  width: 260px;
+  box-shadow: 1px 0 6px rgba(0, 0, 0, 0.06);
+}
+
+[data-variant='modern'] .desktop-panel__header {
+  padding: 16px 24px;
+}
+
+[data-variant='modern'] .desktop-panel__description {
+  font-size: 14px;
+}

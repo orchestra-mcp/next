@@ -1,0 +1,29 @@
+.create-card__body {
+  margin: 0;
+}
+
+/* Override CodeBlock/CodeEditor to fit inside card */
+.create-card .code-block {
+  border-radius: 0;
+  border: none;
+}
+
+.create-card .code-block__header {
+  border-radius: 0;
+}
+
+.create-card .code-editor__header {
+  display: none;
+}
+
+/* Header action group */
+.create-card__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Active edit toggle */
+.card-base__action-btn--active {
+  color: var(--color-accent);
+}

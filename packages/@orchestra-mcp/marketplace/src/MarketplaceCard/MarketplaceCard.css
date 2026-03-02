@@ -1,0 +1,220 @@
+/**
+ * MarketplaceCard Component Styles
+ * Uses CSS variables from theme system
+ */
+
+.mc-card {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--color-bg-alt);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.mc-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  border-color: var(--color-accent);
+}
+
+/* Header: icon + info */
+.mc-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mc-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-bg-active, rgba(128, 128, 128, 0.1));
+}
+
+.mc-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mc-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mc-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mc-author {
+  font-size: 12px;
+  color: var(--color-fg-muted, var(--color-fg));
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mc-verified {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.mc-desc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--color-fg);
+  opacity: 0.8;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Type badges */
+.mc-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mc-badge--extension {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.mc-badge--ai-tool {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+}
+
+.mc-badge--os-service {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+/* Footer: stats + action */
+.mc-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+}
+
+.mc-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--color-fg);
+  opacity: 0.7;
+}
+
+.mc-stars {
+  display: inline-flex;
+  gap: 1px;
+  font-size: 13px;
+}
+
+.mc-star--filled { color: #f59e0b; }
+.mc-star--empty  { color: var(--color-border); }
+
+.mc-installs {
+  white-space: nowrap;
+}
+
+/* Action buttons */
+.mc-btn {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.mc-btn:hover { opacity: 0.85; }
+
+.mc-btn--install {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.mc-btn--uninstall {
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+.mc-btn--update {
+  background: #f59e0b;
+  color: #fff;
+}
+
+/* Compact variant */
+[data-variant='compact'] .mc-card {
+  padding: 10px;
+  border-radius: 6px;
+}
+
+[data-variant='compact'] .mc-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+}
+
+[data-variant='compact'] .mc-name { font-size: 13px; }
+[data-variant='compact'] .mc-desc { font-size: 12px; }
+[data-variant='compact'] .mc-btn  { font-size: 11px; padding: 4px 10px; }
+
+/* Modern variant */
+[data-variant='modern'] .mc-card {
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+[data-variant='modern'] .mc-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+}
+
+[data-variant='modern'] .mc-icon {
+  border-radius: 10px;
+}
+
+[data-variant='modern'] .mc-btn {
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 6px 16px;
+}

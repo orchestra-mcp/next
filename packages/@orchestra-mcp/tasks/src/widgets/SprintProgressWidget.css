@@ -1,0 +1,99 @@
+.sprint-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sprint-progress__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sprint-progress__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-fg, #ccc);
+}
+
+.sprint-progress__dates {
+  font-size: 11px;
+  color: var(--color-fg-muted, #888);
+}
+
+.sprint-progress__days {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent, #7c3aed);
+  text-align: right;
+}
+
+.sprint-progress__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sprint-progress__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sprint-progress__metric-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-fg-muted, #888);
+}
+
+.sprint-progress__metric-value {
+  font-weight: 600;
+  color: var(--color-fg, #ccc);
+}
+
+.sprint-progress__bar-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-bg-alt, #1e1e2e);
+  overflow: hidden;
+}
+
+.sprint-progress__bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+
+.sprint-progress__bar-fill--points {
+  background: var(--color-accent, #7c3aed);
+}
+
+.sprint-progress__bar-fill--tasks {
+  background: #22c55e;
+}
+
+.sprint-progress__empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--color-fg-muted, #888);
+  font-size: 13px;
+}
+
+/* Compact variant */
+[data-variant='compact'] .sprint-progress { gap: 8px; }
+[data-variant='compact'] .sprint-progress__name { font-size: 13px; }
+[data-variant='compact'] .sprint-progress__bar-track { height: 6px; }
+
+/* Modern variant */
+[data-variant='modern'] .sprint-progress__bar-track { height: 10px; border-radius: 6px; }
+[data-variant='modern'] .sprint-progress__bar-fill { border-radius: 6px; }
+[data-variant='modern'] .sprint-progress__bar-fill--points {
+  background: linear-gradient(90deg, var(--color-accent, #7c3aed), var(--color-accent-light, #a78bfa));
+}
+[data-variant='modern'] .sprint-progress__bar-fill--tasks {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}

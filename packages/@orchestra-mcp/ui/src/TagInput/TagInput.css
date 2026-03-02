@@ -1,0 +1,198 @@
+/**
+ * TagInput Component Styles
+ * Uses CSS variables from theme system
+ */
+
+.tag-input {
+  position: relative;
+  width: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.tag-input__container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: var(--color-bg);
+  cursor: text;
+  transition: all 0.15s ease;
+  min-height: 40px;
+}
+
+.tag-input__container:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-alpha, rgba(59, 130, 246, 0.1));
+}
+
+/* Tag chips */
+.tag-input__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background-color: var(--color-accent);
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+  transition: transform 0.15s ease;
+}
+
+.tag-input__chip--flash {
+  animation: tag-flash 0.4s ease;
+}
+
+@keyframes tag-flash {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.tag-input__chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.tag-input__chip-remove:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Input field */
+.tag-input__field {
+  flex: 1;
+  min-width: 80px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-fg);
+  font-size: 14px;
+  font-family: inherit;
+  padding: 2px 0;
+}
+
+.tag-input__field::placeholder {
+  color: var(--color-fg-muted, rgba(0, 0, 0, 0.4));
+}
+
+/* Max reached hint */
+.tag-input__hint {
+  font-size: 12px;
+  color: var(--color-fg-muted, rgba(0, 0, 0, 0.4));
+  font-style: italic;
+}
+
+/* Suggestions dropdown */
+.tag-input__suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 4px 0 0;
+  padding: 4px 0;
+  list-style: none;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.tag-input__suggestion {
+  padding: 6px 12px;
+  font-size: 14px;
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.tag-input__suggestion:hover {
+  background-color: var(--color-bg-alt);
+}
+
+/* Disabled state */
+.tag-input--disabled .tag-input__container {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--color-bg-alt);
+}
+
+.tag-input--disabled .tag-input__chip-remove {
+  display: none;
+}
+
+/* Compact variant */
+[data-variant='compact'] .tag-input__container {
+  border-radius: 4px;
+  padding: 4px 8px;
+  gap: 4px;
+  min-height: 32px;
+}
+
+[data-variant='compact'] .tag-input__chip {
+  font-size: 12px;
+  padding: 1px 6px;
+}
+
+[data-variant='compact'] .tag-input__field {
+  font-size: 13px;
+}
+
+[data-variant='compact'] .tag-input__suggestions {
+  border-radius: 4px;
+}
+
+[data-variant='compact'] .tag-input__suggestion {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .tag-input__container {
+  border-radius: 8px;
+  padding: 8px 12px;
+  gap: 8px;
+  min-height: 48px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+[data-variant='modern'] .tag-input__chip {
+  font-size: 14px;
+  padding: 4px 12px;
+  font-weight: 500;
+}
+
+[data-variant='modern'] .tag-input__field {
+  font-size: 15px;
+}
+
+[data-variant='modern'] .tag-input__container:focus-within {
+  box-shadow: 0 0 0 4px var(--color-accent-alpha, rgba(59, 130, 246, 0.15));
+}
+
+[data-variant='modern'] .tag-input__suggestions {
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+[data-variant='modern'] .tag-input__suggestion {
+  padding: 8px 14px;
+  font-size: 14px;
+}

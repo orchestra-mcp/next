@@ -1,0 +1,123 @@
+/**
+ * Select Component Styles
+ * Uses CSS variables from theme system
+ */
+
+.select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  position: relative;
+}
+
+.select__native {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  padding: 8px 36px 8px 16px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  width: 100%;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Chevron indicator */
+.select__chevron {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--color-fg);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Adjust chevron when error text is present */
+.select--error .select__chevron {
+  top: 20px;
+}
+
+/* Focus state */
+.select__native:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-alpha, rgba(59, 130, 246, 0.1));
+}
+
+/* Hover state */
+.select__native:hover:not(:disabled):not(.select__native--error) {
+  border-color: var(--color-accent);
+}
+
+/* Error state */
+.select--error .select__native {
+  border-color: var(--color-error, #ef4444);
+}
+
+.select--error .select__native:focus {
+  border-color: var(--color-error, #ef4444);
+  box-shadow: 0 0 0 3px var(--color-error-alpha, rgba(239, 68, 68, 0.1));
+}
+
+.select__error {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: var(--color-error, #ef4444);
+  margin-top: 2px;
+}
+
+/* Disabled state */
+.select--disabled .select__native {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--color-bg-alt);
+}
+
+.select--disabled .select__chevron {
+  opacity: 0.5;
+}
+
+/* Compact variant */
+[data-variant='compact'] .select__native {
+  font-size: 13px;
+  padding: 6px 32px 6px 12px;
+  height: 36px;
+  border-radius: 4px;
+}
+
+[data-variant='compact'] .select__chevron {
+  right: 10px;
+  border-left-width: 4px;
+  border-right-width: 4px;
+  border-top-width: 4px;
+}
+
+[data-variant='compact'] .select__error {
+  font-size: 12px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .select__native {
+  font-size: 14px;
+  padding: 10px 40px 10px 18px;
+  height: 44px;
+  border-radius: 8px;
+}
+
+[data-variant='modern'] .select__native:focus {
+  box-shadow: 0 0 0 4px var(--color-accent-alpha, rgba(59, 130, 246, 0.15));
+}
+
+[data-variant='modern'] .select__chevron {
+  right: 14px;
+}

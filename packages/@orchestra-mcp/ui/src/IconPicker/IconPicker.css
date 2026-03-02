@@ -1,0 +1,315 @@
+/**
+ * IconPicker Component Styles
+ * Uses CSS variables from theme system
+ * Supports three modes: select, inline, panel
+ */
+
+/* ===== Panel mode (original) ===== */
+
+.icon-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Search input */
+.icon-picker__search {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg-alt);
+  color: var(--color-fg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.icon-picker__search:focus {
+  border-color: var(--color-accent);
+}
+
+.icon-picker__search::placeholder {
+  color: var(--color-fg-muted, #888);
+}
+
+/* Category tabs */
+.icon-picker__categories {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.icon-picker__category-btn {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-bg-alt);
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.icon-picker__category-btn:hover {
+  background-color: var(--color-bg-active);
+}
+
+.icon-picker__category-btn--active {
+  background-color: var(--color-accent);
+  color: #ffffff;
+  border-color: var(--color-accent);
+}
+
+/* Icon grid */
+.icon-picker__grid {
+  display: grid;
+  gap: 4px;
+}
+
+/* Icon button */
+.icon-picker__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background-color: var(--color-bg-alt);
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.icon-picker__icon-btn:hover {
+  background-color: var(--color-bg-active);
+}
+
+.icon-picker__icon-btn--selected {
+  border-color: var(--color-accent);
+  background-color: var(--color-bg-active);
+}
+
+/* Empty state */
+.icon-picker__empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-fg-muted, #888);
+}
+
+/* ===== Select mode ===== */
+
+.icon-select {
+  position: relative;
+  display: inline-block;
+}
+
+.icon-select__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: var(--color-bg-alt);
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  min-width: 160px;
+}
+
+.icon-select__trigger:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.icon-select__trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-select__trigger-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-select__trigger-name {
+  flex: 1;
+  text-align: left;
+}
+
+.icon-select__trigger-placeholder {
+  flex: 1;
+  text-align: left;
+  color: var(--color-fg-muted, #888);
+}
+
+.icon-select__trigger-chevron {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-fg-muted, #888);
+}
+
+.icon-select__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 280px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 8px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== Inline mode ===== */
+
+@keyframes icon-pop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.25); }
+  50% { transform: scale(0.92); }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes icon-ring {
+  0% { box-shadow: 0 0 0 0 var(--color-accent); }
+  50% { box-shadow: 0 0 0 4px var(--color-accent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.icon-inline {
+  display: flex;
+  width: 100%;
+}
+
+.icon-inline__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background-color: var(--color-bg-alt);
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  transform: scale(1);
+}
+
+.icon-inline__item:hover:not(:disabled):not(.icon-inline__item--selected) {
+  background-color: var(--color-bg-active);
+  transform: scale(1.1);
+}
+
+.icon-inline__item:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.icon-inline__item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-inline__item--selected {
+  border-color: var(--color-accent);
+  background-color: var(--color-bg-active);
+  animation: icon-pop 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28),
+             icon-ring 0.5s ease-out;
+}
+
+/* ===== Compact variant ===== */
+
+[data-variant='compact'] .icon-picker__search {
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+[data-variant='compact'] .icon-picker__icon-btn,
+[data-variant='compact'] .icon-inline__item {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+}
+
+[data-variant='compact'] .icon-picker__category-btn {
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+[data-variant='compact'] .icon-picker__empty {
+  padding: 12px;
+  font-size: 12px;
+}
+
+[data-variant='compact'] .icon-select__trigger {
+  padding: 6px 8px;
+  font-size: 12px;
+  min-width: 140px;
+}
+
+[data-variant='compact'] .icon-inline__item--selected {
+  animation-duration: 0.25s, 0.35s;
+}
+
+/* ===== Modern variant ===== */
+
+[data-variant='modern'] .icon-picker__search {
+  padding: 10px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+[data-variant='modern'] .icon-picker__icon-btn,
+[data-variant='modern'] .icon-inline__item {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+
+[data-variant='modern'] .icon-picker__category-btn {
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+[data-variant='modern'] .icon-picker__empty {
+  padding: 20px;
+  font-size: 14px;
+}
+
+[data-variant='modern'] .icon-select__trigger {
+  padding: 10px 14px;
+  border-radius: 8px;
+  min-width: 180px;
+}
+
+[data-variant='modern'] .icon-select__dropdown {
+  border-radius: 10px;
+}
+
+[data-variant='modern'] .icon-inline__item--selected {
+  animation-duration: 0.45s, 0.6s;
+}
+
+[data-variant='modern'] .icon-inline__item:hover:not(:disabled):not(.icon-inline__item--selected) {
+  transform: scale(1.15);
+}

@@ -1,0 +1,783 @@
+/**
+ * DevToolsSessionSidebar -- 320px sidebar matching NotesSidebar + SessionItem patterns.
+ * BEM naming: .devtools-session-sidebar__*
+ */
+
+/* ── Shell ───────────────────────────────────────────────── */
+
+.devtools-session-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  height: 100%;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg);
+  user-select: none;
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+
+.devtools-session-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+
+.devtools-session-sidebar__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-fg);
+  margin: 0;
+}
+
+.devtools-session-sidebar__new-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: var(--color-fg-bright);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.devtools-session-sidebar__new-btn:hover {
+  opacity: 0.85;
+}
+
+.devtools-session-sidebar__new-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Search ──────────────────────────────────────────────── */
+
+.devtools-session-sidebar__search {
+  position: relative;
+  padding: 0 16px 8px;
+  flex-shrink: 0;
+}
+
+.devtools-session-sidebar__search-icon {
+  position: absolute;
+  left: 26px;
+  top: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  color: var(--color-fg-muted);
+  pointer-events: none;
+}
+
+.devtools-session-sidebar__search-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-bg-alt);
+  color: var(--color-fg);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.devtools-session-sidebar__search-input::placeholder {
+  color: var(--color-fg-muted);
+}
+
+.devtools-session-sidebar__search-input:focus {
+  border-color: var(--color-accent);
+}
+
+/* ── Session list ────────────────────────────────────────── */
+
+.devtools-session-sidebar__list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 8px 8px;
+}
+
+/* ── Swipe wrapper ───────────────────────────────────────── */
+
+.devtools-session-sidebar__wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  margin-bottom: 2px;
+}
+
+.devtools-session-sidebar__wrapper--selected {
+  outline: 2px solid var(--color-accent, #6366f1);
+  outline-offset: -2px;
+}
+
+/* ── Swipe action panels (behind card) ──────────────────── */
+
+.devtools-session-sidebar__action {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.devtools-session-sidebar__action--visible {
+  opacity: 1;
+}
+
+.devtools-session-sidebar__action--pin {
+  left: 0;
+  right: 0;
+  background: var(--color-accent, #6366f1);
+  border-radius: 8px;
+  justify-content: flex-start;
+}
+
+.devtools-session-sidebar__action--delete {
+  left: 0;
+  right: 0;
+  background: var(--color-danger, #e53e3e);
+  border-radius: 8px;
+  justify-content: flex-end;
+}
+
+/* ── Session item ────────────────────────────────────────── */
+
+.devtools-session-sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-bg, #1a1a1a);
+  color: var(--color-fg);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease, transform 0.25s ease;
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+}
+
+.devtools-session-sidebar__item:hover {
+  background: var(--color-bg-hover);
+}
+
+.devtools-session-sidebar__item--active {
+  background: var(--color-bg-active);
+}
+
+.devtools-session-sidebar__item:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+/* ── Icon box ────────────────────────────────────────────── */
+
+.devtools-session-sidebar__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--color-bg-contrast, rgba(255, 255, 255, 0.05));
+  color: var(--color-accent);
+  line-height: 0;
+}
+
+/* ── Body (name + type) ──────────────────────────────────── */
+
+.devtools-session-sidebar__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.devtools-session-sidebar__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.devtools-session-sidebar__type {
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+/* ── Meta (dot + time) ───────────────────────────────────── */
+
+.devtools-session-sidebar__meta {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 48px;
+}
+
+.devtools-session-sidebar__time {
+  font-size: 11px;
+  color: var(--color-fg-dim, var(--color-fg-muted));
+  white-space: nowrap;
+}
+
+/* ── State dot ───────────────────────────────────────────── */
+
+.devtools-session-sidebar__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.devtools-session-sidebar__dot--connected {
+  background: #22c55e;
+}
+
+.devtools-session-sidebar__dot--error {
+  background: #ef4444;
+}
+
+.devtools-session-sidebar__dot--connecting {
+  background: #f59e0b;
+}
+
+.devtools-session-sidebar__dot--idle {
+  background: var(--color-fg-muted);
+  opacity: 0.5;
+}
+
+.devtools-session-sidebar__dot--disconnected {
+  background: var(--color-fg-muted);
+  opacity: 0.3;
+}
+
+/* ── Rename input ────────────────────────────────────────── */
+
+.devtools-session-sidebar__rename-input {
+  width: 100%;
+  background: var(--color-bg);
+  border: 1px solid var(--color-accent, #6366f1);
+  border-radius: 5px;
+  padding: 2px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-fg);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+
+.devtools-session-sidebar__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: var(--color-fg-muted);
+}
+
+.devtools-session-sidebar__empty-icon {
+  opacity: 0.2;
+}
+
+.devtools-session-sidebar__empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-fg);
+  margin: 0;
+}
+
+.devtools-session-sidebar__empty-desc {
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  margin: 0;
+}
+
+/* ── Selection bar ───────────────────────────────────────── */
+
+.devtools-session-sidebar__selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-accent, #6366f1) 12%, var(--color-bg, #1a1a1a));
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent, #6366f1);
+  animation: devtools-sel-in 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes devtools-sel-in {
+  from { opacity: 0; transform: scaleY(0.9); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
+.devtools-session-sidebar__selection-bar button {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.devtools-session-sidebar__selection-bar button:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--color-fg);
+}
+
+/* ── Selected item state ────────────────────────────────── */
+
+.devtools-session-sidebar__item--selected {
+  background: color-mix(in srgb, var(--color-accent, #6366f1) 8%, transparent) !important;
+}
+
+.devtools-session-sidebar__checkbox {
+  flex-shrink: 0;
+  color: var(--color-accent, #6366f1);
+  line-height: 1;
+}
+
+/* ── Pin badge ──────────────────────────────────────────── */
+
+.devtools-session-sidebar__pin-badge {
+  color: var(--color-fg-muted);
+  opacity: 0.6;
+  line-height: 1;
+}
+
+/* ── Context menu ────────────────────────────────────────── */
+
+.devtools-session-sidebar__menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 180px;
+  background: var(--color-bg-alt, #1e1e1e);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: devtools-menu-in 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes devtools-menu-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.devtools-session-sidebar__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-fg);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s ease;
+}
+
+.devtools-session-sidebar__menu-item:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.devtools-session-sidebar__menu-item--danger {
+  color: var(--color-danger, #e53e3e);
+}
+
+.devtools-session-sidebar__menu-item--danger:hover {
+  background: rgba(229, 62, 62, 0.1);
+}
+
+.devtools-session-sidebar__menu-item--danger:not(:first-child) {
+  margin-top: 2px;
+  border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+  padding-top: 10px;
+}
+
+.devtools-session-sidebar__menu-chevron {
+  margin-left: auto;
+  color: var(--color-fg-dim);
+  line-height: 0;
+}
+
+/* ── Submenu parent ──────────────────────────────────────── */
+
+.devtools-session-sidebar__menu-parent {
+  position: relative;
+}
+
+.devtools-session-sidebar__menu-parent > .devtools-session-sidebar__menu-item {
+  background: transparent;
+}
+
+.devtools-session-sidebar__menu-parent:hover > .devtools-session-sidebar__menu-item {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.devtools-session-sidebar__submenu {
+  position: absolute;
+  left: 100%;
+  top: -4px;
+  min-width: 200px;
+  background: var(--color-bg-alt, #1e1e1e);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: devtools-menu-in 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Icon grid ───────────────────────────────────────────── */
+
+.devtools-session-sidebar__icon-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 6px;
+}
+
+.devtools-session-sidebar__icon-pick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.devtools-session-sidebar__icon-pick:hover {
+  background: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--color-fg);
+}
+
+.devtools-session-sidebar__icon-pick--active {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* ── Color grid ──────────────────────────────────────────── */
+
+.devtools-session-sidebar__color-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  padding: 8px;
+}
+
+.devtools-session-sidebar__color-pick {
+  width: 24px;
+  height: 24px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+}
+
+.devtools-session-sidebar__color-pick:hover {
+  transform: scale(1.15);
+}
+
+.devtools-session-sidebar__color-pick--active {
+  border-color: var(--color-fg-bright, #fff);
+  transform: scale(1.15);
+}
+
+/* ── Delete confirmation dialog ──────────────────────────── */
+
+.devtools-session-sidebar__dialog {
+  border: none;
+  border-radius: 14px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  max-width: 320px;
+  width: calc(100vw - 48px);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  margin: 0;
+}
+
+.devtools-session-sidebar__dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: devtools-dialog-backdrop-in 0.15s ease;
+}
+
+@keyframes devtools-dialog-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.devtools-session-sidebar__dialog-inner {
+  background: var(--color-bg-alt, #1e1e1e);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  padding: 24px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  animation: devtools-dialog-in 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes devtools-dialog-in {
+  from { opacity: 0; transform: scale(0.88) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.devtools-session-sidebar__dialog-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(229, 62, 62, 0.12);
+  color: var(--color-danger, #e53e3e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.devtools-session-sidebar__dialog-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-fg);
+  margin: 0;
+}
+
+.devtools-session-sidebar__dialog-body {
+  font-size: 12.5px;
+  color: var(--color-fg-muted);
+  line-height: 1.5;
+  margin: 2px 0 10px;
+}
+
+.devtools-session-sidebar__dialog-body strong {
+  color: var(--color-fg);
+  font-weight: 600;
+}
+
+.devtools-session-sidebar__dialog-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.devtools-session-sidebar__dialog-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.devtools-session-sidebar__dialog-btn:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.devtools-session-sidebar__dialog-btn:active {
+  transform: translateY(0);
+}
+
+.devtools-session-sidebar__dialog-btn--cancel {
+  background: var(--color-bg);
+  color: var(--color-fg-muted);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+}
+
+.devtools-session-sidebar__dialog-btn--delete {
+  background: var(--color-danger, #e53e3e);
+  color: #fff;
+}
+
+/* ── Compact variant ─────────────────────────────────────── */
+
+[data-variant='compact'] .devtools-session-sidebar__wrapper {
+  border-radius: 6px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar {
+  width: 280px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar__header {
+  padding: 8px 12px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar__title {
+  font-size: 14px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar__new-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar__search {
+  padding: 0 12px 6px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar__search-icon {
+  left: 22px;
+  height: 32px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar__search-input {
+  height: 32px;
+  font-size: 12px;
+  padding: 0 10px 0 32px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar__item {
+  padding: 6px 8px;
+  gap: 8px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar__name {
+  font-size: 12px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar__type {
+  font-size: 11px;
+}
+
+[data-variant='compact'] .devtools-session-sidebar__time {
+  font-size: 10px;
+}
+
+/* ── Modern variant ──────────────────────────────────────── */
+
+[data-variant='modern'] .devtools-session-sidebar__wrapper {
+  border-radius: 10px;
+  margin-bottom: 4px;
+}
+
+[data-variant='modern'] .devtools-session-sidebar {
+  width: 360px;
+  box-shadow: 1px 0 6px rgba(0, 0, 0, 0.06);
+}
+
+[data-variant='modern'] .devtools-session-sidebar__header {
+  padding: 16px 20px;
+}
+
+[data-variant='modern'] .devtools-session-sidebar__title {
+  font-size: 18px;
+}
+
+[data-variant='modern'] .devtools-session-sidebar__new-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+[data-variant='modern'] .devtools-session-sidebar__search {
+  padding: 0 20px 10px;
+}
+
+[data-variant='modern'] .devtools-session-sidebar__search-icon {
+  left: 30px;
+  height: 40px;
+}
+
+[data-variant='modern'] .devtools-session-sidebar__search-input {
+  height: 40px;
+  font-size: 14px;
+  border-radius: 20px;
+  padding: 0 14px 0 40px;
+}
+
+[data-variant='modern'] .devtools-session-sidebar__item {
+  padding: 12px 16px;
+  gap: 12px;
+  border-radius: 10px;
+}
+
+[data-variant='modern'] .devtools-session-sidebar__item--active {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+[data-variant='modern'] .devtools-session-sidebar__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+[data-variant='modern'] .devtools-session-sidebar__name {
+  font-size: 14px;
+}
+
+[data-variant='modern'] .devtools-session-sidebar__type {
+  font-size: 12.5px;
+}

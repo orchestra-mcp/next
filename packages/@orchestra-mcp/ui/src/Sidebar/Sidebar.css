@@ -1,0 +1,114 @@
+/**
+ * Sidebar Component Styles
+ */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  background: var(--color-bg-alt);
+  border-color: var(--color-border);
+  transition: width 0.3s ease, transform 0.3s ease;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.sidebar--left {
+  left: 0;
+  border-right: 1px solid var(--color-border);
+}
+
+.sidebar--right {
+  right: 0;
+  border-left: 1px solid var(--color-border);
+}
+
+.sidebar--open {
+  transform: translateX(0);
+}
+
+.sidebar--closed {
+  width: 0 !important;
+}
+
+.sidebar--closed.sidebar--left {
+  transform: translateX(-100%);
+}
+
+.sidebar--closed.sidebar--right {
+  transform: translateX(100%);
+}
+
+.sidebar-content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  cursor: pointer;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px !important;
+  }
+
+  .sidebar--closed {
+    width: 0 !important;
+  }
+}
+
+/* Scrollbar styling */
+.sidebar-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-fg-dim);
+}
+
+/* Compact variant */
+[data-variant='compact'] .sidebar-content {
+  padding: 10px;
+}
+
+[data-variant='compact'] .sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+/* Modern variant */
+[data-variant='modern'] .sidebar {
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
+}
+
+[data-variant='modern'] .sidebar--right {
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
+}
+
+[data-variant='modern'] .sidebar-content {
+  padding: 20px;
+}
+
+[data-variant='modern'] .sidebar-overlay {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+}

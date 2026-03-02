@@ -1,0 +1,60 @@
+/**
+ * Compact Theme Variables
+ * Code-focused, compact interface inspired by modern IDE aesthetics
+ */
+
+/* Background & Surface Colors */
+--color-bg: #1e1e1e;
+--color-bg-secondary: #252526;
+--color-bg-tertiary: #2d2d30;
+--color-surface: #252526;
+--color-surface-hover: #2a2d2e;
+--color-surface-active: #37373d;
+
+/* Text Colors */
+--color-text: #cccccc;
+--color-text-secondary: #858585;
+--color-text-muted: #6a6a6a;
+--color-text-inverse: #1e1e1e;
+
+/* Border Colors */
+--color-border: #3e3e42;
+--color-border-subtle: #2b2b2b;
+--color-border-focus: #007acc;
+
+/* Accent & Primary Colors */
+--color-accent: #007acc;
+--color-accent-hover: #005a9e;
+--color-accent-text: #ffffff;
+
+/* Status Colors */
+--color-success: #89d185;
+--color-warning: #cca700;
+--color-error: #f48771;
+--color-info: #75beff;
+
+/* Sidebar & Activity Bar */
+--sidebar-bg: #252526;
+--activity-bar-bg: #333333;
+--status-bar-bg: #007acc;
+
+/* Input & Form Colors */
+--color-input-bg: #3c3c3c;
+--color-input-border: #3e3e42;
+--color-input-focus-border: #007acc;
+
+/* Typography */
+--font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+--font-family-mono: "SF Mono", Monaco, "Cascadia Code", "Courier New", monospace;
+--font-size-base: 13px;
+--line-height-base: 1.4;
+
+/* Shadows */
+--shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.16);
+--shadow-md: 0 4px 16px rgba(0, 0, 0, 0.24);
+--shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.32);
+
+/* Border Radius */
+--radius-sm: 3px;
+--radius-md: 5px;
+--radius-lg: 8px;

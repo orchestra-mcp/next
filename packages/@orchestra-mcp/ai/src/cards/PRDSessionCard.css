@@ -1,0 +1,24 @@
+/* PRDSessionCard — PRD session question display */
+
+.prd-session__question {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-fg);
+}
+
+.prd-session__required {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  color: #ef4444;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.prd-session__key {
+  display: block;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

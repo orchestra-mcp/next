@@ -1,0 +1,65 @@
+.hook-event-card__empty {
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+  text-align: center;
+  padding: 8px 0;
+}
+
+.hook-event-card__events {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.hook-event-card__event {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+}
+
+.hook-event-card__event-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hook-event-card__type {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-foreground);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hook-event-card__tool {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.hook-event-card__session {
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--color-muted-foreground);
+  opacity: 0.7;
+}
+
+.hook-event-card__date {
+  font-size: 10px;
+  color: var(--color-muted-foreground);
+  margin-left: auto;
+  flex-shrink: 0;
+}
