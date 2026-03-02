@@ -446,7 +446,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>Sign in without a password</div>
-                <div style={{ fontSize: 13, color: textMuted, lineHeight: 1.6 }}>Use Face ID, Touch ID, or a hardware security key to sign in instantly. Passkeys are more secure than passwords — they can't be phished.</div>
+                <div style={{ fontSize: 13, color: textMuted, lineHeight: 1.6 }}>Use Face ID, Touch ID, or a hardware security key to sign in instantly. Passkeys are more secure than passwords — they can&apos;t be phished.</div>
               </div>
             </div>
             <button onClick={() => alert('Passkey registration coming soon!')} style={saveBtnSt}>
@@ -527,7 +527,7 @@ export default function SettingsPage() {
               </div>
               {createdKey && (
                 <div style={{ marginTop: 16, padding: '14px 16px', borderRadius: 10, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)' }}>
-                  <div style={{ fontSize: 12, color: '#22c55e', fontWeight: 600, marginBottom: 8 }}>Copy your key now — it won't be shown again</div>
+                  <div style={{ fontSize: 12, color: '#22c55e', fontWeight: 600, marginBottom: 8 }}>Copy your key now — it won&apos;t be shown again</div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input style={{ ...inputSt, flex: 1, fontFamily: 'monospace', fontSize: 12 }} readOnly value={createdKey} />
                     <button onClick={() => handleCopy(createdKey)} style={{ padding: '9px 14px', borderRadius: 9, border: `1px solid ${cardBorder}`, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', color: textMuted, fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>

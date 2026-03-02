@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { loader } from '@monaco-editor/react';
+import React, { lazy, Suspense, type ComponentType } from 'react';
+import { loader, type EditorProps, type DiffEditorProps } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import './monaco-workers';
 import './CodeEditor.css';
@@ -11,11 +11,11 @@ loader.config({ monaco });
 // Lazy-load the Editor and DiffEditor components for code splitting
 const MonacoEditor = lazy(() =>
   import('@monaco-editor/react').then((mod) => ({ default: mod.Editor })),
-);
+) as React.LazyExoticComponent<ComponentType<EditorProps>>;
 
 const MonacoDiffEditor = lazy(() =>
   import('@monaco-editor/react').then((mod) => ({ default: mod.DiffEditor })),
-);
+) as React.LazyExoticComponent<ComponentType<DiffEditorProps>>;
 
 function DefaultLoading() {
   return (

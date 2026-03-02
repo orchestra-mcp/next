@@ -385,7 +385,7 @@ export default function OnboardingPage() {
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               <button onClick={prev} style={{ padding: '10px 18px', borderRadius: 9, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Back</button>
               <button onClick={next} style={{ flex: 1, padding: '10px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                I'll do this later →
+                I&apos;ll do this later →
               </button>
             </div>
           </div>
@@ -397,7 +397,7 @@ export default function OnboardingPage() {
             <div style={{ width: 68, height: 68, borderRadius: 20, background: 'linear-gradient(135deg, rgba(0,229,255,0.2), rgba(169,0,255,0.2))', border: '1px solid rgba(169,0,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 22px' }}>
               <i className="bx bx-check-circle" style={{ fontSize: 34, color: '#00e5ff' }} />
             </div>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: '0 0 10px', letterSpacing: '-0.03em' }}>You're all set!</h2>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: '0 0 10px', letterSpacing: '-0.03em' }}>You&apos;re all set!</h2>
             <p style={{ fontSize: 13.5, color: textMuted, lineHeight: 1.7, margin: '0 0 28px' }}>
               Your Orchestra workspace is ready.{!teamSkipped && ` Team created.`}{!projectSkipped && ` Project created.`}
             </p>

@@ -356,7 +356,7 @@ export default function AdminUsersPage() {
                     <i className="bx bx-error" /> You are about to impersonate this user
                   </div>
                   <div style={{ fontSize: 12, color: textMuted }}>
-                    You will be logged in as <strong>{target.name}</strong> with full access to their account. A yellow banner will be shown — click "Exit Impersonation" to return to your admin session.
+                    You will be logged in as <strong>{target.name}</strong> with full access to their account. A yellow banner will be shown — click &quot;Exit Impersonation&quot; to return to your admin session.
                   </div>
                 </div>
                 {modalMsg && <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 12 }}>{modalMsg.text}</div>}

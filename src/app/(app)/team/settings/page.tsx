@@ -65,7 +65,7 @@ export default function TeamSettingsPage() {
           <i className="bx bx-left-arrow-alt" /> Team
         </Link>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Team Settings</h1>
-        <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>Manage your team's name and details</p>
+        <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>Manage your team&apos;s name and details</p>
       </div>
 
       {error && (

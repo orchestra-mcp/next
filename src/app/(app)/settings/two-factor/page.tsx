@@ -40,7 +40,7 @@ export default function TwoFactorSetupPage() {
   const inputSt: React.CSSProperties = {
     width: '100%', padding: '11px 14px', borderRadius: 10,
     border: `1px solid ${inputBorder}`, background: inputBg,
-    color: inputColor, fontSize: 14, outline: 'none', boxSizing: 'border-box',
+    color: inputColor, outline: 'none', boxSizing: 'border-box',
     fontFamily: 'inherit', textAlign: 'center', letterSpacing: '0.2em', fontSize: 22,
   } as React.CSSProperties
 
