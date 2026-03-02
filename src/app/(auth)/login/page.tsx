@@ -24,6 +24,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showDevPanel, setShowDevPanel] = useState(false)
+
+  useEffect(() => {
+    setShowDevPanel(localStorage.getItem('show_dev_panel') === 'true')
+  }, [])
 
   useEffect(() => { if (token) router.replace('/dashboard') }, [token, router])
 
@@ -158,7 +163,7 @@ export default function LoginPage() {
       </p>
 
       {/* Dev seed panel */}
-      <div style={{ marginTop: 32, borderRadius: 14, border: `1px solid ${isDark ? 'rgba(255,229,0,0.15)' : 'rgba(200,160,0,0.2)'}`, background: isDark ? 'rgba(255,229,0,0.04)' : 'rgba(255,240,0,0.04)', padding: '16px 18px' }}>
+      {showDevPanel && <div style={{ marginTop: 32, borderRadius: 14, border: `1px solid ${isDark ? 'rgba(255,229,0,0.15)' : 'rgba(200,160,0,0.2)'}`, background: isDark ? 'rgba(255,229,0,0.04)' : 'rgba(255,240,0,0.04)', padding: '16px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
           <i className="bx bx-code-alt" style={{ fontSize: 14, color: isDark ? 'rgba(255,229,0,0.6)' : 'rgba(160,130,0,0.8)' }} />
           <span style={{ fontSize: 11, fontWeight: 600, color: isDark ? 'rgba(255,229,0,0.6)' : 'rgba(160,130,0,0.8)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Dev — Quick Access</span>
@@ -183,7 +188,7 @@ export default function LoginPage() {
             </button>
           ))}
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

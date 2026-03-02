@@ -1,5 +1,5 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useRoleStore, ROLE_LABELS, ROLE_COLORS, type Role } from '@/store/roles'
@@ -12,6 +12,17 @@ export default function AdminPage() {
   const { can, roleLoaded, allUsers, team, fetchAllUsers, fetchTeam } = useRoleStore()
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
+  const [devPanel, setDevPanel] = useState(false)
+
+  useEffect(() => {
+    setDevPanel(localStorage.getItem('show_dev_panel') === 'true')
+  }, [])
+
+  const toggleDevPanel = () => {
+    const next = !devPanel
+    localStorage.setItem('show_dev_panel', String(next))
+    setDevPanel(next)
+  }
 
   useEffect(() => {
     if (!roleLoaded) return
@@ -208,6 +219,33 @@ export default function AdminPage() {
                 </div>
               )
             })}
+          </div>
+          {/* Dev panel toggle */}
+          <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${cardBorder}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <i className="bx bx-code-alt" style={{ fontSize: 14, color: isDark ? 'rgba(255,229,0,0.6)' : 'rgba(160,130,0,0.8)' }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>Developer</span>
+            </div>
+            <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, marginBottom: 2 }}>Dev Quick Access</div>
+                <div style={{ fontSize: 11.5, color: textMuted }}>Show seed login shortcuts on the login page</div>
+              </div>
+              <button
+                onClick={toggleDevPanel}
+                style={{
+                  width: 40, height: 22, borderRadius: 100, border: 'none', cursor: 'pointer', flexShrink: 0,
+                  background: devPanel ? '#22c55e' : (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'),
+                  position: 'relative', transition: 'background 0.2s',
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 3, left: devPanel ? 21 : 3,
+                  width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                  transition: 'left 0.2s', display: 'block',
+                }} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
