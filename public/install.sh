@@ -1,75 +1,164 @@
 #!/bin/sh
-# Orchestra install script
-# Usage: curl -fsSL https://orchestra-mcp.dev/install.sh | sh
-
+#
+# Orchestra MCP — Install Script
+#
+# Usage:
+#   curl -fsSL https://orchestra-mcp.dev/install.sh | sh
+#
+# Environment variables:
+#   INSTALL_DIR   — Installation directory (default: /usr/local/bin)
+#   VERSION       — Version to install (default: latest)
+#   GITHUB_REPO   — GitHub repository (default: orchestra-mcp/framework)
+#
 set -e
 
-REPO="orchestra-mcp/orchestra"
-INSTALL_DIR="/usr/local/bin"
-BINARY="orchestra"
+GITHUB_REPO="${GITHUB_REPO:-orchestra-mcp/framework}"
+VERSION="${VERSION:-latest}"
+EXE=""
+CURL_EXTRA=""
 
-# Detect OS and arch
-OS="$(uname -s)"
-ARCH="$(uname -m)"
+# Detect OS and architecture.
+detect_platform() {
+    RAW_OS="$(uname -s)"
+    ARCH="$(uname -m)"
 
-case "$OS" in
-  Linux)  PLATFORM="linux" ;;
-  Darwin) PLATFORM="darwin" ;;
-  *)
-    echo "Unsupported OS: $OS"
-    exit 1
-    ;;
-esac
+    case "$RAW_OS" in
+        Darwin*)          OS="darwin" ;;
+        Linux*)           OS="linux" ;;
+        MINGW*|MSYS*|CYGWIN*)
+            OS="windows"
+            EXE=".exe"
+            # Windows Schannel may fail revocation checks behind proxies/firewalls.
+            CURL_EXTRA="--ssl-revoke-best-effort"
+            ;;
+        *)
+            echo "Error: Unsupported OS: $RAW_OS" >&2
+            echo "Orchestra supports macOS, Linux, and Windows (Git Bash)." >&2
+            exit 1
+            ;;
+    esac
 
-case "$ARCH" in
-  x86_64|amd64) ARCH="amd64" ;;
-  arm64|aarch64) ARCH="arm64" ;;
-  *)
-    echo "Unsupported architecture: $ARCH"
-    exit 1
-    ;;
-esac
+    case "$ARCH" in
+        x86_64|amd64)  ARCH="amd64" ;;
+        arm64|aarch64) ARCH="arm64" ;;
+        *)
+            echo "Error: Unsupported architecture: $ARCH" >&2
+            echo "Orchestra supports amd64 and arm64." >&2
+            exit 1
+            ;;
+    esac
 
-# Get latest release tag from GitHub
-echo "Fetching latest Orchestra release..."
-LATEST=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+    # Default install dir per platform.
+    if [ -z "${INSTALL_DIR:-}" ]; then
+        if [ "$OS" = "windows" ]; then
+            INSTALL_DIR="${LOCALAPPDATA:-$HOME/AppData/Local}/Orchestra/bin"
+        else
+            INSTALL_DIR="/usr/local/bin"
+        fi
+    fi
 
-if [ -z "$LATEST" ]; then
-  echo "Could not determine latest release. Check https://github.com/${REPO}/releases"
-  exit 1
-fi
+    PLATFORM="${OS}-${ARCH}"
+}
 
-echo "Latest version: $LATEST"
+# Resolve the download URL.
+resolve_url() {
+    if [ "$VERSION" = "latest" ]; then
+        # GitHub /releases/latest only returns non-prerelease. Use API to get the
+        # most recent release (including prereleases).
+        if command -v curl >/dev/null 2>&1; then
+            VERSION="$(curl -fsSL $CURL_EXTRA "https://api.github.com/repos/${GITHUB_REPO}/releases" \
+                | grep -m1 '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')"
+        elif command -v wget >/dev/null 2>&1; then
+            VERSION="$(wget -qO- "https://api.github.com/repos/${GITHUB_REPO}/releases" \
+                | grep -m1 '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')"
+        fi
+        if [ -z "$VERSION" ]; then
+            echo "Error: Could not determine latest version." >&2
+            exit 1
+        fi
+    fi
+    URL="https://github.com/${GITHUB_REPO}/releases/download/${VERSION}/orchestra-${PLATFORM}.tar.gz"
+}
 
-TARBALL="${BINARY}-${PLATFORM}-${ARCH}.tar.gz"
-DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${LATEST}/${TARBALL}"
+# Download and install.
+install() {
+    echo "Orchestra MCP Installer"
+    echo "======================"
+    echo ""
+    echo "  Platform:    ${PLATFORM}"
+    echo "  Install dir: ${INSTALL_DIR}"
+    echo "  Version:     ${VERSION}"
+    echo ""
 
-# Download to temp dir
-TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
+    # Create temp directory.
+    TMP_DIR="$(mktemp -d)"
+    trap 'rm -rf "$TMP_DIR"' EXIT
 
-echo "Downloading $TARBALL..."
-curl -fsSL "$DOWNLOAD_URL" -o "$TMP_DIR/$TARBALL"
+    echo "Downloading ${URL}..."
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL $CURL_EXTRA "$URL" -o "${TMP_DIR}/orchestra.tar.gz"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q "$URL" -O "${TMP_DIR}/orchestra.tar.gz"
+    else
+        echo "Error: curl or wget is required." >&2
+        exit 1
+    fi
 
-echo "Extracting..."
-tar -xzf "$TMP_DIR/$TARBALL" -C "$TMP_DIR"
+    echo "Extracting..."
+    tar -xzf "${TMP_DIR}/orchestra.tar.gz" -C "$TMP_DIR"
 
-# Install binary
-if [ -w "$INSTALL_DIR" ]; then
-  mv "$TMP_DIR/$BINARY" "$INSTALL_DIR/$BINARY"
-  chmod +x "$INSTALL_DIR/$BINARY"
-else
-  echo "Installing to $INSTALL_DIR requires sudo..."
-  sudo mv "$TMP_DIR/$BINARY" "$INSTALL_DIR/$BINARY"
-  sudo chmod +x "$INSTALL_DIR/$BINARY"
-fi
+    echo "Installing to ${INSTALL_DIR}..."
 
-echo ""
-echo "Orchestra $LATEST installed to $INSTALL_DIR/$BINARY"
-echo ""
-echo "Next steps:"
-echo "  orchestra init    # Initialize in your project"
-echo "  orchestra serve   # Start the plugin server"
-echo "  orchestra --help  # Show all commands"
-echo ""
-echo "Docs: https://orchestra-mcp.dev/docs"
+    # Check write permissions, use sudo if needed (skip sudo on Windows).
+    SUDO=""
+    if [ "$OS" != "windows" ]; then
+        if [ ! -w "$INSTALL_DIR" ] 2>/dev/null || { [ ! -d "$INSTALL_DIR" ] && ! mkdir -p "$INSTALL_DIR" 2>/dev/null; }; then
+            if command -v sudo >/dev/null 2>&1; then
+                echo "  (need sudo for ${INSTALL_DIR})"
+                SUDO="sudo"
+            else
+                echo "Error: No write permission to ${INSTALL_DIR} and sudo not available." >&2
+                echo "Try: INSTALL_DIR=~/.local/bin sh install.sh" >&2
+                exit 1
+            fi
+        fi
+    fi
+
+    $SUDO mkdir -p "$INSTALL_DIR"
+
+    for bin in orchestra orchestrator storage-markdown tools-features transport-stdio tools-marketplace; do
+        if [ -f "${TMP_DIR}/${bin}${EXE}" ]; then
+            $SUDO cp "${TMP_DIR}/${bin}${EXE}" "${INSTALL_DIR}/${bin}${EXE}"
+            if [ "$OS" != "windows" ]; then
+                $SUDO chmod +x "${INSTALL_DIR}/${bin}${EXE}"
+            fi
+            echo "  installed ${INSTALL_DIR}/${bin}${EXE}"
+        fi
+    done
+
+    echo ""
+    echo "Done! Orchestra MCP installed."
+    echo ""
+    echo "Next steps:"
+    echo "  cd your-project"
+    echo "  orchestra init"
+    echo ""
+
+    # Verify it works.
+    if command -v "orchestra${EXE}" >/dev/null 2>&1; then
+        echo "Version: $(orchestra${EXE} version)"
+    else
+        echo "Note: Add ${INSTALL_DIR} to your PATH if not already there."
+        if [ "$OS" = "windows" ]; then
+            echo ""
+            echo "  Run this in PowerShell (as Administrator):"
+            echo "    [Environment]::SetEnvironmentVariable('Path', [Environment]::GetEnvironmentVariable('Path', 'User') + ';${INSTALL_DIR}', 'User')"
+            echo ""
+            echo "  Then restart your terminal."
+        fi
+    fi
+}
+
+detect_platform
+resolve_url
+install
