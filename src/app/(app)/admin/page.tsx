@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useRoleStore, ROLE_LABELS, ROLE_COLORS, type Role } from '@/store/roles'
 import { useThemeStore } from '@/store/theme'
+import { apiFetch } from '@/lib/api'
 
 const ROLES: Role[] = ['admin', 'team_owner', 'team_manager', 'user']
 
@@ -13,10 +14,31 @@ export default function AdminPage() {
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
   const [devPanel, setDevPanel] = useState(false)
+  const [comingSoon, setComingSoon] = useState(false)
+  const [comingSoonLoading, setComingSoonLoading] = useState(false)
 
   useEffect(() => {
     setDevPanel(localStorage.getItem('show_dev_panel') === 'true')
   }, [])
+
+  useEffect(() => {
+    apiFetch<{ value: { enabled: boolean } }>('/api/admin/settings/coming_soon')
+      .then(res => setComingSoon(res?.value?.enabled === true))
+      .catch(() => {})
+  }, [])
+
+  const toggleComingSoon = async () => {
+    const next = !comingSoon
+    setComingSoonLoading(true)
+    try {
+      await apiFetch('/api/admin/settings/coming_soon', {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled: next, message: "We're putting the finishing touches on something amazing. Stay tuned!", title: 'Coming Soon' }),
+      })
+      setComingSoon(next)
+    } catch {}
+    setComingSoonLoading(false)
+  }
 
   const toggleDevPanel = () => {
     const next = !devPanel
@@ -220,6 +242,42 @@ export default function AdminPage() {
               )
             })}
           </div>
+          {/* Coming soon toggle */}
+          <div style={{ background: cardBg, border: `1px solid ${comingSoon ? 'rgba(249,115,22,0.3)' : cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${cardBorder}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <i className="bx bx-time-five" style={{ fontSize: 14, color: comingSoon ? '#f97316' : textMuted }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>Coming Soon</span>
+              {comingSoon && (
+                <span style={{ marginLeft: 'auto', fontSize: 10, padding: '2px 8px', borderRadius: 100, background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.2)', fontWeight: 600 }}>
+                  ACTIVE
+                </span>
+              )}
+            </div>
+            <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, marginBottom: 2 }}>Coming Soon Mode</div>
+                <div style={{ fontSize: 11.5, color: textMuted }}>
+                  {comingSoon ? 'All visitors see the coming soon page. Admins bypass it.' : 'Site is publicly accessible.'}
+                </div>
+              </div>
+              <button
+                onClick={toggleComingSoon}
+                disabled={comingSoonLoading}
+                style={{
+                  width: 40, height: 22, borderRadius: 100, border: 'none', cursor: comingSoonLoading ? 'not-allowed' : 'pointer', flexShrink: 0,
+                  background: comingSoon ? '#f97316' : (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'),
+                  position: 'relative', transition: 'background 0.2s', opacity: comingSoonLoading ? 0.6 : 1,
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 3, left: comingSoon ? 21 : 3,
+                  width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                  transition: 'left 0.2s', display: 'block',
+                }} />
+              </button>
+            </div>
+          </div>
+
           {/* Dev panel toggle */}
           <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
             <div style={{ padding: '14px 18px', borderBottom: `1px solid ${cardBorder}`, display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -16,6 +16,24 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      - name: Notify Discord — Deploy started
+        if: ${{ secrets.DISCORD_WEBHOOK != '' }}
+        run: |
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "🚀 Deploy Started — Next.js",
+                "description": "Next.js frontend deploy triggered by **${{ github.actor }}**",
+                "color": 3447003,
+                "fields": [
+                  {"name": "Branch", "value": "`${{ github.ref_name }}`", "inline": true},
+                  {"name": "Commit", "value": "`${{ github.sha }}`", "inline": true}
+                ],
+                "footer": {"text": "orchestra/next"}
+              }]
+            }'
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -42,3 +60,40 @@ jobs:
             curl -sf http://localhost:3000 > /dev/null && echo " Next.js: OK" || (echo " Next.js: FAILED" && exit 1)
             echo "--- Service Status ---"
             sudo systemctl status orchestra-next --no-pager -l | head -5
+
+      - name: Notify Discord — Deploy succeeded
+        if: success() && ${{ secrets.DISCORD_WEBHOOK != '' }}
+        run: |
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "✅ Deploy Succeeded — Next.js",
+                "description": "Next.js frontend is live.",
+                "color": 3066993,
+                "fields": [
+                  {"name": "Branch", "value": "`${{ github.ref_name }}`", "inline": true},
+                  {"name": "Actor", "value": "${{ github.actor }}", "inline": true}
+                ],
+                "footer": {"text": "orchestra/next"}
+              }]
+            }'
+
+      - name: Notify Discord — Deploy failed
+        if: failure() && ${{ secrets.DISCORD_WEBHOOK != '' }}
+        run: |
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ Deploy Failed — Next.js",
+                "description": "Next.js frontend deploy failed. Check the Actions log.",
+                "color": 15158332,
+                "fields": [
+                  {"name": "Branch", "value": "`${{ github.ref_name }}`", "inline": true},
+                  {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
+                  {"name": "Run", "value": "[View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": false}
+                ],
+                "footer": {"text": "orchestra/next"}
+              }]
+            }'

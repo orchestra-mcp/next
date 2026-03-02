@@ -73,6 +73,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             throw Object.assign(new Error('2FA_REQUIRED'), { requires2fa: true, tempToken: res.temp_token })
           }
           localStorage.setItem('orchestra_token', res.token)
+          document.cookie = `orchestra_token=${res.token};path=/;max-age=86400;SameSite=Lax`
           set({ token: res.token, user: res.user, loading: false })
         } catch (e) {
           if ((e as any).requires2fa) throw e
@@ -91,6 +92,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           })
           localStorage.setItem('orchestra_token', res.token)
           localStorage.setItem('orchestra_is_new_user', '1')
+          document.cookie = `orchestra_token=${res.token};path=/;max-age=86400;SameSite=Lax`
           set({ token: res.token, user: res.user, loading: false })
         } catch (e) {
           set({ error: (e as Error).message, loading: false })
@@ -100,6 +102,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
       logout: () => {
         localStorage.removeItem('orchestra_token')
+        document.cookie = 'orchestra_token=;path=/;max-age=0'
         sessionStorage.removeItem('orchestra_2fa_token')
         sessionStorage.removeItem('orchestra_2fa_email')
         set({ token: null, user: null, impersonating: null })
@@ -114,6 +117,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           originalToken: currentToken,
         }
         localStorage.setItem('orchestra_token', impersonationToken)
+        document.cookie = `orchestra_token=${impersonationToken};path=/;max-age=86400;SameSite=Lax`
         set({ token: impersonationToken, user: targetUser, impersonating: impersonatingData })
       },
 

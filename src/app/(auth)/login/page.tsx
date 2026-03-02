@@ -38,6 +38,7 @@ export default function LoginPage() {
     setCurrentRole(seed.role)
     // Write a sentinel dev token so auth guard passes and apiFetch guards skip
     localStorage.setItem('orchestra_token', 'dev_seed_token')
+    document.cookie = 'orchestra_token=dev_seed_token;path=/;max-age=86400;SameSite=Lax'
     const fakeUser = { id: DEV_SEEDS.indexOf(seed) + 1, name: seed.label + ' (Dev)', email: seed.email }
     useAuthStore.setState({ token: 'dev_seed_token', user: fakeUser })
     router.push('/dashboard')
