@@ -1,16 +1,24 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { useThemeStore, applyTheme } from '@/store/theme'
+import { useThemeStore, initializeTheme } from '@/store/theme'
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const { theme } = useThemeStore()
+  const { colorTheme } = useThemeStore()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    applyTheme(theme)
+    initializeTheme()
     setMounted(true)
-  }, [theme])
+  }, [])
+
+  // Re-apply when colorTheme changes after mount
+  useEffect(() => {
+    if (mounted) {
+      const state = useThemeStore.getState()
+      state.setColorTheme(state.colorTheme)
+    }
+  }, [colorTheme, mounted])
 
   // Splash loader — show until client hydrates
   if (!mounted) {
@@ -66,8 +74,8 @@ export function ThemeToggle({ size = 32 }: { size?: number }) {
       style={{
         width: size, height: size, borderRadius: size / 3, cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        border: `1px solid var(--border, rgba(255,255,255,0.07))`,
-        background: `var(--bg-hover, rgba(255,255,255,0.03))`,
+        border: '1px solid var(--color-border, var(--border, rgba(255,255,255,0.07)))',
+        background: 'var(--color-bg-active, var(--bg-hover, rgba(255,255,255,0.03)))',
         color: isDark ? '#facc15' : '#6366f1',
         transition: 'all 0.2s',
         flexShrink: 0,

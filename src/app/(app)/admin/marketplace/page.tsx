@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useThemeStore } from '@/store/theme'
 import { useRoleStore } from '@/store/roles'
 
 interface MarketplacePack {
@@ -24,22 +23,19 @@ const MOCK_PACKS: MarketplacePack[] = [
 export default function AdminMarketplacePage() {
   const router = useRouter()
   const { can, roleLoaded } = useRoleStore()
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
-
   const [search, setSearch] = useState('')
   const [packs, setPacks] = useState(MOCK_PACKS)
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const pageBg = isDark ? '#0f0f12' : '#f5f5f7'
-  const inputBg = isDark ? 'rgba(255,255,255,0.05)' : '#f9f9fb'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const rowBorder = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'
-  const searchBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const cardBg = 'var(--color-bg-alt)'
+  const cardBorder = 'var(--color-border)'
+  const pageBg = 'var(--color-bg)'
+  const inputBg = 'var(--color-bg-alt)'
+  const inputBorder = 'var(--color-border)'
+  const rowBorder = 'var(--color-bg-alt)'
+  const searchBg = 'var(--color-bg-alt)'
 
   const filtered = packs.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
 
@@ -54,7 +50,7 @@ export default function AdminMarketplacePage() {
 
   function VersionBadge({ version }: { version: string }) {
     return (
-      <span style={{ fontSize: 10, fontFamily: 'monospace', padding: '2px 8px', borderRadius: 100, background: isDark ? 'rgba(0,229,255,0.08)' : 'rgba(0,229,255,0.07)', color: '#00e5ff', border: '1px solid rgba(0,229,255,0.2)', fontWeight: 600 }}>
+      <span style={{ fontSize: 10, fontFamily: 'monospace', padding: '2px 8px', borderRadius: 100, background: 'rgba(0,229,255,0.08)', color: '#00e5ff', border: '1px solid rgba(0,229,255,0.2)', fontWeight: 600 }}>
         v{version}
       </span>
     )
@@ -68,11 +64,11 @@ export default function AdminMarketplacePage() {
   }
 
   return (
-    <div style={{ padding: '28px 32px', background: pageBg, minHeight: '100vh' }}>
+    <div className="page-wrapper" style={{ padding: '28px 32px', background: pageBg, minHeight: '100vh' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Link href="/admin" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
-          <i className="bx bx-left-arrow-alt" /> Admin
+          <i className="bx bx-left-arrow-alt rtl-flip" /> Admin
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -83,7 +79,7 @@ export default function AdminMarketplacePage() {
       </div>
 
       {/* Search */}
-      <div style={{ marginBottom: 20, position: 'relative', maxWidth: 340 }}>
+      <div className="search-wrapper" style={{ marginBottom: 20, position: 'relative', maxWidth: 340 }}>
         <i className="bx bx-search" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: textDim, pointerEvents: 'none' }} />
         <input
           value={search}
@@ -95,12 +91,12 @@ export default function AdminMarketplacePage() {
 
       {/* Table */}
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 100px 1fr', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 100px 1fr', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           <div>Pack Name</div>
-          <div>Version</div>
-          <div>Downloads</div>
+          <div className="hide-mobile">Version</div>
+          <div className="hide-mobile">Downloads</div>
           <div>Status</div>
-          <div style={{ textAlign: 'right' }}>Actions</div>
+          <div style={{ textAlign: 'end' }}>Actions</div>
         </div>
 
         {filtered.length === 0 ? (
@@ -110,15 +106,15 @@ export default function AdminMarketplacePage() {
             <div style={{ fontSize: 12, color: textDim }}>Try adjusting your search query.</div>
           </div>
         ) : filtered.map((p, idx) => (
-          <div key={p.name} style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 100px 1fr', padding: '13px 20px', borderBottom: idx < filtered.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
+          <div key={p.name} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 100px 1fr', padding: '13px 20px', borderBottom: idx < filtered.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(169,0,255,0.1)', border: '1px solid rgba(169,0,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <i className="bx bx-package" style={{ fontSize: 15, color: '#a900ff' }} />
               </div>
               <span style={{ fontSize: 13, fontWeight: 500, color: textPrimary, fontFamily: 'monospace' }}>{p.name}</span>
             </div>
-            <div><VersionBadge version={p.version} /></div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{p.downloads.toLocaleString()}</div>
+            <div className="hide-mobile"><VersionBadge version={p.version} /></div>
+            <div className="hide-mobile" style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{p.downloads.toLocaleString()}</div>
             <div><StatusBadge status={p.status} /></div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
               {p.status === 'pending' ? (

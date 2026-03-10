@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useThemeStore } from '@/store/theme'
+import { useTranslations } from 'next-intl'
 
 interface TerminalLine {
   name: string
@@ -39,6 +40,7 @@ export function HeroSection({ data }: { data?: HeroData }) {
   const heroRef = useRef<HTMLDivElement>(null)
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
+  const t = useTranslations()
 
   const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
   const textMuted = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
@@ -50,14 +52,18 @@ export function HeroSection({ data }: { data?: HeroData }) {
   const terminalLines = data?.terminal_lines ?? DEFAULT_LINES
 
   useEffect(() => {
-    import('animejs').then(({ animate, stagger }) => {
-      animate('.hero-badge', { opacity: [0, 1], translateY: [16, 0], duration: 600, easing: 'easeOutCubic' })
-      animate('.hero-title span', { opacity: [0, 1], translateY: [24, 0], duration: 700, delay: stagger(80, { start: 200 }), easing: 'easeOutCubic' })
-      animate('.hero-sub', { opacity: [0, 1], translateY: [16, 0], duration: 600, delay: 600, easing: 'easeOutCubic' })
-      animate('.hero-ctas', { opacity: [0, 1], translateY: [12, 0], duration: 600, delay: 750, easing: 'easeOutCubic' })
-      animate('.hero-terminal', { opacity: [0, 1], translateY: [32, 0], duration: 800, delay: 900, easing: 'easeOutCubic' })
+    import('animejs').then((mod) => {
+      const anime = mod.default
+      anime({ targets: '.hero-badge', opacity: [0, 1], translateY: [16, 0], duration: 600, easing: 'easeOutCubic' })
+      anime({ targets: '.hero-title span', opacity: [0, 1], translateY: [24, 0], duration: 700, delay: anime.stagger(80, { start: 200 }), easing: 'easeOutCubic' })
+      anime({ targets: '.hero-sub', opacity: [0, 1], translateY: [16, 0], duration: 600, delay: 600, easing: 'easeOutCubic' })
+      anime({ targets: '.hero-ctas', opacity: [0, 1], translateY: [12, 0], duration: 600, delay: 750, easing: 'easeOutCubic' })
+      anime({ targets: '.hero-terminal', opacity: [0, 1], translateY: [32, 0], duration: 800, delay: 900, easing: 'easeOutCubic' })
     })
   }, [])
+
+  const titleLine1 = [t('hero.title1'), t('hero.title2'), t('hero.title3')]
+  const titleLine2 = [t('hero.title4'), t('hero.title5'), t('hero.title6')]
 
   return (
     <>
@@ -86,46 +92,46 @@ export function HeroSection({ data }: { data?: HeroData }) {
         {/* Badge */}
         <div className="hero-badge" style={{ opacity: 0, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 100, border: '1px solid rgba(0,229,255,0.25)', background: 'rgba(0,229,255,0.06)', marginBottom: 32, fontSize: 12, fontWeight: 500 }}>
           <span style={{ background: 'linear-gradient(90deg, #00e5ff, #a900ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            &#10022; {totalTools} AI tools &middot; 36 plugins &middot; 17 packs &middot; 5 platforms
+            &#10022; {t('hero.badge', { totalTools })}
           </span>
         </div>
 
         {/* Headline */}
         <h1 className="hero-title" style={{ fontSize: 'clamp(40px, 7vw, 80px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.04em', marginBottom: 24, color: textPrimary }}>
-          {['The', 'AI-native', 'IDE'].map(w => (
-            <span key={w} style={{ opacity: 0, display: 'inline-block', marginRight: '0.25em' }}>{w}</span>
+          {titleLine1.map(w => (
+            <span key={w} style={{ opacity: 0, display: 'inline-block', marginInlineEnd: '0.25em' }}>{w}</span>
           ))}
           <br />
-          {['for', 'every', 'platform'].map(w => (
-            <span key={w} style={{ opacity: 0, display: 'inline-block', marginRight: '0.25em', background: 'linear-gradient(135deg, #00e5ff 0%, #a900ff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{w}</span>
+          {titleLine2.map(w => (
+            <span key={w} style={{ opacity: 0, display: 'inline-block', marginInlineEnd: '0.25em', background: 'linear-gradient(135deg, #00e5ff 0%, #a900ff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{w}</span>
           ))}
         </h1>
 
         {/* Subheading */}
         <p className="hero-sub" style={{ opacity: 0, fontSize: 19, color: textMuted, lineHeight: 1.7, maxWidth: 600, margin: '0 auto 40px', fontWeight: 400 }}>
-          {data?.hero_subtext ?? 'Orchestra connects your AI agents to a unified plugin backbone over QUIC + Protobuf with mTLS. One protocol, every tool, any AI.'}
+          {data?.hero_subtext ?? t('hero.subtitle')}
         </p>
 
         {/* CTAs */}
         <div className="hero-ctas" style={{ opacity: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 64 }}>
           <Link href="/register" style={{ padding: '13px 32px', borderRadius: 10, fontSize: 15, fontWeight: 600, background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Get started free <i className="bx bx-right-arrow-alt" style={{ fontSize: 18 }} />
+            {t('hero.getStartedFree')} <i className="bx bx-right-arrow-alt rtl-flip" style={{ fontSize: 18 }} />
           </Link>
           <Link href="/docs" style={{ padding: '13px 28px', borderRadius: 10, fontSize: 15, fontWeight: 600, border: `1px solid ${docsBtnBorder}`, color: docsBtnColor, background: docsBtnBg, textDecoration: 'none', backdropFilter: 'blur(8px)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <i className="bx bx-book-open" /> Read the docs
+            <i className="bx bx-book-open" /> {t('hero.readTheDocs')}
           </Link>
         </div>
 
-        {/* Terminal — always dark (intentional) */}
+        {/* Terminal */}
         <div className="hero-terminal hero-terminal-wrap" style={{ opacity: 0, maxWidth: 700, margin: '0 auto' }}>
           <div className="hero-terminal-inner" style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(22,18,28,0.97)', boxShadow: '0 30px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03) inset' }}>
             <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57' }} />
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e' }} />
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840' }} />
-              <span style={{ marginLeft: 8, fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'JetBrains Mono, monospace' }}>orchestra serve</span>
+              <span style={{ marginInlineStart: 8, fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'JetBrains Mono, monospace' }}>orchestra serve</span>
             </div>
-            <div style={{ padding: '20px 24px', fontFamily: 'JetBrains Mono, Fira Code, monospace', fontSize: 13, lineHeight: 1.9, color: '#d0d0d0', textAlign: 'left' }}>
+            <div style={{ padding: '20px 24px', fontFamily: 'JetBrains Mono, Fira Code, monospace', fontSize: 13, lineHeight: 1.9, color: '#d0d0d0', textAlign: 'start' }}>
               {terminalLines.map((line, i) => (
                 <div key={i} className="terminal-line">
                   <span style={{ color: COLOR_MAP[line.color] ?? '#00e5ff' }}>&#10003; </span>
@@ -135,8 +141,8 @@ export function HeroSection({ data }: { data?: HeroData }) {
               ))}
               <div style={{ marginTop: 12 }} className="terminal-line">
                 <span style={{ color: '#00e5ff' }}>&#9889; </span>
-                <span style={{ fontWeight: 600, color: '#f8f8f8' }}>{totalTools} tools ready</span>
-                <span style={{ color: 'rgba(255,255,255,0.3)' }}> &middot; stdio + quic &middot; mTLS secured</span>
+                <span style={{ fontWeight: 600, color: '#f8f8f8' }}>{t('hero.toolsReady', { totalTools })}</span>
+                <span style={{ color: 'rgba(255,255,255,0.3)' }}> &middot; {t('hero.terminalMeta')}</span>
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@
 import { useCallback } from 'react'
 import { useWebSocket } from './useWebSocket'
 import type { WSEvent } from './useWebSocket'
+import { useSettingsStore } from '@/store/settings'
 
 /**
  * Custom DOM event name used to broadcast sync events to individual pages.
@@ -10,6 +11,25 @@ import type { WSEvent } from './useWebSocket'
 export const SYNC_EVENT_NAME = 'orchestra:sync'
 
 type WSStatus = 'connecting' | 'connected' | 'disconnected'
+
+// ── Notification toast emitter (module-level, outside React) ──
+export interface NotifToast {
+  title: string
+  message: string
+  ntype: string // info | success | warning | error
+}
+
+const _notifToastListeners = new Set<(toast: NotifToast) => void>()
+
+function emitNotifToast(toast: NotifToast) {
+  _notifToastListeners.forEach(fn => fn(toast))
+}
+
+/** Subscribe to realtime notification toasts. Returns unsubscribe function. */
+export function onNotifToast(cb: (toast: NotifToast) => void): () => void {
+  _notifToastListeners.add(cb)
+  return () => { _notifToastListeners.delete(cb) }
+}
 
 /**
  * Higher-level hook that connects to the Orchestra WebSocket and dispatches
@@ -20,7 +40,37 @@ type WSStatus = 'connecting' | 'connected' | 'disconnected'
  * Usage in pages:  window.addEventListener('orchestra:sync', (e) => { ... })
  */
 export function useRealtimeSync(): { status: WSStatus } {
+  const pushRealtimeNotification = useSettingsStore(s => s.pushRealtimeNotification)
+
   const handleEvent = useCallback((event: WSEvent) => {
+    // Handle realtime notification events
+    if (event.type === 'notification' && event.entity_type === 'notification') {
+      const title = (event as any).title ?? ''
+      const message = (event as any).message ?? ''
+      const ntype = (event as any).ntype ?? 'info'
+
+      pushRealtimeNotification({
+        id: parseInt(event.entity_id, 10),
+        title,
+        message,
+        type: ntype,
+        read_at: null,
+        created_at: new Date(event.timestamp).toISOString(),
+      })
+
+      // Fire in-app toast
+      emitNotifToast({ title, message, ntype })
+
+      // Fire browser push notification if permission granted
+      if (typeof window !== 'undefined' && 'Notification' in window && window.Notification.permission === 'granted') {
+        new window.Notification(title || 'New notification', {
+          body: message,
+          icon: '/favicon.png',
+        })
+      }
+      return
+    }
+
     if (event.type !== 'sync') return
 
     // Dispatch a custom DOM event so any page can listen for relevant changes
@@ -34,7 +84,7 @@ export function useRealtimeSync(): { status: WSStatus } {
       },
     })
     window.dispatchEvent(customEvent)
-  }, [])
+  }, [pushRealtimeNotification])
 
   const { status } = useWebSocket({ onEvent: handleEvent })
 

@@ -6,23 +6,26 @@ import { useAuthStore } from '@/store/auth'
 import { useRouter, usePathname } from 'next/navigation'
 import { useThemeStore } from '@/store/theme'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/ui/theme-provider'
-
-const navLinks = [
-  { href: '/docs', label: 'Docs' },
-  { href: '/blog', label: 'Blog' },
-  { href: '/marketplace', label: 'Marketplace' },
-  { href: '/solutions', label: 'Solutions' },
-  { href: '/download', label: 'Download' },
-]
+import { LanguageSwitcher } from '@/components/ui/language-switcher'
+import { useTranslations } from 'next-intl'
 
 export function MarketingNav() {
+  const t = useTranslations()
   const { token, user, logout } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
   const { theme } = useThemeStore()
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  const navLinks = [
+    { href: '/docs', label: t('nav.docs') },
+    { href: '/blog', label: t('nav.blog') },
+    { href: '/marketplace', label: t('nav.marketplace') },
+    { href: '/solutions', label: t('nav.solutions') },
+    { href: '/download', label: t('nav.download') },
+  ]
 
   const isDark = theme === 'dark'
   const initials = user?.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() ?? 'U'
@@ -77,6 +80,7 @@ export function MarketingNav() {
 
         {/* Right side */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <LanguageSwitcher />
           <ThemeToggle size={34} />
 
           {token && user ? (
@@ -88,6 +92,7 @@ export function MarketingNav() {
                   background: 'transparent', cursor: 'pointer',
                 }}>
                   <Avatar style={{ width: 30, height: 30 }}>
+                    {user.avatar_url && <AvatarImage src={user.avatar_url} alt={initials} />}
                     <AvatarFallback style={{ fontSize: 11, fontWeight: 700 }}>{initials}</AvatarFallback>
                   </Avatar>
                 </button>
@@ -96,6 +101,7 @@ export function MarketingNav() {
                 <div style={{ padding: '10px 12px 8px', borderBottom: `1px solid var(--border, rgba(255,255,255,0.06))` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <Avatar style={{ width: 36, height: 36, flexShrink: 0 }}>
+                      {user.avatar_url && <AvatarImage src={user.avatar_url} alt={initials} />}
                       <AvatarFallback style={{ fontSize: 13, fontWeight: 700 }}>{initials}</AvatarFallback>
                     </Avatar>
                     <div style={{ overflow: 'hidden' }}>
@@ -105,21 +111,21 @@ export function MarketingNav() {
                   </div>
                 </div>
                 <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-                  <i className="bx bx-grid-alt" style={{ marginRight: 8 }} /> Dashboard
+                  <i className="bx bx-grid-alt" style={{ marginInlineEnd: 8 }} /> {t('nav.dashboard')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/settings')}>
-                  <i className="bx bx-cog" style={{ marginRight: 8 }} /> Settings
+                  <i className="bx bx-cog" style={{ marginInlineEnd: 8 }} /> {t('nav.settings')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { logout(); router.push('/') }} style={{ color: '#ef4444' }}>
-                  <i className="bx bx-log-out" style={{ marginRight: 8 }} /> Sign out
+                  <i className="bx bx-log-out" style={{ marginInlineEnd: 8 }} /> {t('common.signOut')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <>
-              <Link href="/login" style={{ padding: '7px 16px', borderRadius: 7, fontSize: 14, fontWeight: 500, color: signInColor, textDecoration: 'none' }}>Sign in</Link>
-              <Link href="/register" style={{ padding: '8px 18px', borderRadius: 8, fontSize: 14, fontWeight: 600, background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', textDecoration: 'none' }}>Get started</Link>
+              <Link href="/login" style={{ padding: '7px 16px', borderRadius: 7, fontSize: 14, fontWeight: 500, color: signInColor, textDecoration: 'none' }}>{t('common.signIn')}</Link>
+              <Link href="/register" style={{ padding: '8px 18px', borderRadius: 8, fontSize: 14, fontWeight: 600, background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', textDecoration: 'none' }}>{t('common.getStarted')}</Link>
             </>
           )}
 
@@ -138,13 +144,13 @@ export function MarketingNav() {
           <div style={{ height: 1, background: mobileMenuDivider, margin: '8px 0' }} />
           {token && user ? (
             <>
-              <Link href="/dashboard" onClick={() => setMobileOpen(false)} style={{ padding: '10px 14px', fontSize: 15, color: mobileMutedColor, textDecoration: 'none' }}>Dashboard</Link>
-              <button onClick={() => { logout(); router.push('/'); setMobileOpen(false) }} style={{ padding: '10px 14px', fontSize: 15, color: '#ef4444', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}>Sign out</button>
+              <Link href="/dashboard" onClick={() => setMobileOpen(false)} style={{ padding: '10px 14px', fontSize: 15, color: mobileMutedColor, textDecoration: 'none' }}>{t('nav.dashboard')}</Link>
+              <button onClick={() => { logout(); router.push('/'); setMobileOpen(false) }} style={{ padding: '10px 14px', fontSize: 15, color: '#ef4444', textAlign: 'start', background: 'none', border: 'none', cursor: 'pointer' }}>{t('common.signOut')}</button>
             </>
           ) : (
             <>
-              <Link href="/login" onClick={() => setMobileOpen(false)} style={{ padding: '10px 14px', fontSize: 15, color: mobileMutedColor, textDecoration: 'none' }}>Sign in</Link>
-              <Link href="/register" onClick={() => setMobileOpen(false)} style={{ padding: '10px 14px', fontSize: 15, fontWeight: 600, color: '#00e5ff', textDecoration: 'none' }}>Get started →</Link>
+              <Link href="/login" onClick={() => setMobileOpen(false)} style={{ padding: '10px 14px', fontSize: 15, color: mobileMutedColor, textDecoration: 'none' }}>{t('common.signIn')}</Link>
+              <Link href="/register" onClick={() => setMobileOpen(false)} style={{ padding: '10px 14px', fontSize: 15, fontWeight: 600, color: '#00e5ff', textDecoration: 'none' }}>{t('common.getStarted')} &rarr;</Link>
             </>
           )}
         </div>

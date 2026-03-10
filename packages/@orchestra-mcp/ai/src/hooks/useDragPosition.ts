@@ -8,6 +8,8 @@ export interface DragPositionOptions {
   constrain?: boolean;
   snapToEdge?: boolean;
   edgeMargin?: number;
+  /** Called on pointerup when the pointer didn't move beyond the drag threshold (i.e. a tap/click) */
+  onTap?: () => void;
 }
 
 export interface DragPositionResult {
@@ -28,6 +30,7 @@ export function useDragPosition(options: DragPositionOptions = {}): DragPosition
     constrain = true,
     snapToEdge = true,
     edgeMargin = 16,
+    onTap,
   } = options;
 
   const [position, setPosition] = useState({ x: initialX, y: initialY });
@@ -35,6 +38,8 @@ export function useDragPosition(options: DragPositionOptions = {}): DragPosition
   const wasDraggedRef = useRef(false);
   const [wasDragged, setWasDragged] = useState(false);
   const startRef = useRef({ x: 0, y: 0, px: 0, py: 0 });
+  const onTapRef = useRef(onTap);
+  onTapRef.current = onTap;
 
   const clamp = useCallback(
     (x: number, y: number, elW: number, elH: number) => {
@@ -60,7 +65,6 @@ export function useDragPosition(options: DragPositionOptions = {}): DragPosition
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
-      e.preventDefault();
       const el = (e.currentTarget as HTMLElement);
       el.setPointerCapture(e.pointerId);
       wasDraggedRef.current = false;
@@ -82,13 +86,18 @@ export function useDragPosition(options: DragPositionOptions = {}): DragPosition
         el.removeEventListener('pointermove', onMove);
         el.removeEventListener('pointerup', onUp);
         setIsDragging(false);
-        setWasDragged(wasDraggedRef.current);
-        if (wasDraggedRef.current && snapToEdge) {
+        const didDrag = wasDraggedRef.current;
+        setWasDragged(didDrag);
+        if (didDrag && snapToEdge) {
           const rect = el.getBoundingClientRect();
           setPosition(prev => ({
             x: snapX(prev.x, rect.width),
             y: prev.y,
           }));
+        }
+        // Fire tap callback when no drag happened
+        if (!didDrag && onTapRef.current) {
+          onTapRef.current();
         }
       };
 

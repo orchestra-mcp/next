@@ -20,6 +20,7 @@ import { registerFigmaCard } from './FigmaCard';
 import { SmartComponentCard } from './SmartComponentCard';
 import { ExportCard } from './ExportCard';
 import { QuestionCard } from './QuestionCard';
+import { PermissionCard } from './PermissionCard';
 
 let registered = false;
 
@@ -149,5 +150,11 @@ export function registerBuiltinCards(): void {
     component: QuestionCard as any,
     category: 'mcp',
     label: 'Question',
+  });
+
+  CardRegistry.register('permission', {
+    component: PermissionCard as any,
+    category: 'permission',
+    label: 'Permission',
   });
 }

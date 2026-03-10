@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRoleStore, type Role, ROLE_LABELS, ROLE_COLORS } from '@/store/roles'
 import { useAuthStore } from '@/store/auth'
 import { useAdminStore } from '@/store/admin'
-import { useThemeStore } from '@/store/theme'
 import { apiFetch } from '@/lib/api'
 
 function RoleBadge({ role }: { role: Role }) {
@@ -27,9 +26,6 @@ export default function AdminUsersPage() {
   const { can, roleLoaded, allUsers, fetchAllUsers, updateMemberRole, suspendUser, unsuspendUser, loading, error, clearError } = useRoleStore()
   const { startImpersonation } = useAuthStore()
   const { impersonateUser } = useAdminStore()
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
-
   const [search, setSearch] = useState('')
   const [filterRole, setFilterRole] = useState<Role | 'all'>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -55,22 +51,22 @@ export default function AdminUsersPage() {
     if (allUsers.length === 0) fetchAllUsers()
   }, [roleLoaded])
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const searchBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
-  const searchBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'
-  const filterActiveBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)'
-  const filterInactiveBg = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
-  const selectBg = isDark ? '#1a1520' : '#ffffff'
-  const selectBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const overlayBg = isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.4)'
-  const modalBg = isDark ? '#1a1520' : '#ffffff'
-  const inputBg = isDark ? 'rgba(255,255,255,0.05)' : '#f9f9fb'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const labelColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.5)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const cardBg = 'var(--color-bg-alt)'
+  const cardBorder = 'var(--color-border)'
+  const searchBg = 'var(--color-bg-alt)'
+  const searchBorder = 'var(--color-border)'
+  const filterActiveBg = 'var(--color-border)'
+  const filterInactiveBg = 'var(--color-bg-alt)'
+  const selectBg = 'var(--color-bg-contrast)'
+  const selectBorder = 'var(--color-border)'
+  const overlayBg = 'rgba(0,0,0,0.5)'
+  const modalBg = 'var(--color-bg-contrast)'
+  const inputBg = 'var(--color-bg-alt)'
+  const inputBorder = 'var(--color-border)'
+  const labelColor = 'var(--color-fg-muted)'
   const inputSt: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 9, border: `1px solid ${inputBorder}`, background: inputBg, color: textPrimary, fontSize: 13, outline: 'none', boxSizing: 'border-box' }
   const labelSt: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: labelColor, marginBottom: 6, display: 'block' }
 
@@ -150,15 +146,15 @@ export default function AdminUsersPage() {
       document.addEventListener('mousedown', h)
       return () => document.removeEventListener('mousedown', h)
     }, [])
-    const itemStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: textPrimary, fontSize: 12.5, textAlign: 'left' }
-    const hBg = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'
+    const itemStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: textPrimary, fontSize: 12.5, textAlign: 'start' }
+    const hBg = 'var(--color-bg-alt)'
     return (
       <div ref={ref} style={{ position: 'relative' }}>
         <button onClick={() => setOpen(v => !v)} style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <i className="bx bx-dots-vertical-rounded" />
         </button>
         {open && (
-          <div style={{ position: 'absolute', right: 0, top: 32, zIndex: 9999, background: isDark ? '#1a1520' : '#ffffff', border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.2)', minWidth: 190, padding: '4px 0', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', right: 0, top: 32, zIndex: 9999, background: 'var(--color-bg-contrast)', border: `1px solid var(--color-border)`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.2)', minWidth: 190, padding: '4px 0', overflow: 'hidden' }}>
             <button style={itemStyle} onClick={() => { router.push(`/admin/users/${u.id}`); setOpen(false) }} onMouseEnter={e => (e.currentTarget.style.background = hBg)} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
               <i className="bx bx-user-circle" style={{ color: '#00e5ff' }} /> View Profile
             </button>
@@ -180,7 +176,7 @@ export default function AdminUsersPage() {
             <button style={itemStyle} onClick={() => { openModal('impersonate', u); setOpen(false) }} onMouseEnter={e => (e.currentTarget.style.background = hBg)} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
               <i className="bx bx-user-check" style={{ color: '#a900ff' }} /> Impersonate
             </button>
-            <div style={{ height: 1, background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)', margin: '4px 0' }} />
+            <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
             <button style={{ ...itemStyle, color: u.status === 'suspended' ? '#22c55e' : '#ef4444' }} onClick={() => { handleBlock(u); setOpen(false) }} onMouseEnter={e => (e.currentTarget.style.background = hBg)} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
               <i className={`bx ${u.status === 'suspended' ? 'bx-check-circle' : 'bx-block'}`} />
               {u.status === 'suspended' ? ' Unblock' : ' Block'}
@@ -198,13 +194,13 @@ export default function AdminUsersPage() {
   )
 
   return (
-    <div style={{ padding: '28px 32px' }}>
+    <div className="page-wrapper" style={{ padding: '28px 32px' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Link href="/admin" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
-          <i className="bx bx-left-arrow-alt" /> Admin
+          <i className="bx bx-left-arrow-alt rtl-flip" /> Admin
         </Link>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Users</h1>
             <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>{allUsers.length} total users</p>
@@ -214,11 +210,11 @@ export default function AdminUsersPage() {
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 340 }}>
+        <div className="search-wrapper" style={{ position: 'relative', flex: '1 1 260px', maxWidth: 340 }}>
           <i className="bx bx-search" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: textDim, pointerEvents: 'none' }} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or email…" style={{ width: '100%', padding: '8px 12px 8px 32px', borderRadius: 9, border: `1px solid ${searchBorder}`, background: searchBg, color: textPrimary, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="admin-filters" style={{ display: 'flex', gap: 6 }}>
           {(['all', 'admin', 'team_owner', 'team_manager', 'user'] as const).map(r => (
             <button key={r} onClick={() => setFilterRole(r)} style={{ padding: '6px 12px', borderRadius: 7, fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer', background: filterRole === r ? filterActiveBg : filterInactiveBg, color: filterRole === r ? textPrimary : textMuted }}>
               {r === 'all' ? 'All roles' : ROLE_LABELS[r]}
@@ -235,14 +231,14 @@ export default function AdminUsersPage() {
 
       {error && (
         <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 8, fontSize: 13, background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
-          {error}<button onClick={clearError} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>✕</button>
+          {error}<button onClick={clearError} style={{ marginInlineStart: 8, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>✕</button>
         </div>
       )}
 
       {/* Table */}
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 44px', gap: 0, padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-          <div>User</div><div>Email</div><div>Role</div><div>Status</div><div />
+        <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 44px', gap: 0, padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          <div>User</div><div className="hide-mobile">Email</div><div>Role</div><div className="hide-mobile">Status</div><div />
         </div>
         {loading && allUsers.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: textDim, fontSize: 13 }}>Loading users…</div>
@@ -252,16 +248,16 @@ export default function AdminUsersPage() {
             <div style={{ fontSize: 14, color: textMuted }}>No users found</div>
           </div>
         ) : filtered.map((u, idx) => (
-          <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 44px', gap: 0, padding: '13px 20px', borderBottom: idx < filtered.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'}` : 'none', alignItems: 'center', background: u.status === 'suspended' ? (isDark ? 'rgba(239,68,68,0.03)' : 'rgba(239,68,68,0.02)') : 'transparent' }}>
+          <div key={u.id} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 44px', gap: 0, padding: '13px 20px', borderBottom: idx < filtered.length - 1 ? `1px solid var(--color-bg-alt)` : 'none', alignItems: 'center', background: u.status === 'suspended' ? 'rgba(239,68,68,0.03)' : 'transparent' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,229,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#00e5ff', flexShrink: 0 }}>
                 {u.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
               </div>
               <div style={{ fontSize: 13, fontWeight: 500, color: u.status === 'suspended' ? textDim : textPrimary }}>{u.name}</div>
             </div>
-            <div style={{ fontSize: 12, color: textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
+            <div className="hide-mobile" style={{ fontSize: 12, color: textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
             <div><RoleBadge role={u.role} /></div>
-            <div><StatusDot status={u.status} /></div>
+            <div className="hide-mobile"><StatusDot status={u.status} /></div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <ActionsDropdown u={u as TargetUser} />
             </div>
@@ -272,7 +268,7 @@ export default function AdminUsersPage() {
       {/* ── Modals ── */}
       {modal && target && (
         <div onClick={closeModal} style={{ position: 'fixed', inset: 0, background: overlayBg, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: modalBg, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 16, padding: 28, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: modalBg, border: `1px solid var(--color-border)`, borderRadius: 16, padding: 28, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: textPrimary }}>
@@ -319,7 +315,7 @@ export default function AdminUsersPage() {
             {modal === 'otp' && (
               <div>
                 {lastOtp ? (
-                  <div style={{ padding: '20px', borderRadius: 10, background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`, textAlign: 'center' }}>
+                  <div style={{ padding: '20px', borderRadius: 10, background: 'var(--color-bg-alt)', border: `1px solid var(--color-border)`, textAlign: 'center' }}>
                     <div style={{ fontSize: 32, fontWeight: 700, fontFamily: 'monospace', color: textPrimary, letterSpacing: '0.15em' }}>{lastOtp.code}</div>
                     <div style={{ fontSize: 11, color: textMuted, marginTop: 8 }}>Expires: {lastOtp.expires_at}</div>
                   </div>
@@ -362,7 +358,7 @@ export default function AdminUsersPage() {
                 {modalMsg && <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 12 }}>{modalMsg.text}</div>}
                 <div style={{ display: 'flex', gap: 10 }}>
                   <BtnPrimary onClick={handleImpersonate} loading={modalLoading}>Impersonate {target.name}</BtnPrimary>
-                  <button onClick={closeModal} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={closeModal} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid var(--color-border)`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
                 </div>
               </div>
             )}

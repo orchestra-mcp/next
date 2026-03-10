@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { useThemeStore } from '@/store/theme'
 import { useRoleStore, ROLE_LABELS, ROLE_COLORS, type Role } from '@/store/roles'
 import { apiFetch } from '@/lib/api'
 
@@ -76,19 +75,17 @@ export default function AdminUserDetailPage() {
   const params = useParams()
   const id = params.id as string
 
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
   const { can, roleLoaded } = useRoleStore()
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const pageBg = isDark ? '#0f0f12' : '#f5f5f7'
-  const rowAlt = isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)'
-  const rowHover = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
-  const tabActiveBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const cardBg = 'var(--color-bg-alt)'
+  const cardBorder = 'var(--color-border)'
+  const pageBg = 'var(--color-bg)'
+  const rowAlt = 'var(--color-bg-alt)'
+  const rowHover = 'var(--color-bg-alt)'
+  const tabActiveBg = 'var(--color-border)'
   const tabInactiveBg = 'transparent'
 
   const [userDetail, setUserDetail] = useState<UserDetail | null>(null)
@@ -148,7 +145,7 @@ export default function AdminUserDetailPage() {
     )
   }
 
-  const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '10px 16px', textAlign: 'left' }
+  const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '10px 16px', textAlign: 'start' }
   const tdStyle: React.CSSProperties = { padding: '11px 16px', fontSize: 13, color: textPrimary, verticalAlign: 'middle' }
 
   function EmptyState({ icon, label }: { icon: string; label: string }) {
@@ -169,7 +166,7 @@ export default function AdminUserDetailPage() {
   return (
     <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto', background: pageBg, minHeight: '100vh' }}>
       <Link href="/admin/users" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, color: textDim, textDecoration: 'none', marginBottom: 20 }}>
-        <i className="bx bx-left-arrow-alt" /> Users
+        <i className="bx bx-left-arrow-alt rtl-flip" /> Users
       </Link>
 
       {loading && !u && (
@@ -209,7 +206,7 @@ export default function AdminUserDetailPage() {
             {/* Stats */}
             <div style={{ display: 'flex', gap: 10, marginTop: 20, flexWrap: 'wrap' }}>
               {statCards.map(s => (
-                <div key={s.label} style={{ flex: '1 1 80px', background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.025)', border: `1px solid ${cardBorder}`, borderRadius: 10, padding: '10px 14px', minWidth: 80 }}>
+                <div key={s.label} style={{ flex: '1 1 80px', background: 'var(--color-bg-alt)', border: `1px solid ${cardBorder}`, borderRadius: 10, padding: '10px 14px', minWidth: 80 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <i className={`bx ${s.icon}`} style={{ fontSize: 13, color: textDim }} />
                     <span style={{ fontSize: 10, color: textDim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</span>
@@ -221,7 +218,7 @@ export default function AdminUserDetailPage() {
           </div>
 
           {/* Tab bar */}
-          <div style={{ display: 'flex', gap: 4, marginBottom: 16, background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)', border: `1px solid ${cardBorder}`, borderRadius: 12, padding: 4 }}>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 16, background: 'var(--color-bg-alt)', border: `1px solid ${cardBorder}`, borderRadius: 12, padding: 4 }}>
             {TABS.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)} style={{ flex: 1, padding: '7px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: tab === t.key ? 600 : 400, color: tab === t.key ? textPrimary : textMuted, background: tab === t.key ? tabActiveBg : tabInactiveBg, transition: 'background 0.15s' }}>
                 {t.label}
@@ -237,7 +234,7 @@ export default function AdminUserDetailPage() {
               <div style={{ padding: 24 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
                   {statCards.map(s => (
-                    <div key={s.label} style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.025)', border: `1px solid ${cardBorder}`, borderRadius: 12, padding: '16px 18px' }}>
+                    <div key={s.label} style={{ background: 'var(--color-bg-alt)', border: `1px solid ${cardBorder}`, borderRadius: 12, padding: '16px 18px' }}>
                       <i className={`bx ${s.icon}`} style={{ fontSize: 20, color: '#00e5ff', display: 'block', marginBottom: 8 }} />
                       <div style={{ fontSize: 24, fontWeight: 700, color: textPrimary }}>{s.value}</div>
                       <div style={{ fontSize: 12, color: textMuted, marginTop: 2 }}>{s.label}</div>
@@ -261,7 +258,7 @@ export default function AdminUserDetailPage() {
                   </thead>
                   <tbody>
                     {projects.map((p, i) => (
-                      <tr key={p.id} style={{ borderBottom: i < projects.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'}` : 'none', background: i % 2 === 1 ? rowAlt : 'transparent' }}
+                      <tr key={p.id} style={{ borderBottom: i < projects.length - 1 ? `1px solid var(--color-bg-alt)` : 'none', background: i % 2 === 1 ? rowAlt : 'transparent' }}
                         onMouseEnter={e => (e.currentTarget.style.background = rowHover)}
                         onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 1 ? rowAlt : 'transparent')}>
                         <td style={{ ...tdStyle, fontWeight: 500 }}>{p.name}</td>
@@ -286,7 +283,7 @@ export default function AdminUserDetailPage() {
                   </thead>
                   <tbody>
                     {notes.map((n, i) => (
-                      <tr key={n.id} style={{ borderBottom: i < notes.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'}` : 'none', background: i % 2 === 1 ? rowAlt : 'transparent' }}
+                      <tr key={n.id} style={{ borderBottom: i < notes.length - 1 ? `1px solid var(--color-bg-alt)` : 'none', background: i % 2 === 1 ? rowAlt : 'transparent' }}
                         onMouseEnter={e => (e.currentTarget.style.background = rowHover)}
                         onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 1 ? rowAlt : 'transparent')}>
                         <td style={{ ...tdStyle, fontWeight: 500 }}>{n.title}</td>
@@ -317,7 +314,7 @@ export default function AdminUserDetailPage() {
                   </thead>
                   <tbody>
                     {teams.map((t, i) => (
-                      <tr key={t.id} style={{ borderBottom: i < teams.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'}` : 'none', background: i % 2 === 1 ? rowAlt : 'transparent' }}
+                      <tr key={t.id} style={{ borderBottom: i < teams.length - 1 ? `1px solid var(--color-bg-alt)` : 'none', background: i % 2 === 1 ? rowAlt : 'transparent' }}
                         onMouseEnter={e => (e.currentTarget.style.background = rowHover)}
                         onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 1 ? rowAlt : 'transparent')}>
                         <td style={{ ...tdStyle, fontWeight: 500 }}>{t.name}</td>
@@ -346,7 +343,7 @@ export default function AdminUserDetailPage() {
                   </thead>
                   <tbody>
                     {issues.map((iss, i) => (
-                      <tr key={iss.id} style={{ borderBottom: i < issues.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'}` : 'none', background: i % 2 === 1 ? rowAlt : 'transparent' }}
+                      <tr key={iss.id} style={{ borderBottom: i < issues.length - 1 ? `1px solid var(--color-bg-alt)` : 'none', background: i % 2 === 1 ? rowAlt : 'transparent' }}
                         onMouseEnter={e => (e.currentTarget.style.background = rowHover)}
                         onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 1 ? rowAlt : 'transparent')}>
                         <td style={{ ...tdStyle, color: textDim, fontSize: 12, fontFamily: 'monospace' }}>#{iss.id}</td>

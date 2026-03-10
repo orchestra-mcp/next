@@ -2,6 +2,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { apiFetch } from '@/lib/api'
+import { isRTL, getDirection } from '@/i18n/config'
+import type { Locale } from '@/i18n/config'
 
 export interface UserPreferences {
   theme: 'dark' | 'light'
@@ -63,6 +65,15 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
       updatePreference: async (key, value) => {
         // Optimistic update
         set(s => ({ preferences: { ...s.preferences, [key]: value } }))
+
+        // Side-effect: when language changes, update document lang/dir and set cookie for next-intl
+        if (key === 'language' && typeof window !== 'undefined') {
+          const locale = value as Locale
+          document.documentElement.lang = locale
+          document.documentElement.dir = getDirection(locale)
+          document.cookie = `NEXT_LOCALE=${locale};path=/;max-age=31536000;SameSite=Lax`
+        }
+
         try {
           await apiFetch('/api/settings/preferences', {
             method: 'PATCH',

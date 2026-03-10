@@ -121,6 +121,7 @@ interface AdminActions {
   // Notifications
   fetchNotificationsSent: () => Promise<void>
   sendNotification: (data: { title: string; message: string; type: string; user_id?: number }) => Promise<void>
+  seedNotifications: () => Promise<void>
   // Settings
   fetchSetting: (key: string) => Promise<Record<string, unknown>>
   updateSetting: (key: string, value: Record<string, unknown>) => Promise<void>
@@ -455,6 +456,16 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
     }
   },
 
+  seedNotifications: async () => {
+    try {
+      await apiFetch('/api/admin/notifications/seed', { method: 'POST' })
+      await get().fetchNotificationsSent()
+    } catch (e) {
+      if ((e as any).devSeed) return
+      set({ error: (e as Error).message })
+    }
+  },
+
   fetchSetting: async (key) => {
     try {
       const res = await apiFetch<{ key: string; value: Record<string, unknown> }>(`/api/admin/settings/${key}`)
@@ -478,7 +489,7 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
     try {
       await apiFetch(`/api/admin/settings/${key}`, {
         method: 'PATCH',
-        body: JSON.stringify({ value }),
+        body: JSON.stringify(value),
       })
       set(s => ({ settings: { ...s.settings, [key]: value } }))
     } catch (e) {

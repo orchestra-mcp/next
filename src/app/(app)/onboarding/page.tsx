@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
-import { useThemeStore } from '@/store/theme'
 import { apiFetch, isDevSeed } from '@/lib/api'
 import Image from 'next/image'
 
@@ -20,8 +19,6 @@ const STEPS = [
 export default function OnboardingPage() {
   const router = useRouter()
   const { user } = useAuthStore()
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
 
   const [step, setStep] = useState<Step>(0)
 
@@ -48,15 +45,15 @@ export default function OnboardingPage() {
   // CLI
   const [copied, setCopied] = useState<string | null>(null)
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
-  const bg = isDark ? '#0f0f12' : '#f5f5f7'
-  const cardBg = isDark ? '#161320' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.09)'
-  const inputBg = isDark ? 'rgba(255,255,255,0.04)' : '#f7f7f9'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const codeBg = isDark ? 'rgba(0,0,0,0.4)' : '#f0f0f4'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const bg = 'var(--color-bg)'
+  const cardBg = 'var(--color-bg-contrast)'
+  const cardBorder = 'var(--color-border)'
+  const inputBg = 'var(--color-bg-alt)'
+  const inputBorder = 'var(--color-border)'
+  const codeBg = 'var(--color-bg-alt)'
 
   const inputSt: React.CSSProperties = {
     width: '100%', padding: '10px 13px', borderRadius: 9,
@@ -157,18 +154,18 @@ export default function OnboardingPage() {
                 ? 'linear-gradient(90deg, #00e5ff, #a900ff)'
                 : i === step
                   ? 'linear-gradient(90deg, #00e5ff, #a900ff)'
-                  : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
+                  : ('var(--color-border)'),
               transition: 'width 0.25s ease',
             }} />
             {i < STEPS.length - 1 && (
-              <div style={{ width: 12, height: 1, background: i < step ? 'rgba(0,229,255,0.3)' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)') }} />
+              <div style={{ width: 12, height: 1, background: i < step ? 'rgba(0,229,255,0.3)' : ('var(--color-border)') }} />
             )}
           </div>
         ))}
       </div>
 
       {/* Card */}
-      <div style={{ width: '100%', maxWidth: 500, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: '32px 36px', boxShadow: isDark ? '0 24px 60px rgba(0,0,0,0.5)' : '0 8px 40px rgba(0,0,0,0.1)' }}>
+      <div style={{ width: '100%', maxWidth: 500, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: '32px 36px', boxShadow: '0 16px 50px rgba(0,0,0,0.25)' }}>
 
         {/* ── Step 0: Welcome ── */}
         {step === 0 && (
@@ -188,7 +185,7 @@ export default function OnboardingPage() {
                 { icon: 'bx-bot', color: '#a900ff', title: 'Multi-agent orchestration', desc: 'Claude, GPT-4, Gemini, and Ollama' },
                 { icon: 'bx-package', color: '#22c55e', title: '17 skill packs', desc: 'Go, React, Rust, Python and more' },
               ].map((f, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}` }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, background: 'var(--color-bg-alt)', border: `1px solid ${cardBorder}` }}>
                   <div style={{ width: 32, height: 32, borderRadius: 9, background: `${f.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <i className={`bx ${f.icon}`} style={{ fontSize: 16, color: f.color }} />
                   </div>
@@ -228,7 +225,7 @@ export default function OnboardingPage() {
                   {goals.map(goal => {
                     const active = selectedGoals.includes(goal.id)
                     return (
-                      <button key={goal.id} onClick={() => toggleGoal(goal.id)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 11px', borderRadius: 8, border: `1px solid ${active ? 'rgba(0,229,255,0.35)' : inputBorder}`, background: active ? 'rgba(0,229,255,0.07)' : inputBg, cursor: 'pointer', textAlign: 'left' }}>
+                      <button key={goal.id} onClick={() => toggleGoal(goal.id)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 11px', borderRadius: 8, border: `1px solid ${active ? 'rgba(0,229,255,0.35)' : inputBorder}`, background: active ? 'rgba(0,229,255,0.07)' : inputBg, cursor: 'pointer', textAlign: 'start' }}>
                         <i className={`bx ${goal.icon}`} style={{ fontSize: 14, color: active ? '#00e5ff' : textMuted, flexShrink: 0 }} />
                         <span style={{ fontSize: 12, color: active ? textPrimary : textMuted, fontWeight: active ? 500 : 400 }}>{goal.label}</span>
                       </button>
@@ -239,7 +236,7 @@ export default function OnboardingPage() {
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               <button onClick={prev} style={{ padding: '10px 18px', borderRadius: 9, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Back</button>
-              <button onClick={saveProfile} disabled={profileSaving || !name.trim()} style={{ flex: 1, padding: '10px', borderRadius: 9, border: 'none', background: name.trim() ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)'), color: name.trim() ? '#fff' : textMuted, fontSize: 13, fontWeight: 700, cursor: name.trim() ? 'pointer' : 'not-allowed', opacity: profileSaving ? 0.7 : 1 }}>
+              <button onClick={saveProfile} disabled={profileSaving || !name.trim()} style={{ flex: 1, padding: '10px', borderRadius: 9, border: 'none', background: name.trim() ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : ('var(--color-border)'), color: name.trim() ? '#fff' : textMuted, fontSize: 13, fontWeight: 700, cursor: name.trim() ? 'pointer' : 'not-allowed', opacity: profileSaving ? 0.7 : 1 }}>
                 {profileSaving ? 'Saving…' : 'Continue →'}
               </button>
             </div>
@@ -256,7 +253,7 @@ export default function OnboardingPage() {
             <p style={{ fontSize: 13, color: textMuted, marginBottom: 22, lineHeight: 1.6 }}>Teams let you collaborate on projects with others. You can always do this later.</p>
 
             {teamSkipped ? (
-              <div style={{ padding: '16px', borderRadius: 10, background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}`, textAlign: 'center', color: textMuted, fontSize: 13, marginBottom: 24 }}>
+              <div style={{ padding: '16px', borderRadius: 10, background: 'var(--color-bg-alt)', border: `1px solid ${cardBorder}`, textAlign: 'center', color: textMuted, fontSize: 13, marginBottom: 24 }}>
                 Skipped — you can create a team from the Team menu anytime.
               </div>
             ) : (
@@ -288,7 +285,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={createTeam}
                   disabled={teamSaving || !teamName.trim()}
-                  style={{ flex: 1, padding: '10px', borderRadius: 9, border: 'none', background: teamName.trim() ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)'), color: teamName.trim() ? '#fff' : textMuted, fontSize: 13, fontWeight: 700, cursor: teamName.trim() ? 'pointer' : 'not-allowed', opacity: teamSaving ? 0.7 : 1 }}
+                  style={{ flex: 1, padding: '10px', borderRadius: 9, border: 'none', background: teamName.trim() ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : ('var(--color-border)'), color: teamName.trim() ? '#fff' : textMuted, fontSize: 13, fontWeight: 700, cursor: teamName.trim() ? 'pointer' : 'not-allowed', opacity: teamSaving ? 0.7 : 1 }}
                 >
                   {teamSaving ? 'Creating…' : 'Create Team →'}
                 </button>
@@ -312,7 +309,7 @@ export default function OnboardingPage() {
             <p style={{ fontSize: 13, color: textMuted, marginBottom: 22, lineHeight: 1.6 }}>Projects organize your features, notes, and tasks in one place.</p>
 
             {projectSkipped ? (
-              <div style={{ padding: '16px', borderRadius: 10, background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}`, textAlign: 'center', color: textMuted, fontSize: 13, marginBottom: 24 }}>
+              <div style={{ padding: '16px', borderRadius: 10, background: 'var(--color-bg-alt)', border: `1px solid ${cardBorder}`, textAlign: 'center', color: textMuted, fontSize: 13, marginBottom: 24 }}>
                 Skipped — create projects anytime from the Projects page.
               </div>
             ) : (
@@ -337,7 +334,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={createProject}
                   disabled={projectSaving || !projectName.trim()}
-                  style={{ flex: 1, padding: '10px', borderRadius: 9, border: 'none', background: projectName.trim() ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)'), color: projectName.trim() ? '#fff' : textMuted, fontSize: 13, fontWeight: 700, cursor: projectName.trim() ? 'pointer' : 'not-allowed', opacity: projectSaving ? 0.7 : 1 }}
+                  style={{ flex: 1, padding: '10px', borderRadius: 9, border: 'none', background: projectName.trim() ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : ('var(--color-border)'), color: projectName.trim() ? '#fff' : textMuted, fontSize: 13, fontWeight: 700, cursor: projectName.trim() ? 'pointer' : 'not-allowed', opacity: projectSaving ? 0.7 : 1 }}
                 >
                   {projectSaving ? 'Creating…' : 'Create Project →'}
                 </button>
@@ -365,19 +362,19 @@ export default function OnboardingPage() {
             ].map(item => (
               <div key={item.key} style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 500, color: textDim, marginBottom: 5 }}>{item.os}</div>
-                <div style={{ position: 'relative', background: codeBg, borderRadius: 9, padding: '10px 40px 10px 13px', fontFamily: 'monospace', fontSize: 12, color: isDark ? '#e2e8f0' : '#1e293b', wordBreak: 'break-all' }}>
+                <div style={{ position: 'relative', background: codeBg, borderRadius: 9, padding: '10px 40px 10px 13px', fontFamily: 'monospace', fontSize: 12, color: 'var(--color-fg)', wordBreak: 'break-all' }}>
                   {item.cmd}
-                  <button onClick={() => copyCmd(item.cmd, item.key)} style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: copied === item.key ? '#22c55e' : textMuted, fontSize: 14 }}>
+                  <button onClick={() => copyCmd(item.cmd, item.key)} style={{ position: 'absolute', insetInlineEnd: 9, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: copied === item.key ? '#22c55e' : textMuted, fontSize: 14 }}>
                     <i className={`bx ${copied === item.key ? 'bx-check' : 'bx-copy'}`} />
                   </button>
                 </div>
               </div>
             ))}
-            <div style={{ marginTop: 16, padding: '14px', borderRadius: 10, background: isDark ? 'rgba(0,229,255,0.04)' : 'rgba(0,229,255,0.04)', border: '1px solid rgba(0,229,255,0.12)' }}>
+            <div style={{ marginTop: 16, padding: '14px', borderRadius: 10, background: 'rgba(0,229,255,0.04)', border: '1px solid rgba(0,229,255,0.12)' }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#00e5ff', marginBottom: 6 }}>Then in your project directory:</div>
-              <div style={{ position: 'relative', background: codeBg, borderRadius: 7, padding: '8px 36px 8px 11px', fontFamily: 'monospace', fontSize: 12, color: isDark ? '#e2e8f0' : '#1e293b' }}>
+              <div style={{ position: 'relative', background: codeBg, borderRadius: 7, padding: '8px 36px 8px 11px', fontFamily: 'monospace', fontSize: 12, color: 'var(--color-fg)' }}>
                 orchestra init
-                <button onClick={() => copyCmd('orchestra init', 'init')} style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: copied === 'init' ? '#22c55e' : textMuted, fontSize: 13 }}>
+                <button onClick={() => copyCmd('orchestra init', 'init')} style={{ position: 'absolute', insetInlineEnd: 7, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: copied === 'init' ? '#22c55e' : textMuted, fontSize: 13 }}>
                   <i className={`bx ${copied === 'init' ? 'bx-check' : 'bx-copy'}`} />
                 </button>
               </div>
@@ -401,7 +398,7 @@ export default function OnboardingPage() {
             <p style={{ fontSize: 13.5, color: textMuted, lineHeight: 1.7, margin: '0 0 28px' }}>
               Your Orchestra workspace is ready.{!teamSkipped && ` Team created.`}{!projectSkipped && ` Project created.`}
             </p>
-            <div style={{ padding: '14px 18px', borderRadius: 12, background: isDark ? 'rgba(0,229,255,0.05)' : 'rgba(0,229,255,0.04)', border: '1px solid rgba(0,229,255,0.15)', marginBottom: 24, textAlign: 'left' }}>
+            <div style={{ padding: '14px 18px', borderRadius: 12, background: 'rgba(0,229,255,0.04)', border: '1px solid rgba(0,229,255,0.15)', marginBottom: 24, textAlign: 'start' }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#00e5ff', marginBottom: 10 }}>Quick reference</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {[
@@ -410,7 +407,7 @@ export default function OnboardingPage() {
                   { cmd: 'orchestra version', desc: 'Check installed version' },
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <code style={{ fontSize: 11, fontFamily: 'monospace', color: isDark ? '#e2e8f0' : '#1e293b', background: codeBg, padding: '2px 7px', borderRadius: 5, flexShrink: 0 }}>{item.cmd}</code>
+                    <code style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--color-fg)', background: codeBg, padding: '2px 7px', borderRadius: 5, flexShrink: 0 }}>{item.cmd}</code>
                     <span style={{ fontSize: 12, color: textMuted }}>{item.desc}</span>
                   </div>
                 ))}

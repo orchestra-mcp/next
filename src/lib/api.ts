@@ -21,7 +21,7 @@ export async function apiFetch<T>(
   }
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(fetchInit.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
     ...(fetchInit.headers as Record<string, string>),
   }
 

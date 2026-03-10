@@ -74,6 +74,8 @@ export interface ChatBoxProps {
   onOpenInWindow?: (event: ClaudeCodeEvent) => void;
   /** Called when user submits answers to an inline AskUserQuestion card */
   onQuestionAnswer?: (requestId: string, answers: Record<string, string>) => void;
+  /** Called when user approves or denies a permission request */
+  onPermissionDecision?: (requestId: string, decision: 'approve' | 'deny') => void;
   /** Whether there are more messages to load */
   hasMoreMessages?: boolean;
   /** Callback when user scrolls to top and more messages should be loaded */

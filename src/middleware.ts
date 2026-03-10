@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import createMiddleware from 'next-intl/middleware'
+import { routing } from './i18n/routing'
+
+// next-intl middleware for locale-prefixed public routes
+const intlMiddleware = createMiddleware(routing)
 
 // Routes that are always accessible even when coming soon is enabled
 const BYPASS_PATHS = [
@@ -14,32 +19,70 @@ const BYPASS_PATHS = [
 
 const PUBLIC_PREFIXES = ['/_next', '/api', '/favicon', '/logo', '/og-image', '/icons']
 
+// Public routes under [locale]/ that use intl middleware (URL-based locale)
+// Everything else is a dashboard route (cookie-based locale, no URL prefix)
+const PUBLIC_ROUTES = [
+  '/blog', '/docs', '/download', '/solutions', '/marketplace',
+  '/contact', '/privacy', '/terms', '/report', '/coming-soon',
+  '/login', '/register', '/forgot-password', '/reset-password',
+  '/magic-login', '/two-factor', '/verify-otp',
+]
+
+function isPublicRoute(pathname: string): boolean {
+  // Root path — redirect to /en
+  if (pathname === '/') return true
+  // Already has locale prefix (e.g. /en/blog, /ar/docs)
+  const localeMatch = pathname.match(/^\/(en|ar)(\/|$)/)
+  if (localeMatch) return true
+  // Matches a known public route without locale prefix
+  return PUBLIC_ROUTES.some(p => pathname === p || pathname.startsWith(p + '/'))
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // Always allow static assets, API routes, and bypass paths
-  if (
-    PUBLIC_PREFIXES.some(p => pathname.startsWith(p)) ||
-    BYPASS_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
-  ) {
+  // Always allow static assets and API routes
+  if (PUBLIC_PREFIXES.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 
-  // Fetch coming soon setting from backend (server-side, no auth required)
+  // Public routes — use intl middleware for locale-prefixed URLs
+  if (isPublicRoute(pathname)) {
+    const comingSoonResponse = await handleComingSoon(req)
+    if (comingSoonResponse.status === 307 || comingSoonResponse.status === 308) {
+      return comingSoonResponse
+    }
+    return intlMiddleware(req)
+  }
+
+  // Dashboard routes — skip intl middleware, use cookie-based locale
+  return handleComingSoon(req)
+}
+
+async function handleComingSoon(req: NextRequest): Promise<NextResponse> {
+  const { pathname } = req.nextUrl
+
+  // Check bypass paths (with or without locale prefix)
+  const pathWithoutLocale = pathname.replace(/^\/(en|ar)/, '') || '/'
+  if (BYPASS_PATHS.some(p => pathWithoutLocale === p || pathWithoutLocale.startsWith(p + '/') ||
+      pathname === p || pathname.startsWith(p + '/'))) {
+    return NextResponse.next()
+  }
+
+  // Fetch coming soon setting from backend
   const apiBase = process.env.INTERNAL_API_URL || 'http://localhost:8080'
   let comingSoon = false
   let isAdmin = false
 
   try {
-    const res = await fetch(`${apiBase}/api/settings/coming_soon`, {
-      next: { revalidate: 30 }, // cache for 30s to avoid hammering the API
+    const res = await fetch(`${apiBase}/api/public/settings/coming_soon`, {
+      next: { revalidate: 30 },
     })
     if (res.ok) {
       const data = await res.json()
       comingSoon = data?.value?.enabled === true
     }
   } catch {
-    // If API is unreachable, don't block access
     comingSoon = false
   }
 
@@ -53,11 +96,8 @@ export async function middleware(req: NextRequest) {
 
   if (token && token !== 'dev_seed_token') {
     try {
-      // Decode JWT payload (no verification needed here — just read role)
       const parts = token.split('.')
       if (parts.length === 3) {
-        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString())
-        // Fetch user role from API to confirm admin status
         const meRes = await fetch(`${apiBase}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         })
@@ -75,7 +115,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Redirect to coming soon page
   const url = req.nextUrl.clone()
   url.pathname = '/coming-soon'
   return NextResponse.redirect(url)
@@ -83,12 +122,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico
-     */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }

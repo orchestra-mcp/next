@@ -2,17 +2,19 @@
 import useEmblaCarousel from 'embla-carousel-react'
 import { useCallback } from 'react'
 import { useThemeStore } from '@/store/theme'
-
-const features = [
-  { icon: 'bx-bolt', title: '131 AI Tools', desc: 'Projects, features, RAG memory, search, agents — all callable via MCP protocol from any AI client.', color: '#00e5ff' },
-  { icon: 'bx-chip', title: 'QUIC Plugin Mesh', desc: 'All plugins communicate over QUIC + Protobuf with mTLS. Sub-millisecond latency, zero config.', color: '#a900ff' },
-  { icon: 'bx-brain', title: 'RAG Memory Engine', desc: 'Tantivy full-text search + SQLite vector storage. Rust-powered. Your AI remembers everything.', color: '#00e5ff' },
-  { icon: 'bx-group', title: 'Multi-Agent Orchestration', desc: 'Parallel agents, sessions, provider routing across Claude, GPT-4o, Gemini, Ollama, DeepSeek.', color: '#a900ff' },
-  { icon: 'bx-devices', title: '5 Platforms', desc: 'macOS, Windows, Linux desktop apps. Chrome extension. iOS and Android mobile. One backend.', color: '#00e5ff' },
-  { icon: 'bx-package', title: '17 Official Packs', desc: 'Install skills, agents, and hooks with one command. Marketplace with 17 packs ready to go.', color: '#a900ff' },
-]
+import { useTranslations } from 'next-intl'
 
 export function FeaturesCarousel() {
+  const t = useTranslations()
+
+  const features = [
+    { icon: 'bx-bolt', title: t('features.aiTools.title'), desc: t('features.aiTools.desc'), color: '#00e5ff' },
+    { icon: 'bx-chip', title: t('features.quicMesh.title'), desc: t('features.quicMesh.desc'), color: '#a900ff' },
+    { icon: 'bx-brain', title: t('features.ragMemory.title'), desc: t('features.ragMemory.desc'), color: '#00e5ff' },
+    { icon: 'bx-group', title: t('features.multiAgent.title'), desc: t('features.multiAgent.desc'), color: '#a900ff' },
+    { icon: 'bx-devices', title: t('features.platforms.title'), desc: t('features.platforms.desc'), color: '#00e5ff' },
+    { icon: 'bx-package', title: t('features.packs.title'), desc: t('features.packs.desc'), color: '#a900ff' },
+  ]
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'start', slidesToScroll: 1 })
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi])
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi])
@@ -44,16 +46,16 @@ export function FeaturesCarousel() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
           <div>
             <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 38px)', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 8, color: textPrimary }}>
-              Everything built in
+              {t('features.title')}
             </h2>
-            <p style={{ fontSize: 15, color: textMuted }}>No glue code. No middleware. Just ship.</p>
+            <p style={{ fontSize: 15, color: textMuted }}>{t('features.subtitle')}</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={scrollPrev} style={{ width: 38, height: 38, borderRadius: 10, border: `1px solid ${btnBorder}`, background: btnBg, color: btnColor, cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <i className="bx bx-chevron-left" />
+              <i className="bx bx-chevron-left rtl-flip" />
             </button>
             <button onClick={scrollNext} style={{ width: 38, height: 38, borderRadius: 10, border: `1px solid ${btnBorder}`, background: btnBg, color: btnColor, cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <i className="bx bx-chevron-right" />
+              <i className="bx bx-chevron-right rtl-flip" />
             </button>
           </div>
         </div>

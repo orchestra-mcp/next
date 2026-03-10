@@ -1,12 +1,22 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { useSettingsStore } from '@/store/settings'
 import { useRoleStore } from '@/store/roles'
 import { useThemeStore } from '@/store/theme'
+import { ThemePicker } from '@orchestra-mcp/theme'
+import { SettingGroupShell } from '@orchestra-mcp/settings'
+import type { SettingGroupType } from '@orchestra-mcp/settings'
+import '../../../../packages/@orchestra-mcp/settings/src/SettingsForm/SettingsForm.css'
 import { useAdminStore } from '@/store/admin'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { apiFetch, isDevSeed } from '@/lib/api'
+import { useTranslations } from 'next-intl'
+import { usePreferencesStore } from '@/store/preferences'
+import { locales } from '@/i18n/config'
+import type { Locale } from '@/i18n/config'
 
 function md5(str: string): string {
   function safeAdd(x: number, y: number) { const lsw = (x & 0xffff) + (y & 0xffff); return ((((x >> 16) + (y >> 16) + (lsw >> 16)) << 16) | (lsw & 0xffff)) >>> 0 }
@@ -54,21 +64,23 @@ type Tab =
   | 'push'
   | 'admin-general' | 'admin-features' | 'admin-homepage' | 'admin-agents'
   | 'admin-contact' | 'admin-pricing' | 'admin-download' | 'admin-integrations'
-  | 'admin-email' | 'admin-aimodels' | 'admin-seo'
+  | 'admin-email' | 'admin-aimodels' | 'admin-seo' | 'admin-discord' | 'admin-slack'
 
 const TIMEZONES = ['UTC','America/New_York','America/Chicago','America/Denver','America/Los_Angeles','Europe/London','Europe/Paris','Europe/Berlin','Asia/Tokyo','Asia/Shanghai','Asia/Dubai','Australia/Sydney']
 const GENDERS = ['', 'Male', 'Female', 'Non-binary', 'Prefer not to say']
 
 export default function SettingsPage() {
-  const { user } = useAuthStore()
+  const { user, updateAvatarUrl } = useAuthStore()
   const { sessions, apiKeys, connectedAccounts, fetchSessions, revokeSession, fetchApiKeys, createApiKey, revokeApiKey, fetchConnectedAccounts, unlinkAccount } = useSettingsStore()
   const { can } = useRoleStore()
   const { fetchSetting, updateSetting } = useAdminStore()
-  const { theme, set: setTheme } = useThemeStore()
-  const isDark = theme === 'dark'
+  const { theme, set: setTheme, setColorTheme } = useThemeStore()
+  const t = useTranslations('settings')
+  const { preferences, updatePreference } = usePreferencesStore()
   const isAdmin = can('canViewAdmin')
 
-  const [tab, setTab] = useState<Tab>('profile')
+  const searchParams = useSearchParams()
+  const tab = (searchParams.get('tab') as Tab) || 'profile'
 
   // Profile
   const [name, setName] = useState(user?.name ?? '')
@@ -91,9 +103,57 @@ export default function SettingsPage() {
   const [createdKey, setCreatedKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  // Push
+  // Avatar
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('avatar', file)
+      const res = await apiFetch<{ ok: boolean; avatar_url: string }>('/api/settings/avatar', { method: 'POST', body: formData })
+      updateAvatarUrl(res.avatar_url)
+    } catch {}
+    finally { setAvatarUploading(false) }
+  }
+
+  // Push — sync state with actual browser Notification permission
   const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushPermission, setPushPermission] = useState<NotificationPermission | 'unsupported'>('default')
   const [emailPrefs, setEmailPrefs] = useState({ feature_updates: true, security_alerts: true, team_invites: true, billing: false })
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+      setPushPermission('unsupported')
+      return
+    }
+    setPushPermission(Notification.permission)
+    setPushEnabled(Notification.permission === 'granted')
+    // Register service worker on mount
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+  }, [])
+
+  async function handleTogglePush() {
+    if (typeof Notification === 'undefined') return
+    if (Notification.permission === 'granted') {
+      // Already granted — toggle off just disables in-app (can't revoke browser permission)
+      setPushEnabled(v => !v)
+      return
+    }
+    if (Notification.permission === 'denied') {
+      // Permission was denied — user must change in browser settings
+      return
+    }
+    // Request permission
+    const result = await Notification.requestPermission()
+    setPushPermission(result)
+    setPushEnabled(result === 'granted')
+  }
 
   // Admin settings local values
   const [adminSettings, setAdminSettings] = useState<Record<string, Record<string, unknown>>>({})
@@ -119,25 +179,19 @@ export default function SettingsPage() {
   }, [tab])
 
   // Theme
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
-  const pageBg = isDark ? '#0f0f12' : '#f5f5f7'
-  const sidebarBg = isDark ? '#0a0a0e' : '#ffffff'
-  const sidebarBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.09)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const cardDivider = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)'
-  const labelColor = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
-  const inputBg = isDark ? 'rgba(255,255,255,0.04)' : '#f9f9fb'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const inputColor = isDark ? '#f8f8f8' : '#0f0f12'
-  const activeNavBg = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'
-  const activeNavColor = isDark ? '#f8f8f8' : '#0f0f12'
-  const inactiveNavColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.5)'
-  const groupLabelColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const pageBg = 'var(--color-bg)'
+  // Sidebar moved to layout — settings page only renders content
+  const cardBg = 'var(--color-bg-alt)'
+  const cardBorder = 'var(--color-border)'
+  const cardDivider = 'var(--color-border)'
+  const labelColor = 'var(--color-fg-muted)'
+  const inputBg = 'var(--color-bg-alt)'
+  const inputBorder = 'var(--color-border)'
+  const inputColor = 'var(--color-fg)'
 
-  const card: React.CSSProperties = { background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 12, padding: '24px', marginBottom: 20 }
   const labelSt: React.CSSProperties = { fontSize: 12, fontWeight: 500, color: labelColor, marginBottom: 6, display: 'block' }
   const inputSt: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${inputBorder}`, background: inputBg, color: inputColor, fontSize: 13, outline: 'none', boxSizing: 'border-box' }
   const selectSt: React.CSSProperties = { ...inputSt, appearance: 'none', cursor: 'pointer' }
@@ -154,11 +208,11 @@ export default function SettingsPage() {
   }
 
   async function handleSavePassword() {
-    if (pwNew !== pwConfirm) { setPwMsg({ ok: false, text: 'Passwords do not match' }); return }
+    if (pwNew !== pwConfirm) { setPwMsg({ ok: false, text: t('passwordsDoNotMatch') }); return }
     setPwSaving(true); setPwMsg(null)
     try {
       if (!isDevSeed()) await apiFetch('/api/auth/change-password', { method: 'POST', body: JSON.stringify({ current_password: pwCurrent, new_password: pwNew }) })
-      setPwMsg({ ok: true, text: 'Password updated successfully' })
+      setPwMsg({ ok: true, text: t('passwordUpdated') })
       setPwCurrent(''); setPwNew(''); setPwConfirm('')
     } catch (e) { setPwMsg({ ok: false, text: (e as Error).message }) }
     finally { setPwSaving(false) }
@@ -209,7 +263,7 @@ export default function SettingsPage() {
           <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{label}</div>
           {desc && <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>{desc}</div>}
         </div>
-        <button onClick={() => update(!val)} style={{ width: 44, height: 24, borderRadius: 100, border: 'none', cursor: 'pointer', background: val ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'), position: 'relative', flexShrink: 0 }}>
+        <button onClick={() => update(!val)} style={{ width: 44, height: 24, borderRadius: 100, border: 'none', cursor: 'pointer', background: val ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : 'var(--color-border)', position: 'relative', flexShrink: 0 }}>
           <span style={{ position: 'absolute', top: 3, left: val ? 22 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
         </button>
       </div>
@@ -220,329 +274,268 @@ export default function SettingsPage() {
     return (
       <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
         <button onClick={() => handleSaveAdminSetting(settingKey)} disabled={adminSaving} style={saveBtnSt}>
-          {adminSaving ? 'Saving…' : 'Save changes'}
+          {adminSaving ? t('saving') : t('saveChanges')}
         </button>
-        {adminSaved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 5 }}><i className="bx bx-check-circle" /> Saved</span>}
+        {adminSaved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 5 }}><i className="bx bx-check-circle" /> {t('saved')}</span>}
       </div>
     )
   }
 
-  // Sidebar nav item
-  function NavItem({ id, label }: { id: Tab; label: string }) {
-    const active = tab === id
-    return (
-      <button onClick={() => setTab(id)} style={{
-        width: '100%', textAlign: 'left', padding: '7px 12px', borderRadius: 7, border: 'none', cursor: 'pointer',
-        background: active ? activeNavBg : 'transparent',
-        color: active ? activeNavColor : inactiveNavColor,
-        fontSize: 13, fontWeight: active ? 500 : 400, transition: 'all 0.12s',
-        display: 'block',
-      }}>
-        {label}
-      </button>
-    )
-  }
-
-  function GroupLabel({ label }: { label: string }) {
-    return <div style={{ fontSize: 11, fontWeight: 600, color: groupLabelColor, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '14px 12px 4px' }}>{label}</div>
-  }
-
-  function SectionTitle({ title, desc }: { title: string; desc?: string }) {
-    return (
-      <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${cardDivider}` }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: textPrimary }}>{title}</div>
-        {desc && <div style={{ fontSize: 12, color: textMuted, marginTop: 4 }}>{desc}</div>}
-      </div>
-    )
+  function SettingsCard({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
+    const group: SettingGroupType = { id: title, label: title, description: desc, order: 0 }
+    return <SettingGroupShell group={group}>{children}</SettingGroupShell>
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: pageBg }}>
-
-      {/* ── Left Sidebar ── */}
-      <div style={{ width: 220, flexShrink: 0, background: sidebarBg, borderRight: `1px solid ${sidebarBorder}`, padding: '24px 12px', position: 'sticky', top: 0, height: 'calc(100vh - 52px)', overflowY: 'scroll' }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: textPrimary, padding: '0 12px 16px', letterSpacing: '-0.01em' }}>Settings</div>
-
-        <GroupLabel label="Account" />
-        <NavItem id="profile" label="Profile" />
-        <NavItem id="password" label="Password" />
-        <NavItem id="appearance" label="Appearance" />
-
-        <GroupLabel label="Security & Authentication" />
-        <NavItem id="2fa" label="Two-Factor Auth" />
-        <NavItem id="passkeys" label="Passkeys" />
-        <NavItem id="social" label="Connected Accounts" />
-        <NavItem id="sessions" label="Sessions" />
-        <NavItem id="apitokens" label="API Tokens" />
-
-        <GroupLabel label="Notifications" />
-        <NavItem id="push" label="Push Notifications" />
-
-        {isAdmin && (
-          <>
-            <GroupLabel label="Administration" />
-            <NavItem id="admin-general" label="General" />
-            <NavItem id="admin-features" label="Features" />
-            <NavItem id="admin-homepage" label="Home Page" />
-            <NavItem id="admin-agents" label="Agents" />
-            <NavItem id="admin-contact" label="Contact" />
-            <NavItem id="admin-pricing" label="Pricing" />
-            <NavItem id="admin-download" label="Download" />
-            <NavItem id="admin-integrations" label="Integrations" />
-            <NavItem id="admin-email" label="Email" />
-            <NavItem id="admin-aimodels" label="AI Models" />
-            <NavItem id="admin-seo" label="SEO" />
-          </>
-        )}
-      </div>
-
-      {/* ── Content ── */}
-      <div style={{ flex: 1, padding: '32px 48px', maxWidth: 680 }}>
+    <div className="settings-content page-wrapper" style={{ padding: '32px 48px' }}>
 
         {/* ── Profile ── */}
         {tab === 'profile' && (
           <>
-            <div style={card}>
-              <SectionTitle title="Profile information" desc="Update your avatar, name, and personal details" />
+            <SettingsCard title={t('profileInfo')} desc={t('profileDesc')}>
 
               {/* Avatar row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
                 <div style={{ position: 'relative' }}>
-                  <Avatar style={{ width: 72, height: 72 }}>
-                    {user?.email && <AvatarImage src={gravatarUrl(user.email, 144)} alt={initials} />}
+                  <Avatar style={{ width: 72, height: 72, opacity: avatarUploading ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+                    {user?.avatar_url
+                      ? <AvatarImage src={user.avatar_url} alt={initials} />
+                      : user?.email && <AvatarImage src={gravatarUrl(user.email, 144)} alt={initials} />}
                     <AvatarFallback style={{ fontSize: 24, fontWeight: 700 }}>{initials}</AvatarFallback>
                   </Avatar>
-                  <div style={{ position: 'absolute', bottom: 0, right: 0, width: 22, height: 22, borderRadius: '50%', background: isDark ? '#1e1e24' : '#fff', border: `2px solid ${cardBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
+                  <div onClick={() => avatarInputRef.current?.click()} style={{ position: 'absolute', bottom: 0, right: 0, width: 22, height: 22, borderRadius: '50%', background: 'var(--color-bg-alt)', border: `2px solid ${cardBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                     <i className="bx bx-camera" style={{ fontSize: 11, color: textMuted }} />
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: textPrimary }}>{user?.name ?? 'User'}</div>
-                  <div style={{ fontSize: 13, color: textMuted, marginTop: 2 }}>Click the camera to upload · JPG, PNG, WebP or GIF</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: textPrimary }}>{user?.name ?? t('userFallback')}</div>
+                  <div style={{ fontSize: 13, color: textMuted, marginTop: 2 }}>{t('uploadHint')}</div>
                 </div>
               </div>
 
               {/* Name + email */}
               <div style={{ marginBottom: 16 }}>
-                <label style={labelSt}>Name</label>
-                <input style={{ ...inputSt, maxWidth: 380 }} value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" />
+                <label style={labelSt}>{t('nameLabel')}</label>
+                <input style={inputSt} value={name} onChange={e => setName(e.target.value)} placeholder={t('namePlaceholder')} />
               </div>
               <div style={{ marginBottom: 16 }}>
-                <label style={labelSt}>Email address</label>
-                <input style={{ ...inputSt, maxWidth: 380 }} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
+                <label style={labelSt}>{t('emailLabel')}</label>
+                <input style={inputSt} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
               </div>
               <div style={{ marginBottom: 16 }}>
-                <label style={labelSt}>Mobile number <span style={{ color: textDim, fontWeight: 400 }}>(optional)</span></label>
-                <input style={{ ...inputSt, maxWidth: 380 }} value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 000 0000" />
+                <label style={labelSt}>{t('mobileLabel')} <span style={{ color: textDim, fontWeight: 400 }}>(optional)</span></label>
+                <input style={inputSt} value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 000 0000" />
               </div>
 
               {/* Gender + Position */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, maxWidth: 380, marginBottom: 16 }}>
+              <div className="grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
                 <div>
-                  <label style={labelSt}>Gender <span style={{ color: textDim, fontWeight: 400 }}>(optional)</span></label>
+                  <label style={labelSt}>{t('genderLabel')} <span style={{ color: textDim, fontWeight: 400 }}>(optional)</span></label>
                   <select style={selectSt} value={gender} onChange={e => setGender(e.target.value)}>
-                    {GENDERS.map(g => <option key={g} value={g}>{g || 'Select…'}</option>)}
+                    {GENDERS.map(g => <option key={g} value={g}>{g || t('selectPlaceholder')}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={labelSt}>Current position <span style={{ color: textDim, fontWeight: 400 }}>(optional)</span></label>
-                  <input style={inputSt} value={position} onChange={e => setPosition(e.target.value)} placeholder="e.g. Tech Lead" />
+                  <label style={labelSt}>{t('positionLabel')} <span style={{ color: textDim, fontWeight: 400 }}>(optional)</span></label>
+                  <input style={inputSt} value={position} onChange={e => setPosition(e.target.value)} placeholder={t('positionPlaceholder')} />
                 </div>
               </div>
 
-              {/* Timezone */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={labelSt}>Timezone</label>
-                <select style={{ ...selectSt, maxWidth: 380 }} value={timezone} onChange={e => setTimezone(e.target.value)}>
-                  {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
-                </select>
-                <div style={{ fontSize: 11, color: textDim, marginTop: 5 }}>Used for date &amp; time display across the app</div>
+              {/* Timezone + Language */}
+              <div className="grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+                <div>
+                  <label style={labelSt}>{t('timezoneLabel')}</label>
+                  <select style={selectSt} value={timezone} onChange={e => setTimezone(e.target.value)}>
+                    {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                  </select>
+                  <div style={{ fontSize: 11, color: textDim, marginTop: 5 }}>{t('timezoneHint')}</div>
+                </div>
+                <div>
+                  <label style={labelSt}>{t('language')}</label>
+                  <select
+                    style={selectSt}
+                    value={preferences.language}
+                    onChange={e => updatePreference('language', e.target.value)}
+                  >
+                    {locales.map((loc: Locale) => (
+                      <option key={loc} value={loc}>{loc === 'en' ? 'English' : loc === 'ar' ? '\u0627\u0644\u0639\u0631\u0628\u064A\u0629' : loc}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <button onClick={handleSaveProfile} style={saveBtnSt}>Save changes</button>
-                {saved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><i className="bx bx-check-circle" /> Saved</span>}
+                <button onClick={handleSaveProfile} style={saveBtnSt}>{t('saveChanges')}</button>
+                {saved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><i className="bx bx-check-circle" /> {t('saved')}</span>}
               </div>
-            </div>
+            </SettingsCard>
 
             {/* Delete account */}
-            <div style={card}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: textPrimary, marginBottom: 4 }}>Delete account</div>
-              <div style={{ fontSize: 13, color: textMuted, marginBottom: 16 }}>Delete your account and all of its resources</div>
+            <SettingsCard title={t('deleteAccount')} desc={t('deleteAccountDesc')}>
               <div style={{ padding: 16, borderRadius: 10, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#ef4444', marginBottom: 4 }}>Warning</div>
-                <div style={{ fontSize: 12, color: textMuted, marginBottom: 14 }}>Please proceed with caution, this cannot be undone.</div>
-                <button style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Delete account</button>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#ef4444', marginBottom: 4 }}>{t('deleteWarning')}</div>
+                <div style={{ fontSize: 12, color: textMuted, marginBottom: 14 }}>{t('deleteWarningDesc')}</div>
+                <button style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{t('deleteAccount')}</button>
               </div>
-            </div>
+            </SettingsCard>
           </>
         )}
 
         {/* ── Password ── */}
         {tab === 'password' && (
-          <div style={card}>
-            <SectionTitle title="Change password" desc="Update your account password. We recommend a strong, unique password." />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 380 }}>
-              <div><label style={labelSt}>Current password</label><input style={inputSt} type="password" value={pwCurrent} onChange={e => setPwCurrent(e.target.value)} placeholder="••••••••" /></div>
-              <div><label style={labelSt}>New password</label><input style={inputSt} type="password" value={pwNew} onChange={e => setPwNew(e.target.value)} placeholder="••••••••" /></div>
-              <div><label style={labelSt}>Confirm new password</label><input style={inputSt} type="password" value={pwConfirm} onChange={e => setPwConfirm(e.target.value)} placeholder="••••••••" /></div>
+          <SettingsCard title={t('changePassword')} desc={t('changePasswordDesc')}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div><label style={labelSt}>{t('currentPassword')}</label><input style={inputSt} type="password" value={pwCurrent} onChange={e => setPwCurrent(e.target.value)} placeholder="••••••••" /></div>
+              <div><label style={labelSt}>{t('newPassword')}</label><input style={inputSt} type="password" value={pwNew} onChange={e => setPwNew(e.target.value)} placeholder="••••••••" /></div>
+              <div><label style={labelSt}>{t('confirmNewPassword')}</label><input style={inputSt} type="password" value={pwConfirm} onChange={e => setPwConfirm(e.target.value)} placeholder="••••••••" /></div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <button onClick={handleSavePassword} disabled={pwSaving} style={saveBtnSt}>{pwSaving ? 'Updating…' : 'Update password'}</button>
+                <button onClick={handleSavePassword} disabled={pwSaving} style={saveBtnSt}>{pwSaving ? t('updating') : t('updatePassword')}</button>
                 {pwMsg && <span style={{ fontSize: 12, color: pwMsg.ok ? '#22c55e' : '#ef4444' }}>{pwMsg.text}</span>}
               </div>
             </div>
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Appearance ── */}
         {tab === 'appearance' && (
-          <div style={card}>
-            <SectionTitle title="Appearance" desc="Choose how Orchestra looks for you." />
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-              {(['dark', 'light'] as const).map(t => (
-                <button key={t} onClick={() => setTheme(t)} style={{ padding: '14px 24px', borderRadius: 10, border: `2px solid ${theme === t ? '#00e5ff' : cardBorder}`, background: t === 'dark' ? '#0f0f12' : '#f5f5f7', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, minWidth: 120 }}>
-                  <div style={{ width: 48, height: 32, borderRadius: 6, background: t === 'dark' ? '#1a1520' : '#ffffff', border: `1px solid ${t === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}` }} />
-                  <span style={{ fontSize: 13, fontWeight: 500, color: t === 'dark' ? '#f8f8f8' : '#0f0f12', textTransform: 'capitalize' }}>{t}</span>
-                  {theme === t && <i className="bx bx-check-circle" style={{ color: '#00e5ff', fontSize: 14 }} />}
-                </button>
-              ))}
-            </div>
-          </div>
+          <>
+            <SettingsCard title={t('appearanceTitle')} desc={t('appearanceDesc')}>
+              <ThemePicker
+                onThemeChange={(themeId) => setColorTheme(themeId)}
+                showVariants={false}
+              />
+            </SettingsCard>
+          </>
         )}
 
         {/* ── Two-Factor Auth ── */}
         {tab === '2fa' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={card}>
-              <SectionTitle title="Two-Factor Authentication" desc="Add an extra layer of security to your account." />
+            <SettingsCard title={t('twoFactorTitle')} desc={t('twoFactorDesc')}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, marginBottom: 3 }}>Authenticator App (TOTP)</div>
-                  <div style={{ fontSize: 12, color: textDim }}>Use Google Authenticator, Authy, or any TOTP app.</div>
-                  {user?.two_factor_enabled && <span style={{ fontSize: 11, marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, color: '#22c55e' }}><i className="bx bx-check-circle" />Enabled</span>}
+                  <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, marginBottom: 3 }}>{t('authenticatorApp')}</div>
+                  <div style={{ fontSize: 12, color: textDim }}>{t('authenticatorAppDesc')}</div>
+                  {user?.two_factor_enabled && <span style={{ fontSize: 11, marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, color: '#22c55e' }}><i className="bx bx-check-circle" />{t('enabled')}</span>}
                 </div>
-                <a href="/settings/two-factor" style={{ padding: '7px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textPrimary, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
-                  {user?.two_factor_enabled ? 'Manage' : 'Enable'}
-                </a>
+                <Link href="/settings/two-factor" style={{ padding: '7px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textPrimary, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+                  {user?.two_factor_enabled ? t('manage') : t('enable')}
+                </Link>
               </div>
-            </div>
-            <div style={card}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>Recovery Codes</div>
-              <div style={{ fontSize: 12, color: textMuted, marginBottom: 14 }}>Save these codes in a safe place. Each code can only be used once.</div>
+            </SettingsCard>
+            <SettingsCard title={t('recoveryCodes')} desc={t('recoveryCodesDesc')}>
               <button style={{ padding: '7px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>
-                <i className="bx bx-download" style={{ marginRight: 6 }} />Download recovery codes
+                <i className="bx bx-download" style={{ marginInlineEnd: 6 }} />{t('downloadRecoveryCodes')}
               </button>
-            </div>
+            </SettingsCard>
           </div>
         )}
 
         {/* ── Passkeys ── */}
         {tab === 'passkeys' && (
-          <div style={card}>
-            <SectionTitle title="Passkey Authentication" desc="Sign in without a password using biometrics or a hardware key." />
+          <SettingsCard title={t('passkeysTitle')} desc={t('passkeysDesc')}>
             <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 24 }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <i className="bx bx-fingerprint" style={{ fontSize: 22, color: '#00e5ff' }} />
               </div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>Sign in without a password</div>
-                <div style={{ fontSize: 13, color: textMuted, lineHeight: 1.6 }}>Use Face ID, Touch ID, or a hardware security key to sign in instantly. Passkeys are more secure than passwords — they can&apos;t be phished.</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>{t('passkeySignIn')}</div>
+                <div style={{ fontSize: 13, color: textMuted, lineHeight: 1.6 }}>{t('passkeyExplain')}</div>
               </div>
             </div>
             <button onClick={() => alert('Passkey registration coming soon!')} style={saveBtnSt}>
-              <i className="bx bx-plus" style={{ marginRight: 6 }} />Register Passkey
+              <i className="bx bx-plus" style={{ marginInlineEnd: 6 }} />{t('registerPasskey')}
             </button>
-            <div style={{ fontSize: 12, color: textDim, marginTop: 12 }}>No passkeys registered yet.</div>
-          </div>
+            <div style={{ fontSize: 12, color: textDim, marginTop: 12 }}>{t('noPasskeys')}</div>
+          </SettingsCard>
         )}
 
         {/* ── Connected Accounts ── */}
         {tab === 'social' && (
-          <div style={card}>
-            <SectionTitle title="Connected Accounts" desc="Connect your social accounts for faster sign-in." />
+          <SettingsCard title={t('connectedAccountsTitle')} desc={t('connectedAccountsDesc')}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {[
                 { provider: 'google', label: 'Google', icon: 'bxl-google', color: '#ea4335' },
                 { provider: 'github', label: 'GitHub', icon: 'bxl-github', color: textPrimary },
+                { provider: 'discord', label: 'Discord', icon: 'bxl-discord-alt', color: '#5865F2' },
+                { provider: 'slack', label: 'Slack', icon: 'bxl-slack', color: '#4A154B' },
               ].map(({ provider, label, icon, color }) => {
                 const connected = connectedAccounts.find(a => a.provider === provider)
                 return (
                   <div key={provider} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 10, border: `1px solid ${cardBorder}` }}>
-                    <div style={{ width: 38, height: 38, borderRadius: 9, background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 9, background: 'var(--color-bg-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <i className={`bx ${icon}`} style={{ fontSize: 20, color }} />
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{label}</div>
-                      {connected ? <div style={{ fontSize: 11, color: textMuted, marginTop: 2 }}>{connected.email}</div> : <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>Not connected</div>}
+                      {connected ? <div style={{ fontSize: 11, color: textMuted, marginTop: 2 }}>{connected.email}</div> : <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>{t('notConnected')}</div>}
                     </div>
                     {connected
-                      ? <button onClick={() => unlinkAccount(provider)} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.07)', color: '#ef4444', fontSize: 12, cursor: 'pointer' }}>Disconnect</button>
-                      : <button style={{ padding: '6px 14px', borderRadius: 7, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 12, cursor: 'pointer' }}>Connect</button>}
+                      ? <button onClick={() => unlinkAccount(provider)} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.07)', color: '#ef4444', fontSize: 12, cursor: 'pointer' }}>{t('disconnect')}</button>
+                      : <button onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/oauth/${provider}/connect`} style={{ padding: '6px 14px', borderRadius: 7, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 12, cursor: 'pointer' }}>{t('connect')}</button>}
                   </div>
                 )
               })}
             </div>
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Sessions ── */}
         {tab === 'sessions' && (
-          <div style={card}>
-            <SectionTitle title="Active Sessions" desc="These devices are currently signed into your account." />
+          <SettingsCard title={t('activeSessions')} desc={t('activeSessionsDesc')}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {sessions.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: textDim, fontSize: 13 }}>
                   <i className="bx bx-devices" style={{ fontSize: 32, display: 'block', marginBottom: 10 }} />
-                  No active sessions found
+                  {t('noActiveSessions')}
                 </div>
               ) : sessions.map(s => (
                 <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', borderRadius: 10, border: `1px solid ${s.is_current ? 'rgba(0,229,255,0.2)' : cardBorder}`, background: s.is_current ? 'rgba(0,229,255,0.03)' : 'transparent' }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 9, background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 9, background: 'var(--color-bg-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <i className={`bx ${deviceIcon(s.device_type)}`} style={{ fontSize: 18, color: s.is_current ? '#00e5ff' : textMuted }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, display: 'flex', alignItems: 'center', gap: 8 }}>
                       {s.device}
-                      {s.is_current && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 100, background: 'rgba(0,229,255,0.1)', color: '#00e5ff', fontWeight: 600 }}>Current</span>}
+                      {s.is_current && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 100, background: 'rgba(0,229,255,0.1)', color: '#00e5ff', fontWeight: 600 }}>{t('current')}</span>}
                     </div>
                     <div style={{ fontSize: 11, color: textDim, marginTop: 3 }}>{s.ip} · {s.location} · {s.last_seen}</div>
                   </div>
                   {!s.is_current && (
-                    <button onClick={() => revokeSession(s.id)} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 12, cursor: 'pointer' }}>Revoke</button>
+                    <button onClick={() => revokeSession(s.id)} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 12, cursor: 'pointer' }}>{t('revoke')}</button>
                   )}
                 </div>
               ))}
             </div>
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── API Tokens ── */}
         {tab === 'apitokens' && (
           <>
-            <div style={card}>
-              <SectionTitle title="Generate API Key" desc="Create personal access tokens for CLI, CI/CD, or external integrations." />
+            <SettingsCard title={t('generateApiKey')} desc={t('generateApiKeyDesc')}>
               <div style={{ display: 'flex', gap: 10 }}>
-                <input style={{ ...inputSt, flex: 1 }} value={newKeyName} onChange={e => setNewKeyName(e.target.value)} placeholder="Key name (e.g. CLI token, CI/CD)" />
-                <button onClick={handleCreateKey} style={{ ...saveBtnSt, flexShrink: 0, padding: '9px 20px' }}>Generate</button>
+                <input style={{ ...inputSt, flex: 1 }} value={newKeyName} onChange={e => setNewKeyName(e.target.value)} placeholder={t('keyNamePlaceholder')} />
+                <button onClick={handleCreateKey} style={{ ...saveBtnSt, flexShrink: 0, padding: '9px 20px' }}>{t('generate')}</button>
               </div>
               {createdKey && (
                 <div style={{ marginTop: 16, padding: '14px 16px', borderRadius: 10, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)' }}>
-                  <div style={{ fontSize: 12, color: '#22c55e', fontWeight: 600, marginBottom: 8 }}>Copy your key now — it won&apos;t be shown again</div>
+                  <div style={{ fontSize: 12, color: '#22c55e', fontWeight: 600, marginBottom: 8 }}>{t('copyKeyWarning')}</div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input style={{ ...inputSt, flex: 1, fontFamily: 'monospace', fontSize: 12 }} readOnly value={createdKey} />
-                    <button onClick={() => handleCopy(createdKey)} style={{ padding: '9px 14px', borderRadius: 9, border: `1px solid ${cardBorder}`, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', color: textMuted, fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
+                    <button onClick={() => handleCopy(createdKey)} style={{ padding: '9px 14px', borderRadius: 9, border: `1px solid ${cardBorder}`, background: 'var(--color-bg-active)', color: textMuted, fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
                       {copied ? <i className="bx bx-check" style={{ color: '#22c55e' }} /> : <i className="bx bx-copy" />}
                     </button>
                   </div>
                 </div>
               )}
-            </div>
-            <div style={card}>
-              <SectionTitle title="Your API Keys" />
+            </SettingsCard>
+            <SettingsCard title={t('yourApiKeys')}>
               {apiKeys.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '32px 0', color: textDim, fontSize: 13 }}>
                   <i className="bx bx-key" style={{ fontSize: 32, display: 'block', marginBottom: 10 }} />
-                  No API keys yet
+                  {t('noApiKeys')}
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -553,39 +546,47 @@ export default function SettingsPage() {
                         <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{k.name}</div>
                         <div style={{ fontSize: 11, color: textDim, marginTop: 2, fontFamily: 'monospace' }}>{k.prefix}••••••••</div>
                       </div>
-                      <div style={{ fontSize: 11, color: textDim, marginRight: 8 }}>{k.last_used ? `Last used ${k.last_used}` : 'Never used'}</div>
-                      <button onClick={() => revokeApiKey(k.id)} style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 12, cursor: 'pointer' }}>Revoke</button>
+                      <div style={{ fontSize: 11, color: textDim, marginInlineEnd: 8 }}>{k.last_used ? `${t('lastUsed')} ${k.last_used}` : t('neverUsed')}</div>
+                      <button onClick={() => revokeApiKey(k.id)} style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 12, cursor: 'pointer' }}>{t('revoke')}</button>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+            </SettingsCard>
           </>
         )}
 
         {/* ── Push Notifications ── */}
         {tab === 'push' && (
           <>
-            <div style={card}>
-              <SectionTitle title="Push Notifications" desc="Receive real-time alerts in your browser." />
+            <SettingsCard title={t('pushNotificationsTitle')} desc={t('pushNotificationsDesc')}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, marginBottom: 3 }}>Browser push notifications</div>
-                  <div style={{ fontSize: 12, color: textDim }}>Receive real-time alerts directly in your browser.</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, marginBottom: 3 }}>{t('browserPush')}</div>
+                  <div style={{ fontSize: 12, color: textDim }}>
+                    {pushPermission === 'denied'
+                      ? 'Notifications blocked by browser. Please enable in browser settings.'
+                      : pushPermission === 'unsupported'
+                        ? 'Push notifications are not supported in this browser.'
+                        : t('browserPushDesc')}
+                  </div>
                 </div>
-                <button onClick={() => setPushEnabled(v => !v)} style={{ width: 44, height: 24, borderRadius: 100, border: 'none', cursor: 'pointer', background: pushEnabled ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'), position: 'relative' }}>
+                <button
+                  onClick={handleTogglePush}
+                  disabled={pushPermission === 'denied' || pushPermission === 'unsupported'}
+                  style={{ width: 44, height: 24, borderRadius: 100, border: 'none', cursor: pushPermission === 'denied' || pushPermission === 'unsupported' ? 'not-allowed' : 'pointer', background: pushEnabled ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : 'var(--color-border)', position: 'relative', opacity: pushPermission === 'denied' || pushPermission === 'unsupported' ? 0.5 : 1 }}
+                >
                   <span style={{ position: 'absolute', top: 3, left: pushEnabled ? 22 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
                 </button>
               </div>
-            </div>
-            <div style={card}>
-              <SectionTitle title="Email Preferences" desc="Choose which emails you receive from Orchestra." />
+            </SettingsCard>
+            <SettingsCard title={t('emailPreferences')} desc={t('emailPreferencesDesc')}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {([
-                  { key: 'feature_updates', label: 'Feature & product updates', desc: 'News about new features and platform improvements' },
-                  { key: 'security_alerts', label: 'Security alerts', desc: 'Important alerts about your account security' },
-                  { key: 'team_invites', label: 'Team invitations', desc: 'When you are invited to join a team' },
-                  { key: 'billing', label: 'Billing & receipts', desc: 'Invoices and payment notifications' },
+                  { key: 'feature_updates', label: t('emailFeatureUpdates'), desc: t('emailFeatureUpdatesDesc') },
+                  { key: 'security_alerts', label: t('emailSecurityAlerts'), desc: t('emailSecurityAlertsDesc') },
+                  { key: 'team_invites', label: t('emailTeamInvites'), desc: t('emailTeamInvitesDesc') },
+                  { key: 'billing', label: t('emailBilling'), desc: t('emailBillingDesc') },
                 ] as { key: keyof typeof emailPrefs; label: string; desc: string }[]).map(({ key, label, desc }) => (
                   <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '13px 0', borderBottom: `1px solid ${cardDivider}` }}>
                     <div>
@@ -595,29 +596,27 @@ export default function SettingsPage() {
                     <input type="checkbox" checked={emailPrefs[key]} onChange={e => setEmailPrefs(p => ({ ...p, [key]: e.target.checked }))} style={{ width: 16, height: 16, cursor: 'pointer', flexShrink: 0, accentColor: '#00e5ff' }} />
                   </div>
                 ))}
-                <button style={{ ...saveBtnSt, alignSelf: 'flex-start', marginTop: 20 }}>Save preferences</button>
+                <button style={{ ...saveBtnSt, alignSelf: 'flex-start', marginTop: 20 }}>{t('savePreferences')}</button>
               </div>
-            </div>
+            </SettingsCard>
           </>
         )}
 
         {/* ── Admin: General ── */}
         {tab === 'admin-general' && isAdmin && (
-          <div style={card}>
-            <SectionTitle title="General Settings" desc="Core platform configuration." />
+          <SettingsCard title={t('adminGeneralTitle')} desc={t('adminGeneralDesc')}>
             {adminField('general', 'site_name', 'Site name')}
             {adminField('general', 'tagline', 'Tagline')}
             {adminField('general', 'url', 'Site URL', 'url')}
             {adminField('general', 'support_email', 'Support email', 'email')}
             {adminToggle('general', 'maintenance_mode', 'Maintenance mode', 'Show maintenance page to all non-admin users')}
             <SaveRow settingKey="general" />
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Admin: Features ── */}
         {tab === 'admin-features' && isAdmin && (
-          <div style={card}>
-            <SectionTitle title="Feature Flags" desc="Enable or disable platform features." />
+          <SettingsCard title={t('adminFeaturesTitle')} desc={t('adminFeaturesDesc')}>
             {[
               { key: 'rag', label: 'RAG Memory', desc: 'Vector search and memory engine' },
               { key: 'multi_agent', label: 'Multi-Agent', desc: 'Agent orchestration and workflows' },
@@ -627,13 +626,12 @@ export default function SettingsPage() {
               { key: 'packs', label: 'Packs', desc: 'Skill and agent packs' },
             ].map(f => adminToggle('features', f.key, f.label, f.desc))}
             <SaveRow settingKey="features" />
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Admin: Home Page ── */}
         {tab === 'admin-homepage' && isAdmin && (
-          <div style={card}>
-            <SectionTitle title="Home Page Settings" desc="Configure the public landing page content." />
+          <SettingsCard title={t('adminHomepageTitle')} desc={t('adminHomepageDesc')}>
             {adminField('homepage', 'hero_headline', 'Hero headline')}
             {adminField('homepage', 'hero_subtext', 'Hero subtext', 'textarea')}
             {adminField('homepage', 'cta_primary', 'Primary CTA label')}
@@ -643,24 +641,22 @@ export default function SettingsPage() {
             {adminField('homepage', 'stats_platforms', 'Stats — Platforms count')}
             {adminField('homepage', 'stats_packs', 'Stats — Packs count')}
             <SaveRow settingKey="homepage" />
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Admin: Agents ── */}
         {tab === 'admin-agents' && isAdmin && (
-          <div style={card}>
-            <SectionTitle title="Agents Page" desc="Configure the agents showcase page." />
+          <SettingsCard title={t('adminAgentsTitle')} desc={t('adminAgentsDesc')}>
             {adminField('agents', 'headline', 'Page headline')}
             {adminField('agents', 'subtext', 'Page subtext', 'textarea')}
             {adminField('agents', 'featured_ids', 'Featured agent IDs (comma-separated)')}
             <SaveRow settingKey="agents" />
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Admin: Contact ── */}
         {tab === 'admin-contact' && isAdmin && (
-          <div style={card}>
-            <SectionTitle title="Contact Settings" desc="Public contact page configuration." />
+          <SettingsCard title={t('adminContactTitle')} desc={t('adminContactDesc')}>
             {adminField('contact', 'headline', 'Page headline')}
             {adminField('contact', 'support_email', 'Support email', 'email')}
             {adminField('contact', 'hours', 'Support hours')}
@@ -668,13 +664,12 @@ export default function SettingsPage() {
             {adminField('contact', 'github', 'GitHub URL', 'url')}
             {adminField('contact', 'discord', 'Discord URL', 'url')}
             <SaveRow settingKey="contact" />
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Admin: Pricing ── */}
         {tab === 'admin-pricing' && isAdmin && (
-          <div style={card}>
-            <SectionTitle title="Pricing Configuration" desc="Set plan names, prices, and features." />
+          <SettingsCard title={t('adminPricingTitle')} desc={t('adminPricingDesc')}>
             {(['free', 'pro', 'enterprise'] as const).map(plan => (
               <div key={plan} style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}`, textTransform: 'capitalize' }}>{plan} Plan</div>
@@ -686,13 +681,12 @@ export default function SettingsPage() {
               </div>
             ))}
             <SaveRow settingKey="pricing" />
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Admin: Download ── */}
         {tab === 'admin-download' && isAdmin && (
-          <div style={card}>
-            <SectionTitle title="Download Links" desc="Platform binary URLs and version info." />
+          <SettingsCard title={t('adminDownloadTitle')} desc={t('adminDownloadDesc')}>
             {(['macos', 'windows', 'linux', 'ios', 'android'] as const).map(platform => (
               <div key={platform} style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}`, textTransform: 'capitalize' }}>{platform}</div>
@@ -702,31 +696,39 @@ export default function SettingsPage() {
               </div>
             ))}
             <SaveRow settingKey="download" />
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Admin: Integrations ── */}
         {tab === 'admin-integrations' && isAdmin && (
-          <div style={card}>
-            <SectionTitle title="OAuth Integrations" desc="Third-party OAuth provider credentials." />
+          <SettingsCard title={t('adminIntegrationsTitle')} desc={t('adminIntegrationsDesc')}>
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Google OAuth</div>
               {adminField('integrations', 'google_client_id', 'Client ID')}
               {adminField('integrations', 'google_client_secret', 'Client secret')}
             </div>
-            <div>
+            <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>GitHub OAuth</div>
               {adminField('integrations', 'github_client_id', 'Client ID')}
               {adminField('integrations', 'github_client_secret', 'Client secret')}
             </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Discord OAuth</div>
+              {adminField('integrations', 'discord_client_id', 'Client ID')}
+              {adminField('integrations', 'discord_client_secret', 'Client secret')}
+            </div>
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Slack OAuth</div>
+              {adminField('integrations', 'slack_client_id', 'Client ID')}
+              {adminField('integrations', 'slack_client_secret', 'Client secret')}
+            </div>
             <SaveRow settingKey="integrations" />
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Admin: Email / SMTP ── */}
         {tab === 'admin-email' && isAdmin && (
-          <div style={card}>
-            <SectionTitle title="SMTP / Email Settings" desc="Configure outbound email delivery." />
+          <SettingsCard title={t('adminEmailTitle')} desc={t('adminEmailDesc')}>
             {adminField('smtp', 'host', 'SMTP host')}
             {adminField('smtp', 'port', 'SMTP port', 'number')}
             {adminField('smtp', 'username', 'Username')}
@@ -734,17 +736,16 @@ export default function SettingsPage() {
             {adminField('smtp', 'from_name', 'From name')}
             {adminField('smtp', 'from_email', 'From email', 'email')}
             <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
-              <button style={saveBtnSt} onClick={() => handleSaveAdminSetting('smtp')}>Save changes</button>
-              <button style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Send test email</button>
-              {adminSaved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><i className="bx bx-check-circle" /> Saved</span>}
+              <button style={saveBtnSt} onClick={() => handleSaveAdminSetting('smtp')}>{t('saveChanges')}</button>
+              <button style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>{t('sendTestEmail')}</button>
+              {adminSaved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><i className="bx bx-check-circle" /> {t('saved')}</span>}
             </div>
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Admin: AI Models ── */}
         {tab === 'admin-aimodels' && isAdmin && (
-          <div style={card}>
-            <SectionTitle title="AI Model Configuration" desc="Default AI models and API keys for each provider." />
+          <SettingsCard title={t('adminAITitle')} desc={t('adminAIDesc')}>
             {[
               { provider: 'claude', label: 'Anthropic Claude', envKey: 'ANTHROPIC_API_KEY' },
               { provider: 'openai', label: 'OpenAI', envKey: 'OPENAI_API_KEY' },
@@ -758,23 +759,94 @@ export default function SettingsPage() {
               </div>
             ))}
             <SaveRow settingKey="aimodels" />
-          </div>
+          </SettingsCard>
         )}
 
         {/* ── Admin: SEO ── */}
         {tab === 'admin-seo' && isAdmin && (
-          <div style={card}>
-            <SectionTitle title="SEO Configuration" desc="Search engine and social media metadata." />
+          <SettingsCard title={t('adminSEOTitle')} desc={t('adminSEODesc')}>
             {adminField('seo', 'title_template', 'Title template (e.g. %s — Orchestra)')}
             {adminField('seo', 'meta_description', 'Meta description', 'textarea')}
             {adminField('seo', 'og_image_url', 'OG image URL', 'url')}
             {adminField('seo', 'robots_txt', 'robots.txt content', 'textarea')}
             {adminField('seo', 'sitemap_url', 'Sitemap URL', 'url')}
             <SaveRow settingKey="seo" />
-          </div>
+          </SettingsCard>
         )}
 
-      </div>
+        {/* ── Admin: Discord Bot ── */}
+        {tab === 'admin-discord' && isAdmin && (
+          <SettingsCard title="Discord Bot" desc="Configure the Discord bot connection, allowed users, and notification settings.">
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Bot Configuration</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <label style={{ fontSize: 13, fontWeight: 500, color: textMuted }}>Enabled</label>
+                <input
+                  type="checkbox"
+                  checked={adminSettings.discord?.enabled === true || adminSettings.discord?.enabled === 'true'}
+                  onChange={e => {
+                    const val = { ...adminSettings.discord, enabled: e.target.checked }
+                    setAdminSettings(s => ({ ...s, discord: val }))
+                  }}
+                  style={{ width: 18, height: 18, accentColor: '#a900ff', cursor: 'pointer' }}
+                />
+              </div>
+              {adminField('discord', 'bot_token', 'Bot Token')}
+              {adminField('discord', 'application_id', 'Application ID')}
+              {adminField('discord', 'guild_id', 'Guild ID')}
+              {adminField('discord', 'channel_id', 'Default Channel ID')}
+              {adminField('discord', 'command_prefix', 'Command Prefix')}
+              {adminField('discord', 'webhook_url', 'Webhook URL', 'url')}
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>OAuth Credentials</div>
+              {adminField('discord', 'client_id', 'Client ID')}
+              {adminField('discord', 'client_secret', 'Client Secret')}
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Allowed Users</div>
+              <div style={{ fontSize: 12, color: textDim, marginBottom: 12 }}>Enter Discord usernames (e.g. user#1234) that are allowed to interact with the bot. Leave empty to allow all users.</div>
+              {adminField('discord', 'allowed_users', 'Allowed users (comma-separated)', 'textarea')}
+            </div>
+            <SaveRow settingKey="discord" />
+          </SettingsCard>
+        )}
+
+        {/* ── Admin: Slack Bot ── */}
+        {tab === 'admin-slack' && isAdmin && (
+          <SettingsCard title="Slack Bot" desc="Configure the Slack bot connection (Socket Mode), allowed users, and notification settings.">
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Bot Configuration</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <label style={{ fontSize: 13, fontWeight: 500, color: textMuted }}>Enabled</label>
+                <input
+                  type="checkbox"
+                  checked={adminSettings.slack?.enabled === true || adminSettings.slack?.enabled === 'true'}
+                  onChange={e => {
+                    const val = { ...adminSettings.slack, enabled: e.target.checked }
+                    setAdminSettings(s => ({ ...s, slack: val }))
+                  }}
+                  style={{ width: 18, height: 18, accentColor: '#a900ff', cursor: 'pointer' }}
+                />
+              </div>
+              {adminField('slack', 'bot_token', 'Bot Token (xoxb-...)')}
+              {adminField('slack', 'app_token', 'App-Level Token (xapp-...)')}
+              {adminField('slack', 'signing_secret', 'Signing Secret')}
+              {adminField('slack', 'app_id', 'App ID')}
+              {adminField('slack', 'channel_id', 'Default Channel ID')}
+              {adminField('slack', 'team_id', 'Team / Workspace ID')}
+              {adminField('slack', 'command_prefix', 'Command Prefix')}
+              {adminField('slack', 'webhook_url', 'Incoming Webhook URL', 'url')}
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Allowed Users</div>
+              <div style={{ fontSize: 12, color: textDim, marginBottom: 12 }}>Enter Slack user IDs (e.g. U12345ABC) that are allowed to interact with the bot. Leave empty to allow all users.</div>
+              {adminField('slack', 'allowed_users', 'Allowed users (comma-separated)', 'textarea')}
+            </div>
+            <SaveRow settingKey="slack" />
+          </SettingsCard>
+        )}
+
     </div>
   )
 }

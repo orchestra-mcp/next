@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useThemeStore } from '@/store/theme'
 import { useRoleStore } from '@/store/roles'
 import { useAdminStore, type AdminPage } from '@/store/admin'
 
@@ -13,8 +12,6 @@ const EMPTY_FORM = { title: '', content: '', status: 'draft' as 'draft' | 'publi
 export default function AdminPagesPage() {
   const router = useRouter()
   const { can, roleLoaded } = useRoleStore()
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
   const { pages, loading, error, fetchPages, createPage, updatePage, deletePage, clearError } = useAdminStore()
 
   const [modal, setModal] = useState<ModalMode>(null)
@@ -29,18 +26,18 @@ export default function AdminPagesPage() {
     fetchPages()
   }, [roleLoaded])
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const pageBg = isDark ? '#0f0f12' : '#f5f5f7'
-  const inputBg = isDark ? 'rgba(255,255,255,0.05)' : '#f9f9fb'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const overlayBg = isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.4)'
-  const modalBg = isDark ? '#1a1520' : '#ffffff'
-  const rowBorder = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'
-  const labelColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.5)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const cardBg = 'var(--color-bg-alt)'
+  const cardBorder = 'var(--color-border)'
+  const pageBg = 'var(--color-bg)'
+  const inputBg = 'var(--color-bg-alt)'
+  const inputBorder = 'var(--color-border)'
+  const overlayBg = 'rgba(0,0,0,0.5)'
+  const modalBg = 'var(--color-bg-contrast)'
+  const rowBorder = 'var(--color-bg-alt)'
+  const labelColor = 'var(--color-fg-muted)'
 
   const inputSt: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 9,
@@ -100,9 +97,9 @@ export default function AdminPagesPage() {
   }
 
   function StatusBadge({ status }: { status: 'draft' | 'published' }) {
-    const color = status === 'published' ? '#22c55e' : isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'
-    const bg = status === 'published' ? 'rgba(34,197,94,0.1)' : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'
-    const border = status === 'published' ? 'rgba(34,197,94,0.25)' : isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+    const color = status === 'published' ? '#22c55e' : 'var(--color-fg-dim)'
+    const bg = status === 'published' ? 'rgba(34,197,94,0.1)' : 'var(--color-bg-active)'
+    const border = status === 'published' ? 'rgba(34,197,94,0.25)' : 'var(--color-border)'
     return (
       <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: bg, color, border: `1px solid ${border}`, fontWeight: 600, textTransform: 'capitalize' }}>
         {status}
@@ -115,16 +112,16 @@ export default function AdminPagesPage() {
   }
 
   return (
-    <div style={{ padding: '28px 32px', background: pageBg, minHeight: '100vh' }}>
+    <div className="page-wrapper" style={{ padding: '28px 32px', background: pageBg, minHeight: '100vh' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Link href="/admin" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
-          <i className="bx bx-left-arrow-alt" /> Admin
+          <i className="bx bx-left-arrow-alt rtl-flip" /> Admin
         </Link>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Pages</h1>
-            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 100, background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)', color: textMuted }}>
+            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 100, background: 'var(--color-bg-active)', color: textMuted }}>
               {pages.length}
             </span>
           </div>
@@ -146,12 +143,12 @@ export default function AdminPagesPage() {
 
       {/* Table */}
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 100px 120px 80px', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 100px 120px 80px', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           <div>Title</div>
-          <div>Slug</div>
+          <div className="hide-mobile">Slug</div>
           <div>Status</div>
-          <div>Updated</div>
-          <div style={{ textAlign: 'right' }}>Actions</div>
+          <div className="hide-mobile">Updated</div>
+          <div style={{ textAlign: 'end' }}>Actions</div>
         </div>
 
         {loading && pages.length === 0 ? (
@@ -166,11 +163,11 @@ export default function AdminPagesPage() {
             <div style={{ fontSize: 12, color: textDim }}>Create your first page to get started.</div>
           </div>
         ) : pages.map((p, idx) => (
-          <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 100px 120px 80px', padding: '13px 20px', borderBottom: idx < pages.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
+          <div key={p.id} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 100px 120px 80px', padding: '13px 20px', borderBottom: idx < pages.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</div>
-            <div style={{ fontSize: 11.5, color: textMuted, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.slug}</div>
+            <div className="hide-mobile" style={{ fontSize: 11.5, color: textMuted, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.slug}</div>
             <div><StatusBadge status={p.status} /></div>
-            <div style={{ fontSize: 11.5, color: textMuted }}>{fmt(p.updated_at)}</div>
+            <div className="hide-mobile" style={{ fontSize: 11.5, color: textMuted }}>{fmt(p.updated_at)}</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
               <button onClick={() => openEdit(p)} title="Edit" style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <i className="bx bx-pencil" style={{ fontSize: 14 }} />
@@ -186,7 +183,7 @@ export default function AdminPagesPage() {
       {/* Modal */}
       {modal && (
         <div onClick={closeModal} style={{ position: 'fixed', inset: 0, background: overlayBg, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: modalBg, border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 16, padding: 28, width: '100%', maxWidth: 520, boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: modalBg, border: `1px solid var(--color-border)`, borderRadius: 16, padding: 28, width: '100%', maxWidth: 520, boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: textPrimary }}>
                 {modal === 'create' ? 'New Page' : 'Edit Page'}

@@ -20,6 +20,7 @@ export interface Team {
   name: string
   slug: string
   description?: string
+  avatar_url?: string
   plan: 'free' | 'pro' | 'enterprise'
   member_count: number
   created_at: string
@@ -214,7 +215,9 @@ export const useRoleStore = create<RolesState & RolesActions>()(
       fetchTeam: async () => {
         set({ loading: true, error: null })
         try {
-          const res = await apiFetch<Team | { team: Team }>('/api/team')
+          const teamId = get().team?.id
+          const url = teamId ? `/api/team?team_id=${teamId}` : '/api/team'
+          const res = await apiFetch<Team | { team: Team }>(url)
           const team = ('team' in res && res.team) ? res.team : res as Team
           set({ team, loading: false })
         } catch (e) {
@@ -250,7 +253,9 @@ export const useRoleStore = create<RolesState & RolesActions>()(
       fetchMembers: async () => {
         set({ loading: true, error: null })
         try {
-          const res = await apiFetch<{ members: TeamMember[] }>('/api/team/members')
+          const teamId = get().team?.id
+          const url = teamId ? `/api/team/members?team_id=${teamId}` : '/api/team/members'
+          const res = await apiFetch<{ members: TeamMember[] }>(url)
           set({ members: res.members, loading: false })
         } catch (e) {
           if ((e as any).devSeed) { set({ loading: false }); return }
@@ -354,7 +359,9 @@ export const useRoleStore = create<RolesState & RolesActions>()(
       updateTeam: async (data) => {
         set({ loading: true, error: null })
         try {
-          const res = await apiFetch<{ team: Team }>('/api/team', {
+          const teamId = get().team?.id
+          const url = teamId ? `/api/team?team_id=${teamId}` : '/api/team'
+          const res = await apiFetch<{ team: Team }>(url, {
             method: 'PATCH',
             body: JSON.stringify(data),
           })

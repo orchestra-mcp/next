@@ -21,21 +21,66 @@
   width: 100%;
   max-width: 640px;
   max-height: 480px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
 }
 
+.spotlight-input-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
 .spotlight-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 16px 20px;
   font-size: 16px;
   border: none;
-  border-bottom: 1px solid var(--color-border);
   background: transparent;
   color: var(--color-fg);
   outline: none;
   font-family: system-ui, -apple-system, sans-serif;
   box-sizing: border-box;
+}
+
+.spotlight-ai-toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-right: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-fg);
+  opacity: 0.5;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.15s ease;
+}
+
+.spotlight-ai-toggle:hover {
+  opacity: 0.8;
+  background: var(--color-bg-active);
+}
+
+.spotlight-ai-toggle--active {
+  opacity: 1;
+  color: #a900ff;
+  border-color: #a900ff;
+  background: rgba(169, 0, 255, 0.1);
+}
+
+.spotlight-results {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .spotlight-input::placeholder {

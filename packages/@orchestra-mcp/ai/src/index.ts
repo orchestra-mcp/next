@@ -42,6 +42,7 @@ export type {
   McpRoutedEvent,
   PreviewCodePayload,
   PreviewEvent,
+  PermissionEvent,
   CardStatus,
   CardCategory,
   ClaudeCodeEvent,

@@ -75,6 +75,7 @@ export const ChatBox = ({
   onFileClick,
   onOpenInWindow,
   onQuestionAnswer,
+  onPermissionDecision,
   hasMoreMessages,
   onLoadMore,
   sessions,
@@ -479,6 +480,7 @@ export const ChatBox = ({
             onFileClick={onFileClick}
             onOpenInWindow={onOpenInWindow}
             onQuestionAnswer={onQuestionAnswer}
+            onPermissionDecision={onPermissionDecision}
           />
         ))}
         {typing && <ChatTypingIndicator />}

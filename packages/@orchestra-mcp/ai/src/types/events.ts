@@ -19,6 +19,7 @@ export type ClaudeCodeEventType =
   | 'terminal'
   | 'mcp_routed'
   | 'preview'
+  | 'permission'
   | 'question';
 
 export interface BaseEvent {
@@ -45,7 +46,8 @@ export type CardCategory =
   | 'agent'
   | 'plan'
   | 'orchestra'
-  | 'preview';
+  | 'preview'
+  | 'permission';
 
 export interface BashEvent extends BaseEvent {
   type: 'bash';
@@ -246,6 +248,16 @@ export interface PreviewEvent extends BaseEvent {
   code?: PreviewCodePayload;
 }
 
+export interface PermissionEvent extends BaseEvent {
+  type: 'permission';
+  requestId: string;
+  toolName: string;
+  toolInput?: string;
+  reason?: string;
+  /** Set when the user responds (null while pending). */
+  decision?: 'approved' | 'denied';
+}
+
 export interface QuestionOption {
   label: string;
   description?: string;
@@ -287,4 +299,5 @@ export type ClaudeCodeEvent =
   | TerminalEvent
   | McpRoutedEvent
   | PreviewEvent
+  | PermissionEvent
   | QuestionEvent;

@@ -1,16 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useThemeStore } from '@/store/theme'
 import { useSettingsStore, type Notification } from '@/store/settings'
+import { useTranslations } from 'next-intl'
 
 type Filter = 'all' | 'unread' | 'system' | 'team'
-
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'all',    label: 'All'    },
-  { id: 'unread', label: 'Unread' },
-  { id: 'system', label: 'System' },
-  { id: 'team',   label: 'Team'   },
-]
 
 // Map notification type to icon class and color
 const TYPE_META: Record<string, { icon: string; color: string }> = {
@@ -40,28 +33,85 @@ function formatTimestamp(iso: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+// Extracted outside the component to avoid React key warnings from
+// re-creating the component function on every render.
+function NotificationRow({ n, onMarkRead, isLast }: { n: Notification; onMarkRead: (id: number) => void; isLast: boolean }) {
+  const meta = getTypeMeta(n.type)
+  const isUnread = !n.read_at
+
+  const textPrimary = 'var(--color-fg)'
+  const textMuted   = 'var(--color-fg-muted)'
+  const textDim     = 'var(--color-fg-dim)'
+  const cardBorder  = 'var(--color-border)'
+  const cardHover   = 'var(--color-bg-active)'
+
+  return (
+    <div
+      onClick={() => { if (isUnread) onMarkRead(n.id) }}
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 14,
+        padding: '14px 18px',
+        borderBottom: isLast ? 'none' : `1px solid ${cardBorder}`,
+        cursor: isUnread ? 'pointer' : 'default',
+        background: isUnread ? 'rgba(0,229,255,0.03)' : 'transparent',
+        transition: 'background 0.15s',
+      }}
+      onMouseEnter={e => { if (isUnread) (e.currentTarget as HTMLDivElement).style.background = cardHover }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isUnread ? 'rgba(0,229,255,0.03)' : 'transparent' }}
+    >
+      {/* Icon */}
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: `${meta.color}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+        <i className={`bx ${meta.icon}`} style={{ fontSize: 17, color: meta.color }} />
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: isUnread ? 600 : 500, color: textPrimary, marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {n.title}
+        </div>
+        <div style={{ fontSize: 12, color: textMuted, lineHeight: 1.5 }}>{n.message}</div>
+      </div>
+
+      {/* Right side: timestamp + unread dot */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+        <span style={{ fontSize: 11, color: textDim, whiteSpace: 'nowrap' }}>{formatTimestamp(n.created_at)}</span>
+        {isUnread && (
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00e5ff', display: 'block' }} />
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function NotificationsPage() {
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
   const { notifications, loading, error, fetchNotifications, markNotificationRead, markAllRead } = useSettingsStore()
+  const t = useTranslations('app')
 
   const [filter, setFilter] = useState<Filter>('all')
   const [markingAll, setMarkingAll] = useState(false)
+
+  const FILTERS: { id: Filter; label: string }[] = [
+    { id: 'all', label: t('filterAll') },
+    { id: 'unread', label: t('filterUnread') },
+    { id: 'system', label: t('filterSystem') },
+    { id: 'team', label: t('filterTeam') },
+  ]
 
   useEffect(() => {
     fetchNotifications()
   }, [])
 
-  const textPrimary = isDark ? '#f8f8f8'                  : '#0f0f12'
-  const textMuted   = isDark ? 'rgba(255,255,255,0.4)'    : 'rgba(0,0,0,0.45)'
-  const textDim     = isDark ? 'rgba(255,255,255,0.25)'   : 'rgba(0,0,0,0.3)'
-  const cardBg      = isDark ? 'rgba(255,255,255,0.03)'   : '#ffffff'
-  const cardBorder  = isDark ? 'rgba(255,255,255,0.07)'   : 'rgba(0,0,0,0.08)'
-  const cardHover   = isDark ? 'rgba(255,255,255,0.05)'   : 'rgba(0,0,0,0.03)'
-  const pillBg      = isDark ? 'rgba(255,255,255,0.06)'   : 'rgba(0,0,0,0.05)'
-  const pillActive  = isDark ? 'rgba(255,255,255,0.12)'   : 'rgba(0,0,0,0.09)'
-  const pillActiveColor = isDark ? '#f8f8f8'              : '#0f0f12'
-  const pillColor   = isDark ? 'rgba(255,255,255,0.45)'   : 'rgba(0,0,0,0.5)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted   = 'var(--color-fg-muted)'
+  const textDim     = 'var(--color-fg-dim)'
+  const cardBg      = 'var(--color-bg-alt)'
+  const cardBorder  = 'var(--color-border)'
+  const pillBg      = 'var(--color-bg-active)'
+  const pillActive  = 'var(--color-border)'
+  const pillActiveColor = 'var(--color-fg)'
+  const pillColor   = 'var(--color-fg-muted)'
 
   // Filter notifications
   const filtered = notifications.filter(n => {
@@ -79,59 +129,15 @@ export default function NotificationsPage() {
     try { await markAllRead() } finally { setMarkingAll(false) }
   }
 
-  function NotificationRow({ n }: { n: Notification }) {
-    const meta = getTypeMeta(n.type)
-    const isUnread = !n.read_at
-
-    return (
-      <div
-        onClick={() => { if (isUnread) markNotificationRead(n.id) }}
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 14,
-          padding: '14px 18px',
-          borderBottom: `1px solid ${cardBorder}`,
-          cursor: isUnread ? 'pointer' : 'default',
-          background: isUnread ? (isDark ? 'rgba(0,229,255,0.025)' : 'rgba(0,229,255,0.03)') : 'transparent',
-          transition: 'background 0.15s',
-        }}
-        onMouseEnter={e => { if (isUnread) (e.currentTarget as HTMLDivElement).style.background = cardHover }}
-        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isUnread ? (isDark ? 'rgba(0,229,255,0.025)' : 'rgba(0,229,255,0.03)') : 'transparent' }}
-      >
-        {/* Icon */}
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: `${meta.color}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-          <i className={`bx ${meta.icon}`} style={{ fontSize: 17, color: meta.color }} />
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: isUnread ? 600 : 500, color: textPrimary, marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {n.title}
-          </div>
-          <div style={{ fontSize: 12, color: textMuted, lineHeight: 1.5 }}>{n.message}</div>
-        </div>
-
-        {/* Right side: timestamp + unread dot */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: textDim, whiteSpace: 'nowrap' }}>{formatTimestamp(n.created_at)}</span>
-          {isUnread && (
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00e5ff', display: 'block' }} />
-          )}
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div style={{ maxWidth: 700, padding: '28px 32px' }}>
+    <div className="page-wrapper" style={{ padding: '28px 32px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>
             Notifications
             {unreadCount > 0 && (
-              <span style={{ marginLeft: 10, fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'rgba(0,229,255,0.1)', color: '#00e5ff', fontWeight: 700, verticalAlign: 'middle' }}>
+              <span style={{ marginInlineStart: 10, fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'rgba(0,229,255,0.1)', color: '#00e5ff', fontWeight: 700, verticalAlign: 'middle' }}>
                 {unreadCount}
               </span>
             )}
@@ -170,7 +176,7 @@ export default function NotificationsPage() {
           >
             {f.label}
             {f.id === 'unread' && unreadCount > 0 && (
-              <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 5px', borderRadius: 100, background: '#00e5ff', color: '#000', fontWeight: 700 }}>{unreadCount}</span>
+              <span style={{ marginInlineStart: 6, fontSize: 10, padding: '1px 5px', borderRadius: 100, background: '#00e5ff', color: '#000', fontWeight: 700 }}>{unreadCount}</span>
             )}
           </button>
         ))}
@@ -183,10 +189,10 @@ export default function NotificationsPage() {
           <div style={{ padding: '8px 0' }}>
             {[1, 2, 3].map(i => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 18px', borderBottom: i < 3 ? `1px solid ${cardBorder}` : 'none' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', flexShrink: 0 }} />
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--color-bg-alt)', flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ height: 13, width: '60%', borderRadius: 6, background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', marginBottom: 8 }} />
-                  <div style={{ height: 11, width: '80%', borderRadius: 6, background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)' }} />
+                  <div style={{ height: 13, width: '60%', borderRadius: 6, background: 'var(--color-bg-alt)', marginBottom: 8 }} />
+                  <div style={{ height: 11, width: '80%', borderRadius: 6, background: 'var(--color-bg-alt)' }} />
                 </div>
               </div>
             ))}
@@ -213,9 +219,7 @@ export default function NotificationsPage() {
         ) : (
           <div>
             {filtered.map((n, idx) => (
-              <div key={n.id} style={{ borderBottom: idx < filtered.length - 1 ? 'none' : undefined }}>
-                <NotificationRow n={n} />
-              </div>
+              <NotificationRow key={n.id} n={n} onMarkRead={markNotificationRead} isLast={idx === filtered.length - 1} />
             ))}
           </div>
         )}

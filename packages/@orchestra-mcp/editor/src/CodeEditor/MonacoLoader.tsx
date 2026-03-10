@@ -1,12 +1,6 @@
 import React, { lazy, Suspense, type ComponentType } from 'react';
-import { loader, type EditorProps, type DiffEditorProps } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
-import './monaco-workers';
+import type { EditorProps, DiffEditorProps } from '@monaco-editor/react';
 import './CodeEditor.css';
-
-// Tell @monaco-editor/react to use the locally installed monaco-editor
-// instead of loading via CDN/AMD. This works with Vite's ESM bundling.
-loader.config({ monaco });
 
 // Lazy-load the Editor and DiffEditor components for code splitting
 const MonacoEditor = lazy(() =>

@@ -4,7 +4,8 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { TunnelSwitcher } from '@/components/tunnel-switcher'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: 'bx-home-alt' },
@@ -19,7 +20,7 @@ export function DashboardSidebar() {
   const { user, logout } = useAuthStore()
 
   return (
-    <aside style={{ width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, background: '#1a1520', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+    <aside style={{ width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, background: '#1a1520', borderInlineEnd: '1px solid rgba(255,255,255,0.06)' }}>
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '18px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <Image src="/logo.svg" alt="Orchestra" width={26} height={26} />
@@ -38,7 +39,7 @@ export function DashboardSidebar() {
               fontSize: 14, fontWeight: active ? 500 : 400,
               color: active ? '#f8f8f8' : 'rgba(255,255,255,0.45)',
               background: active ? 'rgba(169,0,255,0.15)' : 'transparent',
-              borderLeft: `2px solid ${active ? '#a900ff' : 'transparent'}`,
+              borderInlineStart: `2px solid ${active ? '#a900ff' : 'transparent'}`,
               transition: 'all 0.15s',
             }}>
               <i className={`bx ${item.icon}`} style={{ fontSize: 16 }} />
@@ -46,6 +47,11 @@ export function DashboardSidebar() {
             </Link>
           )
         })}
+
+        {/* Tunnel switcher */}
+        <div style={{ marginTop: 12, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <TunnelSwitcher />
+        </div>
       </nav>
 
       {/* User */}
@@ -53,8 +59,8 @@ export function DashboardSidebar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', cursor: 'pointer' }}>
-              <Avatar size={28}><AvatarFallback>{user?.name?.[0]?.toUpperCase() ?? 'U'}</AvatarFallback></Avatar>
-              <div style={{ flex: 1, textAlign: 'left', overflow: 'hidden' }}>
+              <Avatar size={28}>{user?.avatar_url && <AvatarImage src={user.avatar_url} alt="" />}<AvatarFallback>{user?.name?.[0]?.toUpperCase() ?? 'U'}</AvatarFallback></Avatar>
+              <div style={{ flex: 1, textAlign: 'start', overflow: 'hidden' }}>
                 <div style={{ fontSize: 12, fontWeight: 500, color: '#f8f8f8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name ?? 'User'}</div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email ?? ''}</div>
               </div>

@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useThemeStore } from '@/store/theme'
+import { useTranslations } from 'next-intl'
 
 interface Post {
   slug: string
@@ -22,6 +23,7 @@ const FALLBACK_POSTS: Post[] = [
 ]
 
 export function BlogPreview({ data }: { data?: Record<string, unknown> }) {
+  const t = useTranslations()
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
 
@@ -35,17 +37,17 @@ export function BlogPreview({ data }: { data?: Record<string, unknown> }) {
   const posts = rawPosts.length ? rawPosts.slice(0, 3) : FALLBACK_POSTS
 
   return (
-    <section style={{ padding: '80px 32px', maxWidth: 1200, margin: '0 auto' }}>
+    <section className="mkt-page" style={{ padding: '80px 32px', maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
         <div>
-          <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 36px)', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 8, color: textPrimary }}>From the blog</h2>
-          <p style={{ fontSize: 15, color: textMuted }}>Latest news, tutorials, and engineering deep-dives.</p>
+          <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 36px)', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 8, color: textPrimary }}>{t('blog.fromTheBlog')}</h2>
+          <p style={{ fontSize: 15, color: textMuted }}>{t('blog.fromTheBlogSubtitle')}</p>
         </div>
         <Link href="/blog" style={{ fontSize: 14, color: '#00e5ff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-          View all posts <i className="bx bx-right-arrow-alt" />
+          {t('blog.viewAllPosts')} <i className="bx bx-right-arrow-alt rtl-flip" />
         </Link>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+      <div className="blog-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
         {posts.map(post => (
           <Link key={post.slug} href={`/blog/${post.slug}`} style={{ padding: '24px', borderRadius: 16, border: `1px solid ${cardBorder}`, background: cardBg, textDecoration: 'none', display: 'block' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>

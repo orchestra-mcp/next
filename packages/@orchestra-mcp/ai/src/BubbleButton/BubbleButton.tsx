@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import { useDragPosition } from '../hooks/useDragPosition';
 import './BubbleButton.css';
 
@@ -46,11 +46,22 @@ export const BubbleButton = ({
   draggable = false,
   snapToEdge = true,
 }: BubbleButtonProps) => {
-  const drag = useDragPosition({ snapToEdge, edgeMargin: 24 });
+  // When draggable, taps are detected via onTap (since setPointerCapture eats click events)
+  const handleTap = useCallback(() => {
+    if (disabled) return;
+    onToggle();
+  }, [disabled, onToggle]);
 
+  const drag = useDragPosition({
+    snapToEdge,
+    edgeMargin: 24,
+    onTap: draggable ? handleTap : undefined,
+  });
+
+  // Non-draggable mode: use normal click
   const handleTriggerClick = () => {
     if (disabled) return;
-    if (draggable && drag.wasDragged) return;
+    if (draggable) return; // handled by onTap
     onToggle();
   };
 

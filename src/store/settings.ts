@@ -57,6 +57,7 @@ interface SettingsActions {
   fetchNotifications: () => Promise<void>
   markNotificationRead: (id: number) => Promise<void>
   markAllRead: () => Promise<void>
+  pushRealtimeNotification: (n: Notification) => void
   clearError: () => void
 }
 
@@ -176,6 +177,14 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
   markAllRead: async () => {
     const unread = get().notifications.filter(n => !n.read_at)
     await Promise.all(unread.map(n => get().markNotificationRead(n.id)))
+  },
+
+  pushRealtimeNotification: (n) => {
+    set(s => {
+      // Avoid duplicates (in case fetch already picked it up)
+      if (s.notifications.some(x => x.id === n.id)) return s
+      return { notifications: [n, ...s.notifications] }
+    })
   },
 
   clearError: () => set({ error: null }),

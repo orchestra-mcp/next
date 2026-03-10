@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useThemeStore } from '@/store/theme'
 import { useRoleStore } from '@/store/roles'
 
 const DOC_SECTIONS = [
@@ -17,37 +16,34 @@ const DOC_SECTIONS = [
 export default function AdminDocsPage() {
   const router = useRouter()
   const { can, roleLoaded } = useRoleStore()
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
-
   const [selected, setSelected] = useState<string | null>(null)
   const [content, setContent] = useState('')
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const pageBg = isDark ? '#0f0f12' : '#f5f5f7'
-  const inputBg = isDark ? 'rgba(255,255,255,0.05)' : '#f9f9fb'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const navActiveBg = isDark ? 'rgba(0,229,255,0.08)' : 'rgba(0,229,255,0.07)'
-  const navHoverBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
-  const rowBorder = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const cardBg = 'var(--color-bg-alt)'
+  const cardBorder = 'var(--color-border)'
+  const pageBg = 'var(--color-bg)'
+  const inputBg = 'var(--color-bg-alt)'
+  const inputBorder = 'var(--color-border)'
+  const navActiveBg = 'rgba(0,229,255,0.08)'
+  const navHoverBg = 'var(--color-bg-alt)'
+  const rowBorder = 'var(--color-bg-alt)'
 
   return (
-    <div style={{ padding: '28px 32px', background: pageBg, minHeight: '100vh' }}>
+    <div className="page-wrapper" style={{ padding: '28px 32px', background: pageBg, minHeight: '100vh' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Link href="/admin" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
-          <i className="bx bx-left-arrow-alt" /> Admin
+          <i className="bx bx-left-arrow-alt rtl-flip" /> Admin
         </Link>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Documentation</h1>
         <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>Manage documentation sections and content.</p>
       </div>
 
       {/* Split layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 20, alignItems: 'start' }}>
+      <div className="grid-sidebar" style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 20, alignItems: 'start' }}>
         {/* Left: doc tree */}
         <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
@@ -61,10 +57,10 @@ export default function AdminDocsPage() {
                 onClick={() => setSelected(section)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 9, width: '100%',
-                  padding: '11px 16px', border: 'none', cursor: 'pointer', textAlign: 'left',
+                  padding: '11px 16px', border: 'none', cursor: 'pointer', textAlign: 'start',
                   background: isActive ? navActiveBg : 'transparent',
                   borderBottom: idx < DOC_SECTIONS.length - 1 ? `1px solid ${rowBorder}` : 'none',
-                  borderLeft: isActive ? '2px solid #00e5ff' : '2px solid transparent',
+                  borderInlineStart: isActive ? '2px solid #00e5ff' : '2px solid transparent',
                   transition: 'background 0.15s',
                 }}
                 onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = navHoverBg }}

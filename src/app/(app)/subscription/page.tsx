@@ -1,5 +1,5 @@
 'use client'
-import { useThemeStore } from '@/store/theme'
+import { useTranslations } from 'next-intl'
 
 interface Plan {
   name: string
@@ -54,16 +54,15 @@ const STATUS_COLORS: Record<BillingStatus, { bg: string; color: string; border: 
 }
 
 export default function SubscriptionPage() {
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
+  const t = useTranslations('app')
 
-  const textPrimary = isDark ? '#f8f8f8'                  : '#0f0f12'
-  const textMuted   = isDark ? 'rgba(255,255,255,0.4)'    : 'rgba(0,0,0,0.45)'
-  const textDim     = isDark ? 'rgba(255,255,255,0.25)'   : 'rgba(0,0,0,0.3)'
-  const cardBg      = isDark ? 'rgba(255,255,255,0.03)'   : '#ffffff'
-  const cardBorder  = isDark ? 'rgba(255,255,255,0.07)'   : 'rgba(0,0,0,0.08)'
-  const divider     = isDark ? 'rgba(255,255,255,0.06)'   : 'rgba(0,0,0,0.07)'
-  const usageTrack  = isDark ? 'rgba(255,255,255,0.06)'   : 'rgba(0,0,0,0.06)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted   = 'var(--color-fg-muted)'
+  const textDim     = 'var(--color-fg-dim)'
+  const cardBg      = 'var(--color-bg-alt)'
+  const cardBorder  = 'var(--color-border)'
+  const divider     = 'var(--color-border)'
+  const usageTrack  = 'var(--color-bg-active)'
 
   const card: React.CSSProperties = { background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, padding: '22px 24px' }
 
@@ -91,7 +90,7 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <div style={{ maxWidth: 800, padding: '28px 32px' }}>
+    <div className="page-wrapper" style={{ maxWidth: 800, padding: '28px 32px' }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Subscription</h1>
@@ -100,7 +99,7 @@ export default function SubscriptionPage() {
 
       {/* Current plan card */}
       <div style={{ ...card, marginBottom: 24 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 18, paddingBottom: 14, borderBottom: `1px solid ${divider}` }}>Current Plan</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 18, paddingBottom: 14, borderBottom: `1px solid ${divider}` }}>{t('currentPlan')}</div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -130,7 +129,7 @@ export default function SubscriptionPage() {
       {/* Plan comparison */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 14 }}>Plans</div>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <div className="plan-cards" style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           {PLANS.map(plan => (
             <div
               key={plan.name}
@@ -189,19 +188,19 @@ export default function SubscriptionPage() {
         ) : (
           <div>
             {/* Table header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px 44px', padding: '7px 0', marginBottom: 4, fontSize: 10, fontWeight: 600, color: textDim, letterSpacing: '0.05em', textTransform: 'uppercase' as const, borderBottom: `1px solid ${divider}` }}>
+            <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px 44px', padding: '7px 0', marginBottom: 4, fontSize: 10, fontWeight: 600, color: textDim, letterSpacing: '0.05em', textTransform: 'uppercase' as const, borderBottom: `1px solid ${divider}` }}>
               <div>Date</div>
               <div>Amount</div>
-              <div>Status</div>
+              <div className="hide-mobile">Status</div>
               <div />
             </div>
             {BILLING_HISTORY.map((row, idx) => {
               const sc = STATUS_COLORS[row.status]
               return (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px 44px', padding: '12px 0', borderBottom: idx < BILLING_HISTORY.length - 1 ? `1px solid ${divider}` : 'none', alignItems: 'center' }}>
+                <div key={idx} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px 44px', padding: '12px 0', borderBottom: idx < BILLING_HISTORY.length - 1 ? `1px solid ${divider}` : 'none', alignItems: 'center' }}>
                   <div style={{ fontSize: 13, color: textPrimary }}>{row.date}</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{row.amount}</div>
-                  <div>
+                  <div className="hide-mobile">
                     <span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 100, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, fontWeight: 600, textTransform: 'capitalize' as const }}>
                       {row.status}
                     </span>

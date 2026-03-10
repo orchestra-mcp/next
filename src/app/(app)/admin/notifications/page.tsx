@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useThemeStore } from '@/store/theme'
 import { useRoleStore } from '@/store/roles'
 import { useAdminStore, type AdminNotificationSent } from '@/store/admin'
 
@@ -20,12 +19,11 @@ const EMPTY_FORM = {
 export default function AdminNotificationsPage() {
   const router = useRouter()
   const { can, roleLoaded } = useRoleStore()
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
-  const { notifications, loading, error, fetchNotificationsSent, sendNotification, clearError } = useAdminStore()
+  const { notifications, loading, error, fetchNotificationsSent, sendNotification, seedNotifications, clearError } = useAdminStore()
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [sending, setSending] = useState(false)
+  const [seeding, setSeeding] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
   const [sendSuccess, setSendSuccess] = useState(false)
 
@@ -35,16 +33,16 @@ export default function AdminNotificationsPage() {
     fetchNotificationsSent()
   }, [roleLoaded])
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const pageBg = isDark ? '#0f0f12' : '#f5f5f7'
-  const inputBg = isDark ? 'rgba(255,255,255,0.05)' : '#f9f9fb'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const rowBorder = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'
-  const labelColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.5)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const cardBg = 'var(--color-bg-alt)'
+  const cardBorder = 'var(--color-border)'
+  const pageBg = 'var(--color-bg)'
+  const inputBg = 'var(--color-bg-alt)'
+  const inputBorder = 'var(--color-border)'
+  const rowBorder = 'var(--color-bg-alt)'
+  const labelColor = 'var(--color-fg-muted)'
 
   const inputSt: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 9,
@@ -100,11 +98,11 @@ export default function AdminNotificationsPage() {
   }
 
   return (
-    <div style={{ padding: '28px 32px', background: pageBg, minHeight: '100vh' }}>
+    <div className="page-wrapper" style={{ padding: '28px 32px', background: pageBg, minHeight: '100vh' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Link href="/admin" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
-          <i className="bx bx-left-arrow-alt" /> Admin
+          <i className="bx bx-left-arrow-alt rtl-flip" /> Admin
         </Link>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Notifications</h1>
         <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>Send notifications and view history.</p>
@@ -135,7 +133,7 @@ export default function AdminNotificationsPage() {
           </div>
 
           {/* Title + Type row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 14 }}>
+          <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 14 }}>
             <div>
               <label style={labelSt}>Title</label>
               <input style={inputSt} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Notification title…" />
@@ -161,7 +159,7 @@ export default function AdminNotificationsPage() {
           {sendError && <div style={{ fontSize: 12, color: '#ef4444', padding: '8px 12px', borderRadius: 7, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>{sendError}</div>}
           {sendSuccess && <div style={{ fontSize: 12, color: '#22c55e', padding: '8px 12px', borderRadius: 7, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', gap: 6 }}><i className="bx bx-check-circle" /> Notification sent successfully.</div>}
 
-          <div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button
               onClick={handleSend}
               disabled={sending}
@@ -169,6 +167,14 @@ export default function AdminNotificationsPage() {
             >
               <i className="bx bx-send" />
               {sending ? 'Sending…' : 'Send Notification'}
+            </button>
+            <button
+              onClick={async () => { setSeeding(true); try { await seedNotifications() } finally { setSeeding(false) } }}
+              disabled={seeding}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 20px', borderRadius: 9, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, fontWeight: 500, cursor: 'pointer', opacity: seeding ? 0.7 : 1 }}
+            >
+              <i className="bx bx-test-tube" />
+              {seeding ? 'Seeding…' : 'Seed Test Notifications'}
             </button>
           </div>
         </div>
@@ -187,11 +193,11 @@ export default function AdminNotificationsPage() {
       </div>
 
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 110px 1fr 120px', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 110px 1fr 120px', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           <div>Title</div>
           <div>Type</div>
-          <div>Target</div>
-          <div>Sent</div>
+          <div className="hide-mobile">Target</div>
+          <div className="hide-mobile">Sent</div>
         </div>
 
         {loading && notifications.length === 0 ? (
@@ -206,13 +212,13 @@ export default function AdminNotificationsPage() {
             <div style={{ fontSize: 12, color: textDim }}>Use the form above to send your first notification.</div>
           </div>
         ) : notifications.map((n, idx) => (
-          <div key={n.id} style={{ display: 'grid', gridTemplateColumns: '2fr 110px 1fr 120px', padding: '13px 20px', borderBottom: idx < notifications.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
+          <div key={n.id} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 110px 1fr 120px', padding: '13px 20px', borderBottom: idx < notifications.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title}</div>
               <div style={{ fontSize: 11, color: textDim, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.message}</div>
             </div>
             <div><TypeBadge type={n.type} /></div>
-            <div style={{ fontSize: 12, color: textMuted }}>
+            <div className="hide-mobile" style={{ fontSize: 12, color: textMuted }}>
               {n.target === 'all' ? (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <i className="bx bx-group" style={{ fontSize: 13 }} /> All Users
@@ -223,7 +229,7 @@ export default function AdminNotificationsPage() {
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 11.5, color: textDim }}>{fmt(n.created_at)}</div>
+            <div className="hide-mobile" style={{ fontSize: 11.5, color: textDim }}>{fmt(n.created_at)}</div>
           </div>
         ))}
       </div>

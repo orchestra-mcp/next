@@ -43,6 +43,8 @@ interface AuthActions {
   confirm2FA: (code: string) => Promise<void>
   disable2FA: (code: string) => Promise<void>
   verify2FA: (code: string, tempToken: string) => Promise<void>
+  // Avatar
+  updateAvatarUrl: (avatarUrl: string) => void
   // Impersonation
   startImpersonation: (targetUser: User, impersonationToken: string) => void
   exitImpersonation: () => void
@@ -106,6 +108,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         sessionStorage.removeItem('orchestra_2fa_token')
         sessionStorage.removeItem('orchestra_2fa_email')
         set({ token: null, user: null, impersonating: null })
+      },
+
+      updateAvatarUrl: (avatarUrl) => {
+        const user = get().user
+        if (user) set({ user: { ...user, avatar_url: avatarUrl } })
       },
 
       startImpersonation: (targetUser, impersonationToken) => {

@@ -1,4 +1,4 @@
-import type { ClaudeCodeEvent, QuestionEvent } from '../types/events';
+import type { ClaudeCodeEvent, QuestionEvent, PermissionEvent } from '../types/events';
 import { CardRegistry } from './CardRegistry';
 import { RawCard } from './RawCard';
 import { CardErrorBoundary } from './CardErrorBoundary';
@@ -13,6 +13,8 @@ export interface EventCardRendererProps {
   onOpenInWindow?: (event: ClaudeCodeEvent) => void;
   /** Called when the user submits answers to an inline QuestionCard. */
   onQuestionAnswer?: (requestId: string, answers: Record<string, string>) => void;
+  /** Called when the user approves or denies a permission request. */
+  onPermissionDecision?: (requestId: string, decision: 'approve' | 'deny') => void;
   className?: string;
 }
 
@@ -21,6 +23,7 @@ export const EventCardRenderer = ({
   onFileClick,
   onOpenInWindow,
   onQuestionAnswer,
+  onPermissionDecision,
   className,
 }: EventCardRendererProps) => {
   const registration = CardRegistry.get(event.type);
@@ -41,6 +44,11 @@ export const EventCardRenderer = ({
   if (event.type === 'question' && onQuestionAnswer) {
     extraProps.onAnswer = (requestId: string, answers: Record<string, string>) =>
       onQuestionAnswer(requestId, answers);
+  }
+
+  if (event.type === 'permission' && onPermissionDecision) {
+    extraProps.onDecision = (requestId: string, decision: 'approve' | 'deny') =>
+      onPermissionDecision(requestId, decision);
   }
 
   // BashCard uses onOpenTerminal instead of the generic onOpenInWindow

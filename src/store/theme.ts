@@ -1,57 +1,132 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import {
+  setColorTheme as applyColorTheme,
+  setComponentVariant as applyComponentVariant,
+  initTheme,
+  getThemeById,
+  type ComponentVariant,
+} from '@orchestra-mcp/theme'
 
 type Theme = 'dark' | 'light'
 
 interface ThemeState {
+  /** Legacy dark/light toggle — kept for backward compat */
   theme: Theme
+  /** Active color theme ID from @orchestra-mcp/theme (25 themes) */
+  colorTheme: string
+  /** Active component variant: default | compact | modern */
+  variant: ComponentVariant
+  /** Toggle dark/light (switches between orchestra + github-light) */
   toggle: () => void
+  /** Set dark/light directly */
   set: (theme: Theme) => void
+  /** Set color theme by ID (e.g. 'dracula', 'github-dark') */
+  setColorTheme: (themeId: string) => void
+  /** Set component variant */
+  setVariant: (variant: ComponentVariant) => void
+}
+
+/**
+ * Bridge old legacy CSS vars (--bg, --text, --border, etc.) to the new
+ * @orchestra-mcp/theme CSS vars. This keeps existing inline styles working
+ * until they are migrated to var(--color-*).
+ */
+function bridgeLegacyCssVars(themeId: string) {
+  if (typeof document === 'undefined') return
+
+  const theme = getThemeById(themeId)
+  if (!theme) return
+
+  const root = document.documentElement
+  const c = theme.colors
+
+  // Legacy vars consumed by existing dashboard inline styles
+  root.style.setProperty('--bg', c.bg)
+  root.style.setProperty('--bg-card', c.bgAlt)
+  root.style.setProperty('--bg-sidebar', c.bgAlt)
+  root.style.setProperty('--bg-hover', c.bgActive)
+  root.style.setProperty('--bg-input', c.bgAlt)
+  root.style.setProperty('--text', c.fg)
+  root.style.setProperty('--text-muted', c.fgMuted)
+  root.style.setProperty('--border', c.border)
+
+  // Set data-theme for existing CSS selectors ([data-theme="light"])
+  root.setAttribute('data-theme', theme.isLight ? 'light' : 'dark')
+
+  // Update body bg/color for the active theme
+  document.body.style.backgroundColor = c.bg
+  document.body.style.color = c.fg
 }
 
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
       theme: 'dark',
+      colorTheme: 'orchestra',
+      variant: 'default' as ComponentVariant,
+
       toggle: () => {
-        const next = get().theme === 'dark' ? 'light' : 'dark'
-        set({ theme: next })
-        applyTheme(next)
+        const current = get().colorTheme
+        const currentTheme = getThemeById(current)
+        // If currently on a light theme, switch to orchestra (dark); otherwise switch to github-light
+        const nextId = currentTheme?.isLight ? 'orchestra' : 'github-light'
+        const nextTheme = getThemeById(nextId)
+        const nextDarkLight: Theme = nextTheme?.isLight ? 'light' : 'dark'
+
+        set({ theme: nextDarkLight, colorTheme: nextId })
+        applyColorTheme(nextId)
+        bridgeLegacyCssVars(nextId)
       },
+
       set: (theme) => {
-        set({ theme })
-        applyTheme(theme)
+        const nextId = theme === 'light' ? 'github-light' : 'orchestra'
+        set({ theme, colorTheme: nextId })
+        applyColorTheme(nextId)
+        bridgeLegacyCssVars(nextId)
+      },
+
+      setColorTheme: (themeId) => {
+        const theme = getThemeById(themeId)
+        if (!theme) return
+        const darkLight: Theme = theme.isLight ? 'light' : 'dark'
+        set({ colorTheme: themeId, theme: darkLight })
+        applyColorTheme(themeId)
+        bridgeLegacyCssVars(themeId)
+      },
+
+      setVariant: (variant) => {
+        set({ variant })
+        applyComponentVariant(variant)
       },
     }),
-    { name: 'orchestra-theme', partialize: (s) => ({ theme: s.theme }) }
+    {
+      name: 'orchestra-theme',
+      partialize: (s) => ({
+        theme: s.theme,
+        colorTheme: s.colorTheme,
+        variant: s.variant,
+      }),
+    }
   )
 )
 
+/** Initialize theme on app load — restores from localStorage */
+export function initializeTheme() {
+  if (typeof document === 'undefined') return
+
+  // Let @orchestra-mcp/theme restore from its own localStorage keys
+  initTheme()
+
+  // Also apply our Zustand-persisted state
+  const state = useThemeStore.getState()
+  applyColorTheme(state.colorTheme)
+  applyComponentVariant(state.variant)
+  bridgeLegacyCssVars(state.colorTheme)
+}
+
+// Re-export for backward compat — old code imports applyTheme
 export function applyTheme(theme: Theme) {
-  const root = document.documentElement
-  if (theme === 'light') {
-    root.setAttribute('data-theme', 'light')
-    // CSS variables used by dashboard/nav components via var(--xxx)
-    root.style.setProperty('--bg', '#f5f5f7')
-    root.style.setProperty('--bg-card', '#ffffff')
-    root.style.setProperty('--bg-sidebar', '#ffffff')
-    root.style.setProperty('--bg-hover', 'rgba(0,0,0,0.05)')
-    root.style.setProperty('--bg-input', 'rgba(0,0,0,0.05)')
-    root.style.setProperty('--text', '#0f0f12')
-    root.style.setProperty('--text-muted', 'rgba(0,0,0,0.45)')
-    root.style.setProperty('--border', 'rgba(0,0,0,0.08)')
-    // Only set body bg for app/auth routes — landing keeps its dark sections
-    // We use data-theme CSS selectors to target specific components
-  } else {
-    root.setAttribute('data-theme', 'dark')
-    root.style.setProperty('--bg', '#0f0f12')
-    root.style.setProperty('--bg-card', 'rgba(255,255,255,0.025)')
-    root.style.setProperty('--bg-sidebar', '#131118')
-    root.style.setProperty('--bg-hover', 'rgba(255,255,255,0.07)')
-    root.style.setProperty('--bg-input', 'rgba(255,255,255,0.06)')
-    root.style.setProperty('--text', '#f8f8f8')
-    root.style.setProperty('--text-muted', 'rgba(255,255,255,0.4)')
-    root.style.setProperty('--border', 'rgba(255,255,255,0.07)')
-  }
+  useThemeStore.getState().set(theme)
 }

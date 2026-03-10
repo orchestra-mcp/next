@@ -27,6 +27,7 @@ export interface ChatMessageProps {
   onFileClick?: (filePath: string, line?: number) => void;
   onOpenInWindow?: (event: ClaudeCodeEvent) => void;
   onQuestionAnswer?: (requestId: string, answers: Record<string, string>) => void;
+  onPermissionDecision?: (requestId: string, decision: 'approve' | 'deny') => void;
   className?: string;
 }
 
@@ -41,6 +42,7 @@ export const ChatMessage = ({
   onFileClick,
   onOpenInWindow,
   onQuestionAnswer,
+  onPermissionDecision,
   className,
 }: ChatMessageProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -125,6 +127,7 @@ export const ChatMessage = ({
                     onFileClick={onFileClick}
                     onOpenInWindow={onOpenInWindow}
                     onQuestionAnswer={onQuestionAnswer}
+                    onPermissionDecision={onPermissionDecision}
                   />
                 </TimelineNode>
               ))}

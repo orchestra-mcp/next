@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useThemeStore } from '@/store/theme'
+import { useTranslations } from 'next-intl'
 
 interface Plan {
   name: string
@@ -17,27 +18,6 @@ interface PricingData {
   plans?: Plan[]
 }
 
-const DEFAULT_PLANS: Plan[] = [
-  {
-    name: 'Free', price: '0', period: 'forever', highlighted: false,
-    cta: 'Get started', href: '/register',
-    desc: 'Perfect for solo developers and open source projects.',
-    features: ['All 290 MCP tools', '4 core plugins bundled', '1 GB RAG memory', '5 projects', 'Claude Code, Cursor, VS Code', 'Community support'],
-  },
-  {
-    name: 'Pro', price: '19', period: 'month', highlighted: true,
-    cta: 'Start free trial', href: '/register?plan=pro',
-    desc: 'For teams building production AI-native applications.',
-    features: ['Everything in Free', 'All 36 plugins', 'Unlimited projects', '50 GB RAG memory', 'All 17 official packs', 'Multi-model AI bridges', 'Team collaboration', 'Priority support'],
-  },
-  {
-    name: 'Enterprise', price: 'custom', period: '', highlighted: false,
-    cta: 'Contact us', href: '/contact',
-    desc: 'Custom deployments, SLAs, and dedicated support.',
-    features: ['Everything in Pro', 'Self-hosted deployment', 'Custom plugins', 'SSO / SAML', 'SLA guarantee', 'Dedicated support', 'Audit logs'],
-  },
-]
-
 function formatPrice(price: string) {
   if (price === '0') return '$0'
   if (price === 'custom') return 'Custom'
@@ -45,15 +25,37 @@ function formatPrice(price: string) {
   return isNaN(n) ? price : `$${n}`
 }
 
-function formatPeriod(period: string) {
-  if (!period || period === 'forever') return period === 'forever' ? 'forever' : ''
-  if (period === 'month') return 'per month'
-  return period
-}
-
 export function PricingSection({ data }: { data?: PricingData }) {
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
+  const t = useTranslations()
+
+  const DEFAULT_PLANS: Plan[] = [
+    {
+      name: t('pricing.free.name'), price: '0', period: 'forever', highlighted: false,
+      cta: t('pricing.free.cta'), href: '/register',
+      desc: t('pricing.free.desc'),
+      features: ['All 290 MCP tools', '4 core plugins bundled', '1 GB RAG memory', '5 projects', 'Claude Code, Cursor, VS Code', 'Community support'],
+    },
+    {
+      name: t('pricing.pro.name'), price: '19', period: 'month', highlighted: true,
+      cta: t('pricing.pro.cta'), href: '/register?plan=pro',
+      desc: t('pricing.pro.desc'),
+      features: ['Everything in Free', 'All 36 plugins', 'Unlimited projects', '50 GB RAG memory', 'All 17 official packs', 'Multi-model AI bridges', 'Team collaboration', 'Priority support'],
+    },
+    {
+      name: t('pricing.enterprise.name'), price: 'custom', period: '', highlighted: false,
+      cta: t('pricing.enterprise.cta'), href: '/contact',
+      desc: t('pricing.enterprise.desc'),
+      features: ['Everything in Pro', 'Self-hosted deployment', 'Custom plugins', 'SSO / SAML', 'SLA guarantee', 'Dedicated support', 'Audit logs'],
+    },
+  ]
+
+  function formatPeriod(period: string) {
+    if (!period || period === 'forever') return period === 'forever' ? t('pricing.forever') : ''
+    if (period === 'month') return t('pricing.perMonth')
+    return period
+  }
 
   const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
   const textMuted = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.5)'
@@ -73,12 +75,12 @@ export function PricingSection({ data }: { data?: PricingData }) {
   const plans = data?.plans?.length ? data.plans : DEFAULT_PLANS
 
   return (
-    <section id="pricing" style={{ padding: '80px 32px', maxWidth: 1200, margin: '0 auto' }}>
+    <section id="pricing" className="mkt-page" style={{ padding: '80px 32px', maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: 56 }}>
         <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 14, color: textPrimary }}>Simple, transparent pricing</h2>
         <p style={{ fontSize: 16, color: textMuted, maxWidth: 460, margin: '0 auto' }}>Start free. Upgrade when your team needs more.</p>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'stretch' }}>
+      <div className="pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'stretch' }}>
         {plans.map(p => (
           <div key={p.name} style={{
             padding: '32px 28px', borderRadius: 20,

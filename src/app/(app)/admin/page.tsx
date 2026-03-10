@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useRoleStore, ROLE_LABELS, ROLE_COLORS, type Role } from '@/store/roles'
-import { useThemeStore } from '@/store/theme'
 import { apiFetch } from '@/lib/api'
 
 const ROLES: Role[] = ['admin', 'team_owner', 'team_manager', 'user']
@@ -11,8 +10,6 @@ const ROLES: Role[] = ['admin', 'team_owner', 'team_manager', 'user']
 export default function AdminPage() {
   const router = useRouter()
   const { can, roleLoaded, allUsers, team, fetchAllUsers, fetchTeam } = useRoleStore()
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
   const [devPanel, setDevPanel] = useState(false)
   const [comingSoon, setComingSoon] = useState(false)
   const [comingSoonLoading, setComingSoonLoading] = useState(false)
@@ -53,13 +50,13 @@ export default function AdminPage() {
     if (!team) fetchTeam()
   }, [roleLoaded])
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const divider = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)'
-  const rowBorder = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const cardBg = 'var(--color-bg-alt)'
+  const cardBorder = 'var(--color-border)'
+  const divider = 'var(--color-border)'
+  const rowBorder = 'var(--color-bg-alt)'
 
   // Computed stats
   const totalUsers = allUsers.length
@@ -86,14 +83,14 @@ export default function AdminPage() {
     return (
       <div style={{ padding: '28px 32px' }}>
         {[1, 2, 3].map(i => (
-          <div key={i} style={{ height: 60, borderRadius: 10, background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', marginBottom: 14 }} />
+          <div key={i} style={{ height: 60, borderRadius: 10, background: 'var(--color-bg-alt)', marginBottom: 14 }} />
         ))}
       </div>
     )
   }
 
   return (
-    <div style={{ padding: '28px 32px' }}>
+    <div className="page-wrapper" style={{ padding: '28px 32px' }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -106,27 +103,27 @@ export default function AdminPage() {
       </div>
 
       {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
+      <div className="grid-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
         {stats.map(s => (
-          <div key={s.label} style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, padding: '18px 20px' }}>
+          <div key={s.label} className="stat-card" style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, padding: '18px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: 11, fontWeight: 500, color: textMuted }}>{s.label}</span>
               <div style={{ width: 30, height: 30, borderRadius: 7, background: `${s.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <i className={`bx ${s.icon}`} style={{ fontSize: 15, color: s.color }} />
               </div>
             </div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: textPrimary, letterSpacing: '-0.03em', lineHeight: 1 }}>{s.value}</div>
+            <div className="stat-value" style={{ fontSize: 28, fontWeight: 700, color: textPrimary, letterSpacing: '-0.03em', lineHeight: 1 }}>{s.value}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
+      <div className="grid-sidebar" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
         {/* Left: Admin tools + Teams + Users preview */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Admin tools grid */}
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 12 }}>Admin Tools</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            <div className="grid-admin-tools" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
               {tools.map(s => (
                 <Link key={s.href} href={s.href} style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 12, padding: '18px 20px', textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                   <div style={{ width: 38, height: 38, borderRadius: 9, background: `${s.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -136,7 +133,7 @@ export default function AdminPage() {
                     <div style={{ fontSize: 13.5, fontWeight: 600, color: textPrimary, marginBottom: 3 }}>{s.label}</div>
                     <div style={{ fontSize: 11.5, color: textMuted, lineHeight: 1.5 }}>{s.desc}</div>
                   </div>
-                  <i className="bx bx-right-arrow-alt" style={{ fontSize: 16, color: textDim, flexShrink: 0, alignSelf: 'center' }} />
+                  <i className="bx bx-right-arrow-alt rtl-flip" style={{ fontSize: 16, color: textDim, flexShrink: 0, alignSelf: 'center' }} />
                 </Link>
               ))}
             </div>
@@ -149,27 +146,27 @@ export default function AdminPage() {
                 <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>Users</div>
                 <Link href="/admin/users" style={{ fontSize: 12, color: '#00e5ff', textDecoration: 'none' }}>View all</Link>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr', padding: '9px 18px', borderBottom: `1px solid ${divider}`, fontSize: 10, fontWeight: 600, color: textDim, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                <div>Name</div><div>Email</div><div>Role</div><div>Status</div>
+              <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr', padding: '9px 18px', borderBottom: `1px solid ${divider}`, fontSize: 10, fontWeight: 600, color: textDim, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                <div>Name</div><div className="hide-mobile">Email</div><div>Role</div><div className="hide-mobile">Status</div>
               </div>
               {allUsers.slice(0, 6).map((u, idx) => {
                 const c = ROLE_COLORS[u.role]
                 const statusColor = u.status === 'active' ? '#22c55e' : u.status === 'invited' ? '#f97316' : '#ef4444'
                 return (
-                  <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr', padding: '11px 18px', borderBottom: idx < 5 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
+                  <div key={u.id} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr', padding: '11px 18px', borderBottom: idx < 5 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(0,229,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#00e5ff', flexShrink: 0 }}>
                         {u.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                       <span style={{ fontSize: 12.5, fontWeight: 500, color: textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</span>
                     </div>
-                    <div style={{ fontSize: 11.5, color: textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
+                    <div className="hide-mobile" style={{ fontSize: 11.5, color: textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
                     <div>
                       <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 100, background: c.bg, color: c.color, border: `1px solid ${c.border}`, fontWeight: 600 }}>
                         {ROLE_LABELS[u.role]}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: statusColor }}>
+                    <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: statusColor }}>
                       <span style={{ width: 5, height: 5, borderRadius: '50%', background: statusColor, display: 'inline-block' }} />
                       {u.status.charAt(0).toUpperCase() + u.status.slice(1)}
                     </div>
@@ -234,10 +231,10 @@ export default function AdminPage() {
                   <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: c.bg, color: c.color, border: `1px solid ${c.border}`, fontWeight: 700, flexShrink: 0, minWidth: 88, textAlign: 'center' }}>
                     {ROLE_LABELS[role]}
                   </span>
-                  <div style={{ flex: 1, height: 5, borderRadius: 100, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+                  <div style={{ flex: 1, height: 5, borderRadius: 100, background: 'var(--color-bg-active)', overflow: 'hidden' }}>
                     <div style={{ height: '100%', borderRadius: 100, background: c.color, width: `${pct}%`, transition: 'width 0.4s' }} />
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: textPrimary, flexShrink: 0, minWidth: 16, textAlign: 'right' }}>{count}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: textPrimary, flexShrink: 0, minWidth: 16, textAlign: 'end' }}>{count}</span>
                 </div>
               )
             })}
@@ -248,7 +245,7 @@ export default function AdminPage() {
               <i className="bx bx-time-five" style={{ fontSize: 14, color: comingSoon ? '#f97316' : textMuted }} />
               <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>Coming Soon</span>
               {comingSoon && (
-                <span style={{ marginLeft: 'auto', fontSize: 10, padding: '2px 8px', borderRadius: 100, background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.2)', fontWeight: 600 }}>
+                <span style={{ marginInlineStart: 'auto', fontSize: 10, padding: '2px 8px', borderRadius: 100, background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.2)', fontWeight: 600 }}>
                   ACTIVE
                 </span>
               )}
@@ -265,7 +262,7 @@ export default function AdminPage() {
                 disabled={comingSoonLoading}
                 style={{
                   width: 40, height: 22, borderRadius: 100, border: 'none', cursor: comingSoonLoading ? 'not-allowed' : 'pointer', flexShrink: 0,
-                  background: comingSoon ? '#f97316' : (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'),
+                  background: comingSoon ? '#f97316' : 'var(--color-border)',
                   position: 'relative', transition: 'background 0.2s', opacity: comingSoonLoading ? 0.6 : 1,
                 }}
               >
@@ -281,7 +278,7 @@ export default function AdminPage() {
           {/* Dev panel toggle */}
           <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
             <div style={{ padding: '14px 18px', borderBottom: `1px solid ${cardBorder}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <i className="bx bx-code-alt" style={{ fontSize: 14, color: isDark ? 'rgba(255,229,0,0.6)' : 'rgba(160,130,0,0.8)' }} />
+              <i className="bx bx-code-alt" style={{ fontSize: 14, color: 'var(--color-fg-muted)' }} />
               <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>Developer</span>
             </div>
             <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -293,7 +290,7 @@ export default function AdminPage() {
                 onClick={toggleDevPanel}
                 style={{
                   width: 40, height: 22, borderRadius: 100, border: 'none', cursor: 'pointer', flexShrink: 0,
-                  background: devPanel ? '#22c55e' : (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'),
+                  background: devPanel ? '#22c55e' : 'var(--color-border)',
                   position: 'relative', transition: 'background 0.2s',
                 }}
               >

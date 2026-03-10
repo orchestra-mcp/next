@@ -2,28 +2,27 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useThemeStore } from '@/store/theme'
 import { useRoleStore } from '@/store/roles'
 import { apiFetch, isDevSeed } from '@/lib/api'
+import { useTranslations } from 'next-intl'
 
 export default function NewTeamPage() {
   const router = useRouter()
-  const { theme } = useThemeStore()
   const { fetchAllTeams, switchTeam, addTeamLocally } = useRoleStore()
-  const isDark = theme === 'dark'
+  const t = useTranslations('app')
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const inputBg = isDark ? 'rgba(255,255,255,0.04)' : '#f9f9fb'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const cardBg = 'var(--color-bg-alt)'
+  const cardBorder = 'var(--color-border)'
+  const inputBg = 'var(--color-bg-alt)'
+  const inputBorder = 'var(--color-border)'
 
   const inputSt: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 9, border: `1px solid ${inputBorder}`,
@@ -65,7 +64,7 @@ export default function NewTeamPage() {
   }
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 520 }}>
+    <div className="page-wrapper" style={{ padding: '28px 32px', maxWidth: 520 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
         <Link href="/team" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, textDecoration: 'none', fontSize: 16 }}>
@@ -89,7 +88,7 @@ export default function NewTeamPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label style={labelSt}>Team name <span style={{ color: '#ef4444' }}>*</span></label>
+            <label style={labelSt}>{t('teamName')} <span style={{ color: '#ef4444' }}>*</span></label>
             <input
               style={inputSt}
               value={name}
@@ -120,19 +119,19 @@ export default function NewTeamPage() {
             <button
               onClick={handleCreate}
               disabled={saving || !name.trim()}
-              style={{ padding: '9px 22px', borderRadius: 9, border: 'none', background: name.trim() ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)'), color: name.trim() ? '#fff' : textMuted, fontSize: 13, fontWeight: 600, cursor: name.trim() ? 'pointer' : 'not-allowed', opacity: saving ? 0.7 : 1 }}
+              style={{ padding: '9px 22px', borderRadius: 9, border: 'none', background: name.trim() ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : 'var(--color-border)', color: name.trim() ? '#fff' : textMuted, fontSize: 13, fontWeight: 600, cursor: name.trim() ? 'pointer' : 'not-allowed', opacity: saving ? 0.7 : 1 }}
             >
-              {saving ? 'Creating…' : 'Create team'}
+              {saving ? t('creating') : 'Create team'}
             </button>
             <Link href="/team" style={{ padding: '9px 18px', borderRadius: 9, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, fontWeight: 500, cursor: 'pointer', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-              Cancel
+              {t('cancel')}
             </Link>
           </div>
         </div>
       </div>
 
       {/* Info box */}
-      <div style={{ marginTop: 16, padding: '14px 16px', borderRadius: 10, background: isDark ? 'rgba(0,229,255,0.04)' : 'rgba(0,229,255,0.05)', border: `1px solid rgba(0,229,255,0.12)` }}>
+      <div style={{ marginTop: 16, padding: '14px 16px', borderRadius: 10, background: 'rgba(0,229,255,0.05)', border: `1px solid rgba(0,229,255,0.12)` }}>
         <div style={{ fontSize: 12, color: textMuted, lineHeight: 1.6 }}>
           <strong style={{ color: '#00e5ff' }}>Pro tip:</strong> You can invite team members after creating the team from the <Link href="/team/members" style={{ color: '#00e5ff', textDecoration: 'none' }}>Members</Link> page.
         </div>

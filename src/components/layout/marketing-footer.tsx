@@ -2,17 +2,19 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useThemeStore } from '@/store/theme'
-
-const cols = [
-  { title: 'Product', links: [{ label: 'Features', href: '/#features' }, { label: 'Marketplace', href: '/marketplace' }, { label: 'Pricing', href: '/#pricing' }, { label: 'Download', href: '/download' }, { label: 'Changelog', href: '/blog' }] },
-  { title: 'Developers', links: [{ label: 'Documentation', href: '/docs' }, { label: 'API Reference', href: '/docs/api' }, { label: 'Plugin SDK', href: '/docs/sdk' }, { label: 'Report Issue', href: '/report' }, { label: 'GitHub', href: 'https://github.com/orchestra-mcp' }] },
-  { title: 'Company', links: [{ label: 'Blog', href: '/blog' }, { label: 'Solutions', href: '/solutions' }, { label: 'Contact', href: '/contact' }, { label: 'About', href: '/about' }] },
-  { title: 'Legal', links: [{ label: 'Terms of Service', href: '/terms' }, { label: 'Privacy Policy', href: '/privacy' }, { label: 'Cookie Policy', href: '/privacy#cookies' }] },
-]
+import { useTranslations } from 'next-intl'
 
 export function MarketingFooter() {
+  const t = useTranslations()
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
+
+  const cols = [
+    { title: t('footer.product'), links: [{ label: t('footer.features'), href: '/#features' }, { label: t('nav.marketplace'), href: '/marketplace' }, { label: t('footer.pricing'), href: '/#pricing' }, { label: t('nav.download'), href: '/download' }, { label: t('footer.changelog'), href: '/blog' }] },
+    { title: t('footer.developers'), links: [{ label: t('footer.documentation'), href: '/docs' }, { label: t('footer.apiReference'), href: '/docs/api' }, { label: t('footer.pluginSdk'), href: '/docs/sdk' }, { label: t('footer.reportIssue'), href: '/report' }, { label: t('footer.github'), href: 'https://github.com/orchestra-mcp' }] },
+    { title: t('footer.company'), links: [{ label: t('footer.blog'), href: '/blog' }, { label: t('nav.solutions'), href: '/solutions' }, { label: t('footer.contact'), href: '/contact' }, { label: t('footer.about'), href: '/about' }] },
+    { title: t('footer.legal'), links: [{ label: t('footer.termsOfService'), href: '/terms' }, { label: t('footer.privacyPolicy'), href: '/privacy' }, { label: t('footer.cookiePolicy'), href: '/privacy#cookies' }] },
+  ]
 
   const bg = isDark ? '#0a0a0d' : '#f0f0f3'
   const borderColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
@@ -49,7 +51,7 @@ export function MarketingFooter() {
               <span style={{ fontWeight: 700, fontSize: 16, color: logoText }}>Orchestra</span>
             </div>
             <p style={{ fontSize: 13, color: descText, lineHeight: 1.7, marginBottom: 20 }}>
-              The AI-native IDE for every platform. 131 tools, 5 platforms, one protocol.
+              {t('footer.tagline')}
             </p>
             {/* Social */}
             <div style={{ display: 'flex', gap: 8 }}>
@@ -83,9 +85,9 @@ export function MarketingFooter() {
 
         {/* Bottom */}
         <div className="footer-bottom" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 24, borderTop: `1px solid ${borderColor}` }}>
-          <p style={{ fontSize: 12, color: copyrightColor }}>© {new Date().getFullYear()} Orchestra MCP. All rights reserved.</p>
+          <p style={{ fontSize: 12, color: copyrightColor }}>&copy; {new Date().getFullYear()} Orchestra MCP. {t('footer.copyright')}</p>
           <div style={{ display: 'flex', gap: 20 }}>
-            {[{ label: 'Terms', href: '/terms' }, { label: 'Privacy', href: '/privacy' }].map(l => (
+            {[{ label: t('footer.terms'), href: '/terms' }, { label: t('footer.privacy'), href: '/privacy' }].map(l => (
               <Link key={l.href} href={l.href} style={{ fontSize: 12, color: copyrightColor, textDecoration: 'none' }}>{l.label}</Link>
             ))}
           </div>

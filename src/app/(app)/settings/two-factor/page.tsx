@@ -4,13 +4,12 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/auth'
-import { useThemeStore } from '@/store/theme'
+import { useTranslations } from 'next-intl'
 
 export default function TwoFactorSetupPage() {
   const router = useRouter()
   const { user, setup2FA, confirm2FA, disable2FA, loading, error, clearError } = useAuthStore()
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
+  const t = useTranslations('settings')
 
   const [step, setStep] = useState<'idle' | 'setup' | 'confirm' | 'done' | 'disable'>('idle')
   const [qrUrl, setQrUrl] = useState('')
@@ -21,21 +20,21 @@ export default function TwoFactorSetupPage() {
 
   const enabled = user?.two_factor_enabled ?? false
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.35)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const cardDivider = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)'
-  const inputBg = isDark ? 'rgba(255,255,255,0.04)' : '#f9f9fb'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const inputColor = isDark ? '#f8f8f8' : '#0f0f12'
-  const stepBg = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
-  const stepBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const secretBg = isDark ? 'rgba(0,0,0,0.3)' : '#f3f4f6'
-  const qrBg = isDark ? '#ffffff' : '#ffffff'
-  const appIconBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'
-  const appIconBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const cardBg = 'var(--color-bg-alt)'
+  const cardBorder = 'var(--color-border)'
+  const cardDivider = 'var(--color-border)'
+  const inputBg = 'var(--color-bg-alt)'
+  const inputBorder = 'var(--color-border)'
+  const inputColor = 'var(--color-fg)'
+  const stepBg = 'var(--color-bg-alt)'
+  const stepBorder = 'var(--color-border)'
+  const secretBg = 'var(--color-bg-contrast)'
+  const qrBg = '#ffffff'
+  const appIconBg = 'var(--color-bg-active)'
+  const appIconBorder = 'var(--color-border)'
 
   const inputSt: React.CSSProperties = {
     width: '100%', padding: '11px 14px', borderRadius: 10,
@@ -79,22 +78,22 @@ export default function TwoFactorSetupPage() {
   const anyError = codeError || error
 
   return (
-    <div style={{ maxWidth: 680, padding: '28px 32px' }}>
+    <div className="page-wrapper" style={{ maxWidth: 680, padding: '28px 32px' }}>
       {/* Breadcrumb */}
       <Link href="/settings" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 24 }}>
-        <i className="bx bx-left-arrow-alt" style={{ fontSize: 15 }} /> Settings
+        <i className="bx bx-left-arrow-alt rtl-flip" style={{ fontSize: 15 }} /> {t('title')}
       </Link>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Two-Factor Authentication</h1>
-        <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>Add an extra layer of security to your account.</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>{t('twoFactorTitle')}</h1>
+        <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>{t('twoFactorDesc')}</p>
       </div>
 
       {/* Status card */}
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 10, background: enabled ? 'rgba(34,197,94,0.1)' : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <i className={`bx ${enabled ? 'bx-shield-quarter' : 'bx-shield'}`} style={{ fontSize: 22, color: enabled ? '#22c55e' : (isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.35)') }} />
+          <div style={{ width: 42, height: 42, borderRadius: 10, background: enabled ? 'rgba(34,197,94,0.1)' : 'var(--color-bg-active)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <i className={`bx ${enabled ? 'bx-shield-quarter' : 'bx-shield'}`} style={{ fontSize: 22, color: enabled ? '#22c55e' : 'var(--color-fg-dim)' }} />
           </div>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: textPrimary }}>
@@ -106,11 +105,11 @@ export default function TwoFactorSetupPage() {
           </div>
         </div>
         <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 100, fontWeight: 600, flexShrink: 0,
-          background: enabled ? 'rgba(34,197,94,0.1)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
+          background: enabled ? 'rgba(34,197,94,0.1)' : 'var(--color-bg-active)',
           color: enabled ? '#22c55e' : textDim,
           border: `1px solid ${enabled ? 'rgba(34,197,94,0.25)' : cardBorder}`,
         }}>
-          {enabled ? 'Enabled' : 'Disabled'}
+          {enabled ? t('enabled') : 'Disabled'}
         </span>
       </div>
 
@@ -242,7 +241,7 @@ export default function TwoFactorSetupPage() {
               </button>
               <button type="submit" disabled={loading || code.length < 6}
                 style={{ flex: 2, padding: '10px', borderRadius: 9, border: 'none',
-                  background: (loading || code.length < 6) ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)') : 'linear-gradient(135deg, #00e5ff, #a900ff)',
+                  background: (loading || code.length < 6) ? 'var(--color-bg-active)' : 'linear-gradient(135deg, #00e5ff, #a900ff)',
                   color: (loading || code.length < 6) ? textDim : '#fff',
                   fontSize: 14, fontWeight: 600, cursor: (loading || code.length < 6) ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
                 {loading ? 'Verifying...' : 'Enable 2FA'}
@@ -316,7 +315,7 @@ export default function TwoFactorSetupPage() {
               </button>
               <button type="submit" disabled={loading || code.length < 6}
                 style={{ flex: 2, padding: '10px', borderRadius: 9, border: 'none',
-                  background: (loading || code.length < 6) ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)') : 'rgba(239,68,68,0.9)',
+                  background: (loading || code.length < 6) ? 'var(--color-bg-active)' : 'rgba(239,68,68,0.9)',
                   color: (loading || code.length < 6) ? textDim : '#fff',
                   fontSize: 14, fontWeight: 600, cursor: (loading || code.length < 6) ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
                 {loading ? 'Disabling...' : 'Disable 2FA'}

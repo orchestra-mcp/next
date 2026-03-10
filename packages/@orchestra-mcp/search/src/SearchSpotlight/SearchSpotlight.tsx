@@ -36,6 +36,10 @@ export interface SearchSpotlightProps {
   recentSearches?: string[];
   /** Categories for grouping results */
   categories?: SearchCategory[];
+  /** Whether AI mode is active */
+  aiMode?: boolean;
+  /** Called when AI mode is toggled */
+  onAiToggle?: (active: boolean) => void;
 }
 
 export const SearchSpotlight = ({
@@ -48,6 +52,8 @@ export const SearchSpotlight = ({
   loading = false,
   recentSearches = [],
   categories = [],
+  aiMode = false,
+  onAiToggle,
 }: SearchSpotlightProps) => {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -84,7 +90,17 @@ export const SearchSpotlight = ({
   const handleChange = (value: string) => {
     setQuery(value);
     setActiveIndex(0);
-    onSearch(value);
+    // When AI mode is active, prefix with ? for the parent handler
+    onSearch(aiMode ? `?${value}` : value);
+  };
+
+  const handleAiToggle = () => {
+    const next = !aiMode;
+    onAiToggle?.(next);
+    // Re-fire search with current query in new mode
+    if (query) {
+      onSearch(next ? `?${query}` : query);
+    }
   };
 
   if (!open) return null;
@@ -101,63 +117,77 @@ export const SearchSpotlight = ({
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <input
-          ref={inputRef}
-          className="spotlight-input"
-          type="text"
-          value={query}
-          onChange={(e) => handleChange(e.target.value)}
-          placeholder={placeholder}
-          aria-label="Search input"
-        />
+        <div className="spotlight-input-row">
+          <input
+            ref={inputRef}
+            className="spotlight-input"
+            type="text"
+            value={query}
+            onChange={(e) => handleChange(e.target.value)}
+            placeholder={aiMode ? 'Ask AI anything...' : placeholder}
+            aria-label="Search input"
+          />
+          {onAiToggle && (
+            <button
+              className={`spotlight-ai-toggle${aiMode ? ' spotlight-ai-toggle--active' : ''}`}
+              onClick={handleAiToggle}
+              title={aiMode ? 'Switch to search' : 'Switch to AI'}
+              aria-label={aiMode ? 'Switch to search' : 'Switch to AI'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9.937 6.223c.09-.27.473-.27.563 0l.87 2.607a.3.3 0 0 0 .19.19l2.607.87c.27.09.27.473 0 .563l-2.607.87a.3.3 0 0 0-.19.19l-.87 2.607c-.09.27-.473.27-.563 0l-.87-2.607a.3.3 0 0 0-.19-.19l-2.607-.87c-.27-.09-.27-.473 0-.563l2.607-.87a.3.3 0 0 0 .19-.19l.87-2.607Zm7.5-3c.06-.18.316-.18.376 0l.58 1.738a.2.2 0 0 0 .126.126l1.738.58c.18.06.18.316 0 .376l-1.738.58a.2.2 0 0 0-.126.126l-.58 1.738c-.06.18-.316.18-.376 0l-.58-1.738a.2.2 0 0 0-.126-.126l-1.738-.58c-.18-.06-.18-.316 0-.376l1.738-.58a.2.2 0 0 0 .126-.126l.58-1.738Zm-2 10c.06-.18.316-.18.376 0l.58 1.738a.2.2 0 0 0 .126.126l1.738.58c.18.06.18.316 0 .376l-1.738.58a.2.2 0 0 0-.126.126l-.58 1.738c-.06.18-.316.18-.376 0l-.58-1.738a.2.2 0 0 0-.126-.126l-1.738-.58c-.18-.06-.18-.316 0-.376l1.738-.58a.2.2 0 0 0 .126-.126l.58-1.738Z"/></svg>
+            </button>
+          )}
+        </div>
 
-        {loading && <div className="spotlight-loading" data-testid="spotlight-loading">Searching...</div>}
+        <div className="spotlight-results">
+          {loading && <div className="spotlight-loading" data-testid="spotlight-loading">{aiMode ? 'AI is thinking...' : 'Searching...'}</div>}
 
-        {showRecent && (
-          <div className="spotlight-section">
-            <div className="spotlight-section-label">Recent</div>
-            {recentSearches.map((term) => (
-              <button
-                key={term}
-                className="spotlight-recent"
-                onClick={() => handleChange(term)}
-              >
-                {term}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {showEmpty && <div className="spotlight-empty">No results found</div>}
-
-        {grouped.map((group) => (
-          <div key={group.label} className="spotlight-section">
-            {group.label && <div className="spotlight-section-label">{group.label}</div>}
-            {group.results.map((result) => {
-              const idx = flatResults.indexOf(result);
-              return (
+          {showRecent && (
+            <div className="spotlight-section">
+              <div className="spotlight-section-label">Recent</div>
+              {recentSearches.map((term) => (
                 <button
-                  key={result.id}
-                  className={`spotlight-result${idx === activeIndex ? ' spotlight-result--active' : ''}`}
-                  data-testid={`spotlight-result-${result.id}`}
-                  onClick={() => onSelect(result)}
-                  aria-selected={idx === activeIndex}
+                  key={term}
+                  className="spotlight-recent"
+                  onClick={() => handleChange(term)}
                 >
-                  {result.icon && <span className="spotlight-result-icon">{result.icon}</span>}
-                  <div className="spotlight-result-body">
-                    <span className="spotlight-result-title">{result.title}</span>
-                    {result.description && (
-                      <span className="spotlight-result-desc">{result.description}</span>
-                    )}
-                  </div>
-                  {result.shortcut && (
-                    <kbd className="spotlight-result-shortcut">{result.shortcut}</kbd>
-                  )}
+                  {term}
                 </button>
-              );
-            })}
-          </div>
-        ))}
+              ))}
+            </div>
+          )}
+
+          {showEmpty && <div className="spotlight-empty">No results found</div>}
+
+          {grouped.map((group) => (
+            <div key={group.label} className="spotlight-section">
+              {group.label && <div className="spotlight-section-label">{group.label}</div>}
+              {group.results.map((result) => {
+                const idx = flatResults.indexOf(result);
+                return (
+                  <button
+                    key={result.id}
+                    className={`spotlight-result${idx === activeIndex ? ' spotlight-result--active' : ''}`}
+                    data-testid={`spotlight-result-${result.id}`}
+                    onClick={() => onSelect(result)}
+                    aria-selected={idx === activeIndex}
+                  >
+                    {result.icon && <span className="spotlight-result-icon">{result.icon}</span>}
+                    <div className="spotlight-result-body">
+                      <span className="spotlight-result-title">{result.title}</span>
+                      {result.description && (
+                        <span className="spotlight-result-desc">{result.description}</span>
+                      )}
+                    </div>
+                    {result.shortcut && (
+                      <kbd className="spotlight-result-shortcut">{result.shortcut}</kbd>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

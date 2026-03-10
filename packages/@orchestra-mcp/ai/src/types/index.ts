@@ -34,6 +34,10 @@ export type {
   GateEvent,
   TerminalEvent,
   McpRoutedEvent,
+  PermissionEvent,
+  QuestionEvent,
+  QuestionItem,
+  QuestionOption,
   ClaudeCodeEvent,
 } from './events';
 

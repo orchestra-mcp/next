@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
 
 @theme inline {
   --color-background: var(--background);
@@ -55,6 +55,11 @@
     --brand-purple: #a900ff;
     --brand-gradient: linear-gradient(135deg, #00e5ff, #a900ff);
 
+    /* Layout shadows & accent highlights */
+    --color-shadow-lg: 0 12px 40px rgba(0,0,0,0.5);
+    --color-shadow-md: 0 12px 32px rgba(0,0,0,0.4);
+    --color-accent-active: rgba(169,0,255,0.12);
+
     /* Legacy vars kept for backward compat */
     --bg: #0f0f12;
     --bg-card: rgba(255,255,255,0.04);
@@ -79,26 +84,26 @@
 /* Styled scrollbars — always visible with subtle dark track */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.2) rgba(255,255,255,0.04);
+  scrollbar-color: var(--color-fg-dim, rgba(255,255,255,0.2)) var(--color-bg-alt, rgba(255,255,255,0.04));
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-track {
-  background: rgba(255,255,255,0.04);
+  background: var(--color-bg-alt, rgba(255,255,255,0.04));
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.2);
+  background: var(--color-fg-dim, rgba(255,255,255,0.2));
   border-radius: 4px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.35);
+  background: var(--color-fg-muted, rgba(255,255,255,0.35));
 }
 
 body {
-  background-color: #0f0f12;
-  color: #f8f8f8;
+  background-color: var(--color-bg, #0f0f12);
+  color: var(--color-fg, #f8f8f8);
   font-family: 'Instrument Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
@@ -116,10 +121,10 @@ a { color: inherit; text-decoration: none; }
 
 /* Glass card */
 .glass {
-  background: rgba(255,255,255,0.04);
+  background: var(--color-bg-alt, rgba(255,255,255,0.04));
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid var(--color-border, rgba(255,255,255,0.08));
 }
 
 /* Gradient button */
@@ -156,6 +161,29 @@ a { color: inherit; text-decoration: none; }
 }
 .cursor-blink { animation: blink 1s step-end infinite; }
 
+/* Skeleton loading pulse */
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Skeleton shimmer overlay */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
 /* Glow effects */
 .glow-purple { box-shadow: 0 0 30px rgba(169, 0, 255, 0.25), 0 0 80px rgba(0, 229, 255, 0.1); }
 .glow-cyan { box-shadow: 0 0 20px rgba(0, 229, 255, 0.3); }
@@ -167,6 +195,13 @@ a { color: inherit; text-decoration: none; }
  * which are updated by applyTheme() in store/theme.ts.
  * Auth pages: use .auth-card / .auth-page-bg class selectors below.
  */
+
+/* Light theme layout overrides */
+[data-theme="light"] {
+  --color-shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+  --color-shadow-md: 0 8px 24px rgba(0,0,0,0.12);
+  --color-accent-active: rgba(169,0,255,0.08);
+}
 
 /* Auth pages (light) */
 [data-theme="light"] .auth-card {
@@ -189,7 +224,7 @@ a { color: inherit; text-decoration: none; }
 /* Marketing sections */
 @media (max-width: 640px) {
   /* Reduce horizontal padding on small screens */
-  section { padding-left: 16px !important; padding-right: 16px !important; }
+  section { padding-inline-start: 16px !important; padding-inline-end: 16px !important; }
 
   /* Hero */
   .hero-terminal { font-size: 11px !important; }
@@ -237,9 +272,302 @@ a { color: inherit; text-decoration: none; }
   .terminal-line { font-size: 10.5px !important; line-height: 1.7 !important; word-break: break-all; }
 }
 
-/* Dashboard sidebar: hide on mobile, show toggle */
+/* ─── App Shell Mobile ────────────────────────────────────────────── */
+
+/* Sidebar overlay backdrop */
+.app-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 29;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.app-sidebar-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Hamburger button — hidden on desktop */
+.app-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Icon rail hover effect */
+.icon-rail-btn:hover {
+  background: rgba(169, 0, 255, 0.06) !important;
+}
+
+/* ─── Sidebar & page transitions (CSS only, no JS) ──────────────── */
+
+/* Page content fade-in on mount */
+.app-main > main {
+  animation: pageIn 0.2s ease-out;
+}
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Sidebar list items — subtle fade-in */
+.sidebar-item {
+  animation: itemIn 0.15s ease-out both;
+}
+@keyframes itemIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Mobile: 3-panel layout collapses */
 @media (max-width: 768px) {
-  .app-sidebar { transform: translateX(-100%); transition: transform 0.25s ease; }
-  .app-sidebar.open { transform: translateX(0); }
-  .app-main { margin-left: 0 !important; }
+  /* Hide icon rail on mobile — show combined sidebar instead */
+  .app-icon-rail {
+    transform: translateX(-100%) !important;
+    transition: transform 0.25s ease !important;
+    width: 56px !important;
+  }
+  .app-icon-rail.open {
+    transform: translateX(0) !important;
+  }
+  /* Sidebar panel: hidden off-screen on mobile, slides in when .open */
+  .app-sidebar-panel {
+    display: none !important;
+    flex-direction: column !important;
+    transition: transform 0.25s ease !important;
+    width: 260px !important;
+    inset-inline-start: 0 !important;
+  }
+  .app-sidebar-panel.open {
+    display: flex !important;
+    transform: translateX(56px) !important;
+  }
+  .app-sidebar-overlay {
+    display: block;
+  }
+  .app-main {
+    margin-inline-start: 0 !important;
+  }
+  .app-hamburger {
+    display: flex !important;
+  }
+  .app-header {
+    padding-inline-start: 12px !important;
+    padding-inline-end: 12px !important;
+  }
+  /* Hide sidebar collapse button on mobile */
+  .app-sidebar-collapse {
+    display: none !important;
+  }
+  /* Notification dropdown full width on mobile */
+  .app-notif-dropdown {
+    position: fixed !important;
+    top: 52px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    z-index: 9999 !important;
+  }
+  /* Ensure header dropdowns are above overlay */
+  .app-header {
+    z-index: 31;
+    position: relative;
+  }
+  /* User dropdown menu needs high z-index on mobile */
+  [data-radix-popper-content-wrapper] {
+    z-index: 9999 !important;
+  }
+  /* Settings page: stack layout on mobile */
+  .settings-layout {
+    flex-direction: column !important;
+    min-height: auto !important;
+  }
+  .settings-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    position: relative !important;
+    border-inline-end: none !important;
+    border-bottom: 1px solid hsl(var(--border)) !important;
+    padding: 8px 8px 0 !important;
+    overflow-y: visible !important;
+    overflow-x: visible !important;
+  }
+  .settings-sidebar-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 2px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding-bottom: 8px !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .settings-sidebar-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+  .settings-sidebar-nav button {
+    white-space: nowrap !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+  }
+  /* Hide group labels in horizontal mode */
+  .settings-sidebar .settings-group-label {
+    display: none !important;
+  }
+  /* Hide the "Settings" title in horizontal mode */
+  .settings-sidebar-title {
+    display: none !important;
+  }
+  .settings-content {
+    padding: 16px !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Page content padding reduction on mobile */
+@media (max-width: 640px) {
+  .app-page-content {
+    padding: 16px !important;
+  }
+}
+
+/* ─── Responsive Grid Utilities ──────────────────────────────────── */
+
+/* Stat cards: 4-col → 2-col on mobile */
+@media (max-width: 640px) {
+  .grid-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  .grid-3col { grid-template-columns: 1fr !important; }
+  .grid-2col { grid-template-columns: 1fr !important; }
+  .grid-sidebar { grid-template-columns: 1fr !important; }
+  .grid-admin-tools { grid-template-columns: 1fr !important; }
+  .grid-admin-users { grid-template-columns: 2fr 1fr !important; }
+  /* Page wrapper padding */
+  .page-wrapper { padding: 16px !important; }
+  /* Hide table columns on mobile */
+  .hide-mobile { display: none !important; }
+  /* Full width modals on mobile */
+  .modal-content { max-width: 100% !important; margin: 8px !important; padding: 20px 16px 16px !important; }
+  /* Header flex wrap */
+  .page-header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+  .page-header > button,
+  .page-header > a { align-self: stretch; text-align: center; justify-content: center; }
+  /* Dashboard stat card compact */
+  .grid-stats .stat-card { padding: 14px 16px !important; }
+  .stat-value { font-size: 22px !important; }
+  /* Search inputs full width */
+  .search-wrapper { max-width: 100% !important; }
+  /* Project detail: stats row */
+  .project-stats { padding-inline-start: 0 !important; flex-wrap: wrap !important; gap: 10px !important; }
+  /* Feature row: wrap badges under title */
+  .feature-row { flex-wrap: wrap !important; }
+  .feature-badges { margin-top: 4px; width: 100%; padding-inline-start: 40px; }
+  /* Filter tabs: horizontal scroll */
+  .filter-tabs { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 4px; }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+  .filter-tabs button { flex-shrink: 0 !important; }
+  /* Admin form grids: stack on mobile */
+  .form-grid-2col { grid-template-columns: 1fr !important; }
+  /* Admin user filters: horizontal scroll */
+  .admin-filters { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .admin-filters::-webkit-scrollbar { display: none; }
+  .admin-filters button { flex-shrink: 0 !important; }
+  /* Team tab bar: horizontal scroll */
+  .team-tabs { width: 100% !important; }
+  .team-tabs button { padding: 7px 12px !important; font-size: 12px !important; }
+  /* Plan cards: full-width stack */
+  .plan-cards { flex-direction: column !important; }
+  .plan-cards > div { min-width: 0 !important; }
+  /* Auth card: compact padding */
+  .auth-card { padding: 24px 20px !important; border-radius: 16px !important; }
+  /* OTP digit inputs: smaller on mobile */
+  .otp-digits input { width: 40px !important; height: 48px !important; font-size: 18px !important; }
+  .otp-digits { gap: 6px !important; }
+  /* Auth wrapper: reduce top/bottom padding */
+  .auth-page { padding: 24px 12px !important; }
+  /* Marketing pages: reduce padding */
+  .mkt-page { padding: 40px 16px !important; }
+  /* Marketing solution cards: stack grid */
+  .mkt-solution-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+  .mkt-solution-card { padding: 24px !important; }
+  /* Marketing 3-col grids: stack */
+  .mkt-grid-3 { grid-template-columns: 1fr !important; }
+  /* Marketing 2-col grids: stack */
+  .mkt-grid-2 { grid-template-columns: 1fr !important; }
+  /* Marketing CTA buttons: stack */
+  .mkt-cta-row { flex-direction: column !important; align-items: stretch !important; }
+  .mkt-cta-row a { text-align: center !important; justify-content: center !important; }
+  /* Contact form: stack name/email */
+  .mkt-form-2col { grid-template-columns: 1fr !important; }
+  /* Docs layout: hide sidebar, full-width content */
+  .docs-layout { flex-direction: column !important; }
+  .docs-sidebar { display: none !important; }
+  .docs-content { padding: 24px 16px !important; }
+}
+
+/* Tablet: 3-col → 2-col */
+@media (max-width: 900px) and (min-width: 641px) {
+  .grid-3col { grid-template-columns: repeat(2, 1fr) !important; }
+  .grid-sidebar { grid-template-columns: 1fr !important; }
+  /* Marketing 3-col grids: 2-col on tablet */
+  .mkt-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ─── RTL / Arabic Support ────────────────────────────────────────── */
+
+/* Flip directional icons in RTL */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Arabic font stack — applied when document dir is RTL */
+[dir="rtl"] {
+  --font-sans: 'IBM Plex Sans Arabic', 'Instrument Sans', system-ui, sans-serif;
+  font-family: var(--font-sans);
+}
+[dir="rtl"] body {
+  font-family: 'IBM Plex Sans Arabic', 'Instrument Sans', system-ui, sans-serif;
+}
+
+/* Arabic text doesn't benefit from tight letter-spacing, reset it */
+[dir="rtl"] * {
+  letter-spacing: 0em !important;
+}
+
+/* Slightly increase line-height for Arabic readability */
+[dir="rtl"] p,
+[dir="rtl"] li,
+[dir="rtl"] span,
+[dir="rtl"] div {
+  line-height: 1.7;
+}
+
+/* Mobile sidebar: flip transform direction for RTL */
+@media (max-width: 768px) {
+  [dir="rtl"] .app-icon-rail {
+    transform: translateX(100%) !important;
+  }
+  [dir="rtl"] .app-icon-rail.open {
+    transform: translateX(0) !important;
+  }
+  [dir="rtl"] .app-sidebar-panel.open {
+    transform: translateX(-56px) !important;
+  }
 }

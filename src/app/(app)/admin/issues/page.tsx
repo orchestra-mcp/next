@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useThemeStore } from '@/store/theme'
 import { useRoleStore } from '@/store/roles'
 import { useAdminStore, type AdminIssue } from '@/store/admin'
 
@@ -12,8 +11,6 @@ type PriorityFilter = 'all' | 'low' | 'medium' | 'high'
 export default function AdminIssuesPage() {
   const router = useRouter()
   const { can, roleLoaded } = useRoleStore()
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
   const { issues, loading, error, fetchIssues, updateIssue, clearError } = useAdminStore()
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -26,17 +23,17 @@ export default function AdminIssuesPage() {
     fetchIssues()
   }, [roleLoaded])
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const textDim = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
-  const pageBg = isDark ? '#0f0f12' : '#f5f5f7'
-  const inputBg = isDark ? 'rgba(255,255,255,0.05)' : '#f9f9fb'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const rowBorder = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'
-  const pillActiveBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
-  const pillInactiveBg = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
+  const textPrimary = 'var(--color-fg)'
+  const textMuted = 'var(--color-fg-muted)'
+  const textDim = 'var(--color-fg-dim)'
+  const cardBg = 'var(--color-bg-alt)'
+  const cardBorder = 'var(--color-border)'
+  const pageBg = 'var(--color-bg)'
+  const inputBg = 'var(--color-bg-alt)'
+  const inputBorder = 'var(--color-border)'
+  const rowBorder = 'var(--color-bg-alt)'
+  const pillActiveBg = 'var(--color-border)'
+  const pillInactiveBg = 'var(--color-bg-alt)'
 
   const filtered = issues.filter(i => {
     const matchStatus = statusFilter === 'all' || i.status === statusFilter
@@ -72,7 +69,7 @@ export default function AdminIssuesPage() {
     const map = {
       open: { bg: 'rgba(0,229,255,0.08)', color: '#00e5ff', border: 'rgba(0,229,255,0.2)', label: 'Open' },
       'in-review': { bg: 'rgba(245,158,11,0.08)', color: '#f59e0b', border: 'rgba(245,158,11,0.2)', label: 'In Review' },
-      closed: { bg: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', color: textMuted as string, border: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', label: 'Closed' },
+      closed: { bg: 'var(--color-bg-active)', color: textMuted as string, border: 'var(--color-border)', label: 'Closed' },
     }
     const c = map[status]
     return <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: c.bg, color: c.color, border: `1px solid ${c.border}`, fontWeight: 600 }}>{c.label}</span>
@@ -95,24 +92,24 @@ export default function AdminIssuesPage() {
   }
 
   return (
-    <div style={{ padding: '28px 32px', background: pageBg, minHeight: '100vh' }}>
+    <div className="page-wrapper" style={{ padding: '28px 32px', background: pageBg, minHeight: '100vh' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Link href="/admin" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
-          <i className="bx bx-left-arrow-alt" /> Admin
+          <i className="bx bx-left-arrow-alt rtl-flip" /> Admin
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Issues</h1>
-          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 100, background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)', color: textMuted }}>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 100, background: 'var(--color-bg-active)', color: textMuted }}>
             {issues.length}
           </span>
         </div>
       </div>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="admin-filters" style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: textDim, marginRight: 3 }}>Status:</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: textDim, marginInlineEnd: 3 }}>Status:</span>
           {statusPills.map(p => (
             <button key={p.value} onClick={() => setStatusFilter(p.value)} style={{ padding: '5px 11px', borderRadius: 100, fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer', background: statusFilter === p.value ? pillActiveBg : pillInactiveBg, color: statusFilter === p.value ? textPrimary : textMuted, transition: 'background 0.15s' }}>
               {p.label}
@@ -120,7 +117,7 @@ export default function AdminIssuesPage() {
           ))}
         </div>
         <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: textDim, marginRight: 3 }}>Priority:</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: textDim, marginInlineEnd: 3 }}>Priority:</span>
           {priorityPills.map(p => (
             <button key={p.value} onClick={() => setPriorityFilter(p.value)} style={{ padding: '5px 11px', borderRadius: 100, fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer', background: priorityFilter === p.value ? pillActiveBg : pillInactiveBg, color: priorityFilter === p.value ? textPrimary : textMuted, transition: 'background 0.15s' }}>
               {p.label}
@@ -138,13 +135,13 @@ export default function AdminIssuesPage() {
 
       {/* Table */}
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '60px 2fr 90px 100px 110px 130px', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '60px 2fr 90px 100px 110px 130px', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           <div>#</div>
           <div>Title</div>
           <div>Priority</div>
-          <div>Status</div>
-          <div>Created</div>
-          <div>Change Status</div>
+          <div className="hide-mobile">Status</div>
+          <div className="hide-mobile">Created</div>
+          <div className="hide-mobile">Change Status</div>
         </div>
 
         {loading && issues.length === 0 ? (
@@ -159,13 +156,13 @@ export default function AdminIssuesPage() {
             <div style={{ fontSize: 12, color: textDim }}>Try adjusting your filters.</div>
           </div>
         ) : filtered.map((issue, idx) => (
-          <div key={issue.id} style={{ display: 'grid', gridTemplateColumns: '60px 2fr 90px 100px 110px 130px', padding: '13px 20px', borderBottom: idx < filtered.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
+          <div key={issue.id} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '60px 2fr 90px 100px 110px 130px', padding: '13px 20px', borderBottom: idx < filtered.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: textDim, fontFamily: 'monospace' }}>#{issue.id}</div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 12 }}>{issue.title}</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingInlineEnd: 12 }}>{issue.title}</div>
             <div><PriorityBadge priority={issue.priority} /></div>
-            <div><StatusBadge status={issue.status} /></div>
-            <div style={{ fontSize: 11.5, color: textDim }}>{fmt(issue.created_at)}</div>
-            <div>
+            <div className="hide-mobile"><StatusBadge status={issue.status} /></div>
+            <div className="hide-mobile" style={{ fontSize: 11.5, color: textDim }}>{fmt(issue.created_at)}</div>
+            <div className="hide-mobile">
               <select
                 value={issue.status}
                 disabled={updatingId === issue.id}
