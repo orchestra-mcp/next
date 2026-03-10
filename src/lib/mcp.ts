@@ -394,12 +394,10 @@ export function getDevGateUrl(): string | null {
 /**
  * Build the WebSocket URL for a tunnel connection.
  *
- * WebSocket connections MUST go directly to the Go backend — NOT through
- * Next.js rewrites, which only proxy HTTP and don't support the WebSocket
- * upgrade handshake.
- *
- * In dev: ws://localhost:8080/api/tunnels/:id/ws
- * In prod: wss://api.example.com/api/tunnels/:id/ws (NEXT_PUBLIC_API_URL set)
+ * Uses NEXT_PUBLIC_API_URL from .env to determine the server.
+ * In dev (.env.local):  NEXT_PUBLIC_API_URL=http://localhost:8080  → ws://localhost:8080
+ * In prod (.env.production): NEXT_PUBLIC_API_URL=https://orchestra-mcp.dev → wss://orchestra-mcp.dev
+ * Fallback: uses current page origin.
  */
 export function buildTunnelWSUrl(tunnelId: string): string | null {
   if (typeof window === 'undefined') return null
@@ -410,13 +408,11 @@ export function buildTunnelWSUrl(tunnelId: string): string | null {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
   let base: string
   if (apiUrl) {
-    // Production: use the configured API URL.
     base = apiUrl.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
   } else {
-    // Development: connect directly to the Go backend (port 8080).
-    // Next.js rewrites only handle HTTP, not WebSocket upgrades.
+    // Fallback: derive from current page origin.
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    base = `${wsProto}//localhost:8080`
+    base = `${wsProto}//${window.location.host}`
   }
 
   return `${base}/api/tunnels/${tunnelId}/ws?token=${encodeURIComponent(token)}`
