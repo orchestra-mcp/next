@@ -46,16 +46,30 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
+  // Fast bypass — never block auth pages or coming-soon itself, even when
+  // coming-soon is enabled. This check runs BEFORE any async API call so
+  // login/register are always reachable regardless of backend availability.
+  const pathNoLocale = pathname.replace(/^\/(en|ar)/, '') || '/'
+  const isBypass = BYPASS_PATHS.some(p =>
+    pathNoLocale === p || pathNoLocale.startsWith(p + '/') ||
+    pathname === p || pathname.startsWith(p + '/')
+  )
+
   // Public routes — use intl middleware for locale-prefixed URLs
   if (isPublicRoute(pathname)) {
-    const comingSoonResponse = await handleComingSoon(req)
-    if (comingSoonResponse.status === 307 || comingSoonResponse.status === 308) {
-      return comingSoonResponse
+    if (!isBypass) {
+      const comingSoonResponse = await handleComingSoon(req)
+      if (comingSoonResponse.status === 307 || comingSoonResponse.status === 308) {
+        return comingSoonResponse
+      }
     }
     return intlMiddleware(req)
   }
 
   // Dashboard routes — skip intl middleware, use cookie-based locale
+  if (isBypass) {
+    return NextResponse.next()
+  }
   return handleComingSoon(req)
 }
 
