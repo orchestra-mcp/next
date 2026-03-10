@@ -10,6 +10,7 @@ import { TunnelSwitcher } from '@/components/tunnel-switcher'
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: 'bx-home-alt' },
   { href: '/projects', label: 'Projects', icon: 'bx-folder' },
+  { href: '/repos', label: 'Repos', icon: 'bx-git-repo-forked' },
   { href: '/notes', label: 'Notes', icon: 'bx-note' },
   { href: '/settings', label: 'Settings', icon: 'bx-cog' },
 ]
