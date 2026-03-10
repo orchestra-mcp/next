@@ -1258,52 +1258,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </nav>
 
-          {/* Bottom: user avatar */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, paddingBottom: 10 }}>
-            {/* User avatar */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button style={{ display: 'flex', alignItems: 'center', padding: '2px', borderRadius: 50, border: '2px solid rgba(169,0,255,0.25)', background: 'transparent', cursor: 'pointer' }}>
-                  <Avatar style={{ width: 28, height: 28 }}>
-                    <AvatarImage src={user?.avatar_url || (user?.email ? gravatarUrl(user.email, 56) : undefined)} alt={initials} />
-                    <AvatarFallback style={{ fontSize: 10, fontWeight: 700 }}>{initials}</AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" align="end" sideOffset={8} style={{
-                width: 220,
-                background: notifBg,
-                border: `1px solid ${notifBorder}`,
-                boxShadow: 'var(--color-shadow-lg)',
-              }}>
-                <div style={{ padding: '10px 12px 8px', borderBottom: `1px solid ${dropdownUserBorder}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Avatar style={{ width: 36, height: 36, flexShrink: 0 }}>
-                      <AvatarImage src={user?.avatar_url || (user?.email ? gravatarUrl(user.email, 72) : undefined)} alt={initials} />
-                      <AvatarFallback style={{ fontSize: 13, fontWeight: 700 }}>{initials}</AvatarFallback>
-                    </Avatar>
-                    <div style={{ overflow: 'hidden' }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name ?? 'User'}</div>
-                      <div style={{ fontSize: 11, color: userEmailColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email ?? ''}</div>
-                      <div style={{ fontSize: 10, marginTop: 3, padding: '1px 6px', borderRadius: 4, background: 'rgba(169,0,255,0.1)', color: '#a900ff', border: '1px solid rgba(169,0,255,0.2)', display: 'inline-block', fontWeight: 600, letterSpacing: '0.02em' }}>
-                        {ROLE_LABELS[currentRole]}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <DropdownMenuItem onClick={() => router.push('/settings')} style={{ color: textPrimary }}>
-                  <i className="bx bx-cog" style={{ marginInlineEnd: 8 }} /> {t('nav.settings')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/subscription')} style={{ color: textPrimary }}>
-                  <i className="bx bx-credit-card" style={{ marginInlineEnd: 8 }} /> {t('nav.subscription')}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => { logout(); router.push('/login') }} style={{ color: '#ff6b6b' }}>
-                  <i className="bx bx-log-out" style={{ marginInlineEnd: 8 }} /> {t('nav.signOut')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          {/* Bottom spacer (user menu moved to header) */}
+          <div style={{ paddingBottom: 10 }} />
         </aside>
 
         {/* -- Sidebar Panel (260px, collapsible) ------------------- */}
@@ -1571,6 +1527,50 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             {/* Theme toggle */}
             <ThemeToggle size={32} />
+
+            {/* User menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button style={{ display: 'flex', alignItems: 'center', padding: '2px', borderRadius: 50, border: '2px solid rgba(169,0,255,0.25)', background: 'transparent', cursor: 'pointer' }}>
+                  <Avatar style={{ width: 28, height: 28 }}>
+                    <AvatarImage src={user?.avatar_url || (user?.email ? gravatarUrl(user.email, 56) : undefined)} alt={initials} />
+                    <AvatarFallback style={{ fontSize: 10, fontWeight: 700 }}>{initials}</AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={8} style={{
+                width: 220,
+                background: notifBg,
+                border: `1px solid ${notifBorder}`,
+                boxShadow: 'var(--color-shadow-lg)',
+              }}>
+                <div style={{ padding: '10px 12px 8px', borderBottom: `1px solid ${dropdownUserBorder}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Avatar style={{ width: 36, height: 36, flexShrink: 0 }}>
+                      <AvatarImage src={user?.avatar_url || (user?.email ? gravatarUrl(user.email, 72) : undefined)} alt={initials} />
+                      <AvatarFallback style={{ fontSize: 13, fontWeight: 700 }}>{initials}</AvatarFallback>
+                    </Avatar>
+                    <div style={{ overflow: 'hidden' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name ?? 'User'}</div>
+                      <div style={{ fontSize: 11, color: userEmailColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email ?? ''}</div>
+                      <div style={{ fontSize: 10, marginTop: 3, padding: '1px 6px', borderRadius: 4, background: 'rgba(169,0,255,0.1)', color: '#a900ff', border: '1px solid rgba(169,0,255,0.2)', display: 'inline-block', fontWeight: 600, letterSpacing: '0.02em' }}>
+                        {ROLE_LABELS[currentRole]}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <DropdownMenuItem onClick={() => router.push('/settings')} style={{ color: textPrimary }}>
+                  <i className="bx bx-cog" style={{ marginInlineEnd: 8 }} /> {t('nav.settings')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/subscription')} style={{ color: textPrimary }}>
+                  <i className="bx bx-credit-card" style={{ marginInlineEnd: 8 }} /> {t('nav.subscription')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => { logout(); router.push('/login') }} style={{ color: '#ff6b6b' }}>
+                  <i className="bx bx-log-out" style={{ marginInlineEnd: 8 }} /> {t('nav.signOut')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </header>
 
           {/* Page content */}
