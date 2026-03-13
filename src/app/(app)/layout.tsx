@@ -9,8 +9,9 @@ import { useRoleStore, ROLE_LABELS, type Team } from '@/store/roles'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/ui/theme-provider'
+import { LanguageSwitcher } from '@/components/ui/language-switcher'
 import { useThemeStore } from '@/store/theme'
-import { useRealtimeSync, onNotifToast } from '@/hooks/useRealtimeSync'
+import { useRealtimeSync, onNotifToast, SYNC_EVENT_NAME } from '@/hooks/useRealtimeSync'
 import { usePreferencesStore } from '@/store/preferences'
 import { useTunnelConnection, onTunnelToast } from '@/hooks/useTunnelConnection'
 import { useTunnelStore } from '@/store/tunnels'
@@ -21,12 +22,16 @@ import type { SearchResult } from '@orchestra-mcp/search'
 import { useTranslations } from 'next-intl'
 import { apiFetch, isDevSeed } from '@/lib/api'
 import { SidebarListPanel } from '@/components/layout/sidebar-list-panel'
-import type { SidebarProject, SidebarNote, SidebarPlan, SidebarDocFile, SidebarDevPlugin } from '@/components/layout/sidebar-list-panel'
+import type { SidebarProject, SidebarNote, SidebarPlan, SidebarDocFile, SidebarDevPlugin, SidebarRepo } from '@/components/layout/sidebar-list-panel'
 import { useSidebarMetaStore } from '@/store/sidebar-meta'
 import { CreateItemModal } from '@/components/layout/create-item-modal'
 import type { CreateItemKind } from '@/components/layout/create-item-modal'
+import { CreateProjectWizard } from '@/components/layout/create-project-wizard'
 import { CopilotBubble } from '@/components/copilot/CopilotBubble'
+import { CopilotPanel } from '@/components/copilot/CopilotPanel'
+import { useChatStore } from '@/store/chat'
 import { useSettingsStore } from '@/store/settings'
+import { useFeatureFlagsStore } from '@/store/feature-flags'
 
 const NOTIF_TYPE_META: Record<string, { icon: string; color: string }> = {
   info:    { icon: 'bx-info-circle',  color: '#00e5ff' },
@@ -98,6 +103,8 @@ function getPageTitle(pathname: string, t: (key: string) => string): string {
   // Chat page removed — copilot bubble handles all AI chat
   if (pathname === '/wiki') return t('pageTitle.wiki')
   if (pathname === '/devtools') return t('pageTitle.devtools')
+  if (pathname.startsWith('/repos/') && pathname !== '/repos') return t('nav.versionControl')
+  if (pathname === '/repos') return t('nav.versionControl')
   if (pathname === '/settings') return t('pageTitle.settings')
   if (pathname === '/subscription') return t('pageTitle.subscription')
   if (pathname === '/notifications') return t('pageTitle.notifications')
@@ -455,6 +462,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { theme } = useThemeStore()
   const { fetchPreferences, preferences, updatePreference } = usePreferencesStore()
   const sidebarCollapsed = preferences.sidebar_collapsed
+  const { flags: featureFlags, fetchFlags: fetchFeatureFlags, loaded: featureFlagsLoaded } = useFeatureFlagsStore()
   const t = useTranslations('sidebar')
 
   // MCP hook for sidebar data fetching
@@ -490,8 +498,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarPlans, setSidebarPlans] = useState<SidebarPlan[]>([])
   const [sidebarDocs, setSidebarDocs] = useState<SidebarDocFile[]>([])
   const [sidebarDevPlugins, setSidebarDevPlugins] = useState<SidebarDevPlugin[]>([])
+  const [sidebarRepos, setSidebarRepos] = useState<SidebarRepo[]>([])
   const [sidebarLoading, setSidebarLoading] = useState(false)
   const [sidebarSearch, setSidebarSearch] = useState('')
+  const [anyProviderEnabled, setAnyProviderEnabled] = useState(true)
+  const [githubEnabled, setGithubEnabled] = useState(false)
+  const [githubConnected, setGithubConnected] = useState<boolean | null>(null)
   const [plansProjectId, setPlansProjectId] = useState<string | null>(null)
   const [createModal, setCreateModal] = useState<{ kind: CreateItemKind; projectId?: string } | null>(null)
 
@@ -768,13 +780,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const displayedSearchResults = searchResults.length > 0 ? searchResults : (searchSuggestions.length > 0 ? searchSuggestions : [])
 
   // ── Sidebar section detection ─────────────────────────────
-  const sectionFromPath: 'admin' | 'projects' | 'notes' | 'plans' | 'wiki' | 'devtools' | 'settings' | 'team' | null =
+  const sectionFromPath: 'admin' | 'projects' | 'notes' | 'plans' | 'wiki' | 'devtools' | 'repos' | 'settings' | 'team' | null =
     pathname.startsWith('/admin') ? 'admin'
     : pathname.startsWith('/projects') ? 'projects'
     : pathname.startsWith('/notes') ? 'notes'
     : pathname.startsWith('/plans') ? 'plans'
     : pathname.startsWith('/wiki') ? 'wiki'
     : pathname.startsWith('/devtools') ? 'devtools'
+    : pathname.startsWith('/repos') ? 'repos'
     : pathname.startsWith('/settings') ? 'settings'
     : pathname.startsWith('/team') ? 'team'
     : null
@@ -784,7 +797,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const lastPathMap = useSidebarMetaStore(s => s.lastPath)
   const activeSection = sectionFromPath ?? lastSection
   // Use stored path for active highlighting when on section root (e.g. /projects but not /projects/abc123)
-  const sectionRoots = ['/projects', '/notes', '/plans', '/wiki', '/devtools', '/settings', '/team']
+  const sectionRoots = ['/projects', '/notes', '/plans', '/wiki', '/devtools', '/repos', '/settings', '/team']
   const isOnSectionRoot = sectionRoots.includes(pathname)
   // Include query params so notes (?id=) can highlight active items
   const qs = searchParams.toString()
@@ -821,8 +834,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Fetch sidebar data when section or connection changes
   const fetchSidebarData = useCallback(async () => {
     if (!activeSection || activeSection === 'admin' || activeSection === 'settings' || activeSection === 'team') return
-    // Wiki uses cloud API (no tunnel needed); other sections need tunnel connection
-    if (activeSection !== 'wiki' && connStatus !== 'connected') return
+    // Wiki and repos use cloud API (no tunnel needed); other sections need tunnel connection
+    if (activeSection !== 'wiki' && activeSection !== 'repos' && connStatus !== 'connected') return
 
     setSidebarLoading(true)
     try {
@@ -878,8 +891,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         setSidebarPlans(allPlans)
       } else if (activeSection === 'wiki') {
         try {
-          const docs = await apiFetch<Array<{ doc_id: string; title: string; category: string; pinned: boolean; icon: string; color: string }>>('/api/docs')
-          setSidebarDocs(docs.map(d => ({ name: d.title || d.doc_id, path: d.doc_id, folder: d.category || '', pinned: d.pinned || false, icon: d.icon || '', color: d.color || '' })))
+          // Load system docs (public, no auth)
+          const systemDocs = await apiFetch<Array<{ doc_id: string; title: string; category: string; pinned: boolean; icon: string; color: string }>>('/api/docs', { skipAuth: true }).catch(() => [] as any[])
+          // Also load project-scoped docs from the first project (requires auth)
+          let projectDocs: Array<{ doc_id: string; title: string; category: string; pinned: boolean; icon: string; color: string }> = []
+          const projSlug = sidebarProjects[0]?.id
+          if (projSlug) {
+            projectDocs = await apiFetch<typeof projectDocs>(`/api/projects/${encodeURIComponent(projSlug)}/docs`).catch(() => [])
+          }
+          // Merge, dedup by doc_id (project docs take precedence)
+          const seen = new Set<string>()
+          const allDocs = [...projectDocs, ...systemDocs].filter(d => {
+            if (seen.has(d.doc_id)) return false
+            seen.add(d.doc_id)
+            return true
+          })
+          setSidebarDocs(allDocs.map(d => ({ name: d.title || d.doc_id, path: d.doc_id, folder: d.category || '', pinned: d.pinned || false, icon: d.icon || '', color: d.color || '' })))
         } catch { setSidebarDocs([]) }
       } else if (activeSection === 'devtools') {
         // Build plugin list from available tools
@@ -914,6 +941,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           // Fallback: just list all plugins without tool counts
           setSidebarDevPlugins(DEVTOOL_PLUGINS.map(d => ({ key: d.key, label: d.label, icon: d.icon, color: d.color, toolCount: 0 })))
         }
+      } else if (activeSection === 'repos') {
+        try {
+          // Check if GitHub is connected first
+          const accounts = await apiFetch<Array<{ provider: string }>>('/api/settings/connected-accounts')
+          const hasGithub = accounts.some(a => a.provider === 'github')
+          setGithubConnected(hasGithub)
+          if (hasGithub) {
+            const data = await apiFetch<Array<{ id: string; name: string; repo_owner: string; repo_name: string; language: string; status: string; branch: string; is_private: boolean; description: string }>>('/api/repos')
+            setSidebarRepos(data)
+          } else {
+            setSidebarRepos([])
+          }
+        } catch { setSidebarRepos([]); setGithubConnected(false) }
       }
     } catch (e) {
       console.error('[sidebar] fetch error:', e)
@@ -921,10 +961,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       setSidebarLoading(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connStatus, activeSection, callTool, plansProjectId])
+  }, [connStatus, activeSection, callTool, plansProjectId, team?.id])
 
   useEffect(() => {
     fetchSidebarData()
+  }, [fetchSidebarData])
+
+  // ── Refresh sidebar when sync events arrive via WebSocket ───
+  useEffect(() => {
+    const syncEntityTypes = new Set(['project', 'feature', 'note', 'plan', 'doc', 'ai_session', 'person', 'request'])
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail?.entity_type && syncEntityTypes.has(detail.entity_type)) {
+        // Debounce rapid sync events (batch pushes) into a single re-fetch
+        if (debounceTimer) clearTimeout(debounceTimer)
+        debounceTimer = setTimeout(() => fetchSidebarData(), 500)
+      }
+    }
+    window.addEventListener(SYNC_EVENT_NAME, handler)
+    return () => {
+      window.removeEventListener(SYNC_EVENT_NAME, handler)
+      if (debounceTimer) clearTimeout(debounceTimer)
+    }
   }, [fetchSidebarData])
 
   // ── MCP sidebar action handlers ─────────────────────────────
@@ -1028,6 +1087,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [callTool, fetchSidebarData])
 
+  const handleSidebarMoveToTeam = useCallback(async (sec: string, ids: string[], teamId: string) => {
+    // Toggle team in/out of team_ids array (multi-team support)
+    ids.forEach(id => useSidebarMetaStore.getState().toggleTeam(sec, id, teamId))
+  }, [])
+
+  const handleSidebarAssignMember = useCallback(async (sec: string, ids: string[], memberId: number) => {
+    // Toggle member in/out of assigned_to_ids array (multi-member support)
+    ids.forEach(id => useSidebarMetaStore.getState().toggleAssignee(sec, id, String(memberId)))
+    // Send notification to the assigned member
+    if (memberId > 0) {
+      try {
+        const itemNames = ids.join(', ')
+        await apiFetch('/api/admin/notifications/send', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_ids: [memberId],
+            title: 'New Assignment',
+            message: `You have been assigned to ${sec.slice(0, -1)}: ${itemNames}`,
+            type: 'info',
+          }),
+        })
+      } catch {
+        // Non-fatal: notification delivery is best-effort
+      }
+    }
+  }, [])
+
   const handleSidebarCreate = useCallback((sec: string, kind: string, data: Record<string, string>) => {
     setCreateModal({
       kind: kind as CreateItemKind,
@@ -1042,6 +1128,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     fetchTeam()
     fetchAllTeams()
     fetchPreferences()
+    fetchFeatureFlags()
     fetchNotifications()
     // Redirect new users to onboarding (only once, after first registration)
     if (typeof window !== 'undefined' && pathname !== '/onboarding') {
@@ -1052,6 +1139,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
     }
   }, [token, user, router, fetchMe])
+
+  // Fetch enabled OAuth providers to conditionally show Connected Accounts tab
+  useEffect(() => {
+    apiFetch<{ value: Record<string, unknown> }>('/api/public/settings/integrations', { skipAuth: true })
+      .then(res => {
+        const val = res.value ?? {}
+        const hasAny = Object.entries(val).some(([k, v]) => k.endsWith('_enabled') && !!v)
+        setAnyProviderEnabled(hasAny)
+        setGithubEnabled(!!val.github_enabled)
+      })
+      .catch(() => {})
+  }, [])
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -1104,14 +1203,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Total sidebar width: icon rail (56) + panel (260) = 316, or just icon rail (56) when collapsed or no sidebar
   const totalSidebarWidth = sidebarCollapsed ? 56 : 316
 
-  const navItems = [
-    { href: '/dashboard', label: t('nav.dashboard'), icon: 'bx-grid-alt' },
-    { href: '/projects', label: t('nav.projects'), icon: 'bx-folder' },
-    { href: '/notes', label: t('nav.notes'), icon: 'bx-note' },
-    { href: '/plans', label: t('nav.plans'), icon: 'bx-map' },
-    { href: '/wiki', label: t('nav.wiki'), icon: 'bx-book-open' },
-    { href: '/devtools', label: t('nav.devtools'), icon: 'bx-wrench' },
+  // Feature-flag-aware nav items — dashboard is always visible
+  const allNavItems = [
+    { href: '/dashboard', label: t('nav.dashboard'), icon: 'bx-grid-alt', flag: null },
+    { href: '/projects', label: t('nav.projects'), icon: 'bx-folder', flag: 'projects' },
+    { href: '/notes', label: t('nav.notes'), icon: 'bx-note', flag: 'notes' },
+    { href: '/plans', label: t('nav.plans'), icon: 'bx-map', flag: 'plans' },
+    { href: '/wiki', label: t('nav.wiki'), icon: 'bx-book-open', flag: 'wiki' },
+    { href: '/devtools', label: t('nav.devtools'), icon: 'bx-wrench', flag: 'devtools' },
+    ...(githubEnabled ? [{ href: '/repos', label: t('nav.versionControl'), icon: 'bx-git-branch', flag: null }] : []),
   ]
+  const navItems = allNavItems.filter(item => !item.flag || featureFlags[item.flag] !== false)
 
   const adminItems = [
     { href: '/admin', label: t('overview'), icon: 'bx-bar-chart-alt-2', exact: true },
@@ -1124,8 +1226,40 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/admin/marketplace', label: t('nav.marketplace'), icon: 'bx-store' },
     { href: '/admin/docs', label: t('documentation'), icon: 'bx-book-open' },
     { href: '/admin/contact', label: t('contact'), icon: 'bx-envelope' },
+    { href: '/admin/sponsors', label: 'Sponsors', icon: 'bx-buildings' },
+    { href: '/admin/community', label: 'Community', icon: 'bx-conversation' },
     { href: '/admin/issues', label: t('issues'), icon: 'bx-bug' },
     { href: '/admin/notifications', label: t('notifications'), icon: 'bx-bell' },
+  ]
+
+  const settingsItems: Array<{ href: string; tab: string; label: string; icon: string; divider?: boolean }> = [
+    { href: '/settings?tab=profile', tab: 'profile', label: t('settingsProfile'), icon: 'bx-user' },
+    { href: '/settings?tab=password', tab: 'password', label: t('settingsPassword'), icon: 'bx-lock-alt' },
+    { href: '/settings?tab=appearance', tab: 'appearance', label: t('settingsAppearance'), icon: 'bx-palette' },
+    { href: '/settings?tab=2fa', tab: '2fa', label: t('settings2fa'), icon: 'bx-shield-quarter' },
+    { href: '/settings?tab=passkeys', tab: 'passkeys', label: t('settingsPasskeys'), icon: 'bx-key' },
+    ...(anyProviderEnabled ? [{ href: '/settings?tab=social', tab: 'social', label: t('settingsConnectedAccounts'), icon: 'bx-link' }] : []),
+    ...(anyProviderEnabled ? [{ href: '/settings?tab=integrations', tab: 'integrations', label: t('settingsIntegrations'), icon: 'bx-plug' }] : []),
+    { href: '/settings?tab=sessions', tab: 'sessions', label: t('settingsSessions'), icon: 'bx-devices' },
+    { href: '/settings?tab=apitokens', tab: 'apitokens', label: t('settingsApiTokens'), icon: 'bx-code-alt' },
+    { href: '/settings?tab=push', tab: 'push', label: t('settingsPush'), icon: 'bx-bell' },
+    { href: '/settings?tab=copilot', tab: 'copilot', label: 'AI Copilot', icon: 'bx-bot' },
+    ...(can('canViewAdmin') ? [
+      { href: '/settings?tab=admin-general', tab: 'admin-general', label: t('settingsAdminGeneral'), icon: 'bx-slider-alt', divider: true },
+      { href: '/settings?tab=admin-features', tab: 'admin-features', label: t('settingsAdminFeatures'), icon: 'bx-toggle-right' },
+      { href: '/settings?tab=admin-homepage', tab: 'admin-homepage', label: t('settingsAdminHomepage'), icon: 'bx-home' },
+      { href: '/settings?tab=admin-agents', tab: 'admin-agents', label: t('settingsAdminAgents'), icon: 'bx-bot' },
+      { href: '/settings?tab=admin-contact', tab: 'admin-contact', label: t('settingsAdminContact'), icon: 'bx-envelope' },
+      { href: '/settings?tab=admin-pricing', tab: 'admin-pricing', label: t('settingsAdminPricing'), icon: 'bx-dollar-circle' },
+      { href: '/settings?tab=admin-download', tab: 'admin-download', label: t('settingsAdminDownload'), icon: 'bx-download' },
+      { href: '/settings?tab=admin-integrations', tab: 'admin-integrations', label: t('settingsAdminIntegrations'), icon: 'bx-plug' },
+      { href: '/settings?tab=admin-email', tab: 'admin-email', label: t('settingsAdminEmail'), icon: 'bx-mail-send' },
+      { href: '/settings?tab=admin-seo', tab: 'admin-seo', label: t('settingsAdminSEO'), icon: 'bx-search-alt' },
+      { href: '/settings?tab=admin-discord', tab: 'admin-discord', label: t('settingsAdminDiscord'), icon: 'bxl-discord-alt' },
+      { href: '/settings?tab=admin-slack', tab: 'admin-slack', label: t('settingsAdminSlack'), icon: 'bxl-slack' },
+      { href: '/settings?tab=admin-github', tab: 'admin-github', label: 'GitHub', icon: 'bxl-github' },
+      { href: '/settings?tab=admin-social', tab: 'admin-social', label: 'Social Platforms', icon: 'bx-share-alt' },
+    ] : []),
   ]
 
   // For pages without a sidebar, the main content margin is just 56 (icon rail only)
@@ -1198,10 +1332,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         if (itemHasSidebar && sidebarCollapsed) {
                           updatePreference('sidebar_collapsed', false)
                         }
-                        // Navigate to last-visited path in this section (e.g. /projects/orchestra-web) if available
-                        const sectionKey = item.href.replace('/', '') // '/projects' → 'projects'
-                        const storedPath = useSidebarMetaStore.getState().lastPath[sectionKey]
-                        router.push(storedPath || item.href)
+                        // Navigate to section root (e.g. /projects shows the dashboard)
+                        router.push(item.href)
                       }
                     }}
                     style={{
@@ -1212,12 +1344,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     }}
                   >
                     <i className={`bx ${item.icon}`} style={{ fontSize: 20 }} />
-                    {active && (
-                      <span style={{
-                        position: 'absolute', insetInlineStart: -8, top: 8, bottom: 8,
-                        width: 3, borderRadius: '0 3px 3px 0', background: '#a900ff',
-                      }} />
-                    )}
                   </button>
                 </Tooltip>
               )
@@ -1246,12 +1372,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     }}
                   >
                     <i className="bx bx-shield-alt-2" style={{ fontSize: 20 }} />
-                    {pathname.startsWith('/admin') && (
-                      <span style={{
-                        position: 'absolute', insetInlineStart: -8, top: 8, bottom: 8,
-                        width: 3, borderRadius: '0 3px 3px 0', background: '#a900ff',
-                      }} />
-                    )}
                   </button>
                 </Tooltip>
               </>
@@ -1280,6 +1400,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               }}>
                 <i className="bx bx-shield-alt-2" style={{ fontSize: 16, color: '#a900ff' }} />
                 <span style={{ fontSize: 14, fontWeight: 600, color: textPrimary }}>{t('administration')}</span>
+              </div>
+            ) : pathname.startsWith('/settings') ? (
+              <div style={{
+                height: 52, display: 'flex', alignItems: 'center', gap: 8,
+                padding: '0 16px', borderBottom: `1px solid ${borderColor}`, flexShrink: 0,
+              }}>
+                <i className="bx bx-cog" style={{ fontSize: 16, color: '#a900ff' }} />
+                <span style={{ fontSize: 14, fontWeight: 600, color: textPrimary }}>{t('nav.settings')}</span>
+              </div>
+            ) : pathname.startsWith('/repos') ? (
+              <div style={{
+                height: 52, display: 'flex', alignItems: 'center', gap: 8,
+                padding: '0 16px', borderBottom: `1px solid ${borderColor}`, flexShrink: 0,
+              }}>
+                <i className="bx bx-git-branch" style={{ fontSize: 16, color: '#a900ff' }} />
+                <span style={{ fontSize: 14, fontWeight: 600, color: textPrimary }}>{t('nav.versionControl')}</span>
               </div>
             ) : (
               <WorkspaceSwitcher
@@ -1317,11 +1453,40 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     )
                   })}
                 </div>
-              ) : activeSection && activeSection !== 'admin' ? (
+              ) : pathname.startsWith('/settings') ? (
+                /* Settings sub-navigation */
+                <div style={{ padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: 1, flex: 1, overflowY: 'auto' }}>
+                  {settingsItems.map(item => {
+                    const currentTab = searchParams.get('tab') || 'profile'
+                    const active = item.tab === currentTab
+                    return (
+                      <div key={item.tab}>
+                        {item.divider && (
+                          <>
+                            <div style={{ height: 1, background: borderColor, margin: '6px 10px' }} />
+                            <div style={{ fontSize: 10, fontWeight: 600, color: textDim, letterSpacing: '0.07em', textTransform: 'uppercase', padding: '6px 10px 4px' }}>{t('settingsAdminSection')}</div>
+                          </>
+                        )}
+                        <Link href={item.href} style={{
+                          display: 'flex', alignItems: 'center', gap: 9,
+                          padding: '7px 10px', borderRadius: 7, textDecoration: 'none',
+                          fontSize: 13, fontWeight: active ? 500 : 400,
+                          color: active ? textPrimary : navInactiveColor,
+                          background: active ? navActiveBg : 'transparent',
+                        }}>
+                          <i className={`bx ${item.icon}`} style={{ fontSize: 15, width: 18, textAlign: 'center', opacity: active ? 1 : 0.5 }} />
+                          {item.label}
+                        </Link>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : activeSection && activeSection !== 'admin' && activeSection !== 'settings' ? (
                 /* CRUD list for the active section */
                 <SidebarListPanel
                   section={activeSection}
                   activePath={effectivePathname}
+                  activeTeamId={team?.id ?? null}
                   textPrimary={textPrimary}
                   textMuted={textMuted}
                   textDim={textDim}
@@ -1334,6 +1499,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   sessions={[]}
                   sidebarDocs={sidebarDocs}
                   sidebarDevPlugins={sidebarDevPlugins}
+                  sidebarRepos={sidebarRepos}
+                  githubConnected={githubConnected}
                   sidebarLoading={sidebarLoading}
                   sidebarSearch={sidebarSearch}
                   setSidebarSearch={setSidebarSearch}
@@ -1343,6 +1510,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   onColorItem={handleSidebarColor}
                   onIconItem={handleSidebarIcon}
                   onCreateItem={handleSidebarCreate}
+                  onMoveToTeam={handleSidebarMoveToTeam}
+                  onAssignMember={handleSidebarAssignMember}
                 />
               ) : (
                 /* Fallback workspace nav (should not happen with hasSidebar guard) */
@@ -1525,7 +1694,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               )}
             </div>
 
-            {/* Theme toggle */}
+            {/* Language + Theme */}
+            <LanguageSwitcher size={32} urlBased={false} />
             <ThemeToggle size={32} />
 
             {/* User menu */}
@@ -1573,15 +1743,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
           </header>
 
-          {/* Page content */}
-          <main style={{ flex: 1, overflowY: 'auto' }}>
+          {/* Page content — show 404 if the feature is disabled, fullscreen copilot replaces content */}
+          <CopilotMainArea featureFlags={featureFlags} featureFlagsLoaded={featureFlagsLoaded} pathname={pathname} router={router}>
             {children}
-          </main>
+          </CopilotMainArea>
         </div>
       </div>
 
-      {/* Create item modal (triggered from sidebar + button) */}
-      {createModal && (
+      {/* Create item modal / project wizard (triggered from sidebar + button) */}
+      {createModal && createModal.kind === 'project' && (
+        <CreateProjectWizard
+          onClose={() => setCreateModal(null)}
+          onSuccess={fetchSidebarData}
+        />
+      )}
+      {createModal && createModal.kind !== 'project' && (
         <CreateItemModal
           kind={createModal.kind}
           projectId={createModal.projectId}
@@ -1593,5 +1769,48 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Copilot bubble — always visible on every page */}
       <CopilotBubble />
     </div>
+  )
+}
+
+// ── Copilot-aware main area ──────────────────────────────────
+// Extracted to its own component so useChatStore doesn't re-render the entire layout.
+
+function CopilotMainArea({ children, featureFlags, featureFlagsLoaded, pathname, router }: {
+  children: React.ReactNode
+  featureFlags: Record<string, boolean>
+  featureFlagsLoaded: boolean
+  pathname: string
+  router: ReturnType<typeof useRouter>
+}) {
+  const copilotMode = useChatStore(s => s.copilotMode)
+  const copilotOpen = useChatStore(s => s.copilotOpen)
+  const isFullscreen = copilotMode === 'fullscreen' && copilotOpen
+
+  return (
+    <main style={{ flex: 1, overflowY: isFullscreen ? 'hidden' : 'auto' }}>
+      {isFullscreen ? (
+        <CopilotPanel />
+      ) : (
+        (() => {
+          const featureRouteMap: Record<string, string> = { '/projects': 'projects', '/notes': 'notes', '/plans': 'plans', '/wiki': 'wiki', '/devtools': 'devtools' }
+          const disabledFeature = Object.entries(featureRouteMap).find(([route, flag]) =>
+            (pathname === route || pathname.startsWith(route + '/')) && featureFlags[flag] === false
+          )
+          if (disabledFeature && featureFlagsLoaded) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12, color: 'var(--color-fg-dim)' }}>
+                <i className="bx bx-block" style={{ fontSize: 48, opacity: 0.3 }} />
+                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-fg)' }}>404</div>
+                <div style={{ fontSize: 14 }}>This feature has been disabled by an administrator.</div>
+                <button onClick={() => router.push('/dashboard')} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  Go to Dashboard
+                </button>
+              </div>
+            )
+          }
+          return children
+        })()
+      )}
+    </main>
   )
 }

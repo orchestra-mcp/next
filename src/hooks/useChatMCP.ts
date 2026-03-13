@@ -34,21 +34,24 @@ interface TurnMeta {
 function stripMetadata(text: string): string {
   let cleaned = text
 
+  // Strip orphan "** " prefix at start of text (bold marker without closing pair)
+  cleaned = cleaned.replace(/^\*\*\s+/, '')
+
   // Strip "#### Turn N — <timestamp>" headers
   cleaned = cleaned.replace(/^#{1,4}\s*Turn\s+\d+\s*[—–-]\s*\d{4}-\d{2}-\d{2}T[\d:.]+Z?\s*\n?/gm, '')
 
   // NOTE: Tool call trace lines (⚙/✓/✗) are preserved here and extracted
   // into ClaudeCodeEvent objects by extractToolEvents() instead.
 
-  // Strip "**Response:**" or "**Answer:**" prefixes
-  cleaned = cleaned.replace(/^\*\*(?:Response|Answer|Result)\*\*:?\s*/gm, '')
+  // Strip "**Response:**", "**Answer:**", "**Technical Issue:**" and similar bold-prefixed narration headers
+  cleaned = cleaned.replace(/^\*\*(?:Response|Answer|Result|Technical Issue|Note|Error|Warning|Summary)\*\*:?\s*/gm, '')
 
-  // Strip format A: everything after \n---\n followed by metadata lines
+  // Strip format A: everything after \n---\n followed by actual metadata lines
+  // Only match known metadata keys to avoid stripping normal bold list items
   const sepIdx = cleaned.lastIndexOf('\n---\n')
   if (sepIdx !== -1) {
-    const after = cleaned.slice(sepIdx + 5)
-    // Check if what follows looks like metadata (starts with "- **")
-    if (/^-\s+\*\*\w/.test(after.trim())) {
+    const after = cleaned.slice(sepIdx + 5).trim()
+    if (/^-\s+\*\*(?:Session|Model|Tokens|Cost|Duration|Account)\*\*\s*[:：]/i.test(after)) {
       cleaned = cleaned.slice(0, sepIdx)
     }
   }
@@ -57,12 +60,12 @@ function stripMetadata(text: string): string {
   // Match both with and without underscores/bold, at end of text or end of line
   cleaned = cleaned.replace(/\s*_?\*{0,2}Model\s*[:：]\s*\S+\s*\|\s*Tokens\s*[:：]\s*\d+\s*in\s*\/\s*\d+\s*out\s*\|\s*Cost\s*[:：]\s*\$?[\d.]+\s*\|\s*Duration\s*[:：]\s*\d+m?s\*{0,2}_?\s*$/gm, '')
 
-  // Strip standalone metadata lines: "- **Session:** ...", "- **Model:** ...", etc.
-  cleaned = cleaned.replace(/^-\s+\*\*(?:Session|Model|Tokens|Cost|Duration)\*\*:\s*.+$/gm, '')
+  // Strip standalone metadata lines: "- **Key:** val", "• **Key:** val", "* **Key:** val"
+  // Also match non-bold: "• Session: val", "• Model: val"
+  cleaned = cleaned.replace(/^[•*-]\s+\*{0,2}(?:Session|Model|Tokens|Cost|Duration)\*{0,2}\s*[:：]\s*.+$/gm, '')
 
-  // Strip standalone "- **Key:** value" metadata lines at end of text
-  // (can appear without --- separator if response was stored differently)
-  cleaned = cleaned.replace(/(\n-\s+\*\*(?:Session|Model|Tokens|Cost|Duration)\*\*:\s*.+)+\s*$/gm, '')
+  // Strip trailing metadata block at end of text (same patterns)
+  cleaned = cleaned.replace(/(\n[•*-]\s+\*{0,2}(?:Session|Model|Tokens|Cost|Duration)\*{0,2}\s*[:：]\s*.+)+\s*$/gm, '')
 
   // Collapse multiple blank lines into at most two
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
@@ -79,7 +82,7 @@ function parseTurnResponse(raw: string): { content: string; meta: TurnMeta } {
     const json = JSON.parse(raw)
     if (json.response !== undefined) {
       return {
-        content: stripMetadata(json.response),
+        content: json.response,
         meta: {
           claudeSessionId: json.session_id,
           model: json.model,
@@ -121,6 +124,22 @@ function parseTurnResponse(raw: string): { content: string; meta: TurnMeta } {
     meta.tokensOut = meta.tokensOut ?? parseInt(pipeMatch[3], 10)
     meta.cost = meta.cost ?? parseFloat(pipeMatch[4])
     meta.durationMs = meta.durationMs ?? parseInt(pipeMatch[5], 10)
+  }
+
+  // Parse plain bullet metadata: "• Session: val", "• Model: val", "- Session: val"
+  for (const line of raw.split('\n')) {
+    const bm = line.match(/^[•*-]\s+\*{0,2}(\w[\w\s]*?)\*{0,2}\s*[:：]\s*(.+)$/)
+    if (!bm) continue
+    const key = bm[1].toLowerCase().trim()
+    const val = bm[2].trim()
+    if (key === 'session' && !meta.claudeSessionId) meta.claudeSessionId = val
+    if (key === 'model' && !meta.model) meta.model = val
+    if (key === 'tokens' && meta.tokensIn == null) {
+      const tm = val.match(/(\d+)\s*in\s*\/\s*(\d+)\s*out/)
+      if (tm) { meta.tokensIn = parseInt(tm[1], 10); meta.tokensOut = parseInt(tm[2], 10) }
+    }
+    if (key === 'cost' && meta.cost == null) meta.cost = parseFloat(val.replace('$', '')) || 0
+    if (key === 'duration' && meta.durationMs == null) meta.durationMs = parseInt(val, 10) || 0
   }
 
   return { content: stripMetadata(raw), meta }
@@ -186,17 +205,44 @@ function parseSessionDetail(text: string): { meta: { name: string; account: stri
           messages.push({
             id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-u`,
             role: 'user',
-            content: t.user,
+            content: t.user.replace(/^\*\*\s+/, ''),
             timestamp: t.timestamp || new Date().toISOString(),
           })
         }
         if (t.assistant) {
+          // Parse persisted tool events from the turn data.
+          let events: ClaudeCodeEvent[] | undefined
+          if (Array.isArray(t.events) && t.events.length > 0) {
+            const evMap = new Map<string, ClaudeCodeEvent>()
+            for (const ev of t.events) {
+              if (ev.type === 'tool_start') {
+                const card = bridgeEventToCard(ev)
+                card.status = 'done' // persisted events are always completed
+                evMap.set(ev.tool_id || card.id, card)
+              } else if (ev.type === 'tool_end' && ev.tool_id) {
+                const existing = evMap.get(ev.tool_id)
+                if (existing) {
+                  existing.status = ev.tool_error ? 'error' : 'done'
+                  // Merge result data
+                  if (ev.tool_result) {
+                    const tn = (ev.tool_name || '').toLowerCase()
+                    if (tn === 'bash') (existing as any).output = ev.tool_result
+                    else if (tn === 'grep') (existing as any).resultText = ev.tool_result
+                    else if (tn === 'read') (existing as any).content = ev.tool_result
+                    else (existing as any).resultText = ev.tool_result
+                  }
+                }
+              }
+            }
+            events = Array.from(evMap.values())
+          }
           messages.push({
             id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-a`,
             role: 'assistant',
             content: stripMetadata(t.assistant),
             timestamp: t.timestamp || new Date().toISOString(),
             markdown: true,
+            ...(events && events.length > 0 ? { events } : {}),
           })
         }
       }
@@ -238,7 +284,7 @@ function parseSessionDetail(text: string): { meta: { name: string; account: stri
   function flushMessage() {
     if (currentRole && currentContent.length > 0) {
       const raw = currentContent.join('\n').trim()
-      const content = currentRole === 'assistant' ? stripMetadata(raw) : raw
+      const content = currentRole === 'assistant' ? stripMetadata(raw) : raw.replace(/^\*\*\s+/, '')
       if (content) {
         messages.push({
           id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -281,42 +327,86 @@ function parseSessionDetail(text: string): { meta: { name: string; account: stri
 
 /**
  * Tool call line patterns in bridge-claude response text:
- *   ⚙ ToolName: arg_summary   → tool_use (start)
+ *   ⚙ ToolName: arg_summary   → tool_use (start, captures "arg_summary")
  *   ⚙ ToolName                → tool_use (start, no args)
+ *   ⚙ ToolName Long text...   → tool_use (start, trailing text discarded)
  *   ✓ ToolName                → tool_result (success)
  *   ✗ ToolName                → tool_result (error)
+ *
+ * Patterns allow optional leading whitespace and emoji variant (⚙️ vs ⚙).
  */
-const TOOL_START_RE = /^⚙\s+(\S+?)(?::\s*(.+))?$/
-const TOOL_END_OK_RE = /^✓\s+(\S+)$/
-const TOOL_END_ERR_RE = /^✗\s+(\S+)$/
+const TOOL_START_RE = /^\s*⚙️?\s+(\S+?)(?::\s*(.+))?$/
+const TOOL_START_LOOSE_RE = /^\s*⚙️?\s+(\S+)/
+const TOOL_END_OK_RE = /^\s*✓\s+(\S+)/
+const TOOL_END_ERR_RE = /^\s*✗\s+(\S+)/
 
-function mapToolNameToEvent(toolName: string, argSummary: string, id: string): ClaudeCodeEvent {
+function mapToolNameToEvent(toolName: string, argSummary: string, id: string, toolData?: Record<string, any>): ClaudeCodeEvent {
   const base = { id, toolUseId: id, status: 'done' as const, timestamp: new Date().toISOString() }
   const name = toolName.toLowerCase()
 
   switch (name) {
     case 'bash':
-      return { ...base, type: 'bash', command: argSummary || '' }
+      return {
+        ...base, type: 'bash',
+        command: toolData?.command || argSummary || '',
+        description: toolData?.description || '',
+      }
     case 'grep':
-      return { ...base, type: 'grep', pattern: argSummary || '', matches: [] }
+      return {
+        ...base, type: 'grep',
+        pattern: toolData?.pattern || argSummary || '',
+        filePattern: toolData?.glob || toolData?.type || '',
+        path: toolData?.path || '',
+        matches: [],
+      }
     case 'read':
-      return { ...base, type: 'read', filePath: argSummary || '' }
+      return { ...base, type: 'read', filePath: toolData?.file_path || argSummary || '' }
     case 'glob':
-      return { ...base, type: 'glob', pattern: argSummary || '' }
+      return {
+        ...base, type: 'glob',
+        pattern: toolData?.pattern || argSummary || '',
+        path: toolData?.path || '',
+      }
     case 'edit':
-      return { ...base, type: 'edit', filePath: argSummary || '', original: '', modified: '' }
+      return {
+        ...base, type: 'edit',
+        filePath: toolData?.file_path || argSummary || '',
+        original: toolData?.old_string || '',
+        modified: toolData?.new_string || '',
+        description: toolData?.description || '',
+      }
     case 'write':
-      return { ...base, type: 'create', filePath: argSummary || '', content: '' }
+      return {
+        ...base, type: 'create',
+        filePath: toolData?.file_path || argSummary || '',
+        content: toolData?.content || '',
+      }
     case 'task':
-      return { ...base, type: 'sub_agent', agentType: 'general', description: argSummary || '' }
+      return {
+        ...base, type: 'sub_agent',
+        agentType: toolData?.subagent_type || 'general',
+        description: toolData?.description || toolData?.prompt || argSummary || '',
+      }
     case 'todowrite':
-      return { ...base, type: 'todo_list', items: [] }
+      return {
+        ...base, type: 'todo_list',
+        items: toolData?.todos || [],
+      }
     case 'websearch':
-      return { ...base, type: 'web_search', query: argSummary || '', results: [] }
+      return { ...base, type: 'web_search', query: toolData?.query || argSummary || '', results: [] }
     case 'webfetch':
-      return { ...base, type: 'web_fetch', url: argSummary || '' }
-    default:
-      return { ...base, type: 'mcp', toolName, arguments: argSummary ? { summary: argSummary } : {} }
+      return { ...base, type: 'web_fetch', url: toolData?.url || argSummary || '' }
+    case 'askuserquestion':
+      return {
+        ...base, type: 'question',
+        requestId: id,
+        questions: toolData?.questions || [],
+      }
+    default: {
+      // Use full toolData as arguments if available, otherwise fall back to summary
+      const args = toolData || (argSummary ? { summary: argSummary } : {})
+      return { ...base, type: 'mcp', toolName, arguments: args }
+    }
   }
 }
 
@@ -333,7 +423,10 @@ function extractToolEvents(text: string): { cleanedText: string; events: ClaudeC
   for (const line of text.split('\n')) {
     const trimmed = line.trim()
 
-    const startMatch = trimmed.match(TOOL_START_RE)
+    if (!trimmed) { cleanedLines.push(line); continue }
+
+    // Try strict match first (⚙ Tool: args), then loose match (⚙ Tool anything)
+    const startMatch = trimmed.match(TOOL_START_RE) || trimmed.match(TOOL_START_LOOSE_RE)
     if (startMatch) {
       const toolName = startMatch[1]
       const argSummary = startMatch[2] || ''
@@ -348,17 +441,18 @@ function extractToolEvents(text: string): { cleanedText: string; events: ClaudeC
     const okMatch = trimmed.match(TOOL_END_OK_RE)
     if (okMatch) {
       const pending = pendingTools.get(okMatch[1])
-      if (pending) { pending.status = 'done'; pendingTools.delete(okMatch[1]) }
-      continue
+      if (pending) { pending.status = 'done'; pendingTools.delete(okMatch[1]); continue }
+      // No matching pending tool — keep line as content
     }
 
     const errMatch = trimmed.match(TOOL_END_ERR_RE)
     if (errMatch) {
       const pending = pendingTools.get(errMatch[1])
-      if (pending) { pending.status = 'error'; pendingTools.delete(errMatch[1]) }
-      continue
+      if (pending) { pending.status = 'error'; pendingTools.delete(errMatch[1]); continue }
+      // No matching pending tool — keep line as content
     }
 
+    // Keep all non-tool-marker lines as response text
     cleanedLines.push(line)
   }
 
@@ -378,6 +472,8 @@ interface BridgeChatEvent {
   tool_name?: string
   tool_id?: string
   tool_input?: string
+  tool_data?: string   // Full JSON input for rich rendering (Write content, Edit old/new, Bash command, MCP args)
+  tool_result?: string // Tool output/result content (Bash stdout, Grep matches, etc.)
   tool_error?: boolean
   tokens_in?: number
   tokens_out?: number
@@ -393,7 +489,12 @@ interface BridgeChatEvent {
  */
 function bridgeEventToCard(ev: BridgeChatEvent): ClaudeCodeEvent {
   const id = ev.tool_id || `ev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
-  return mapToolNameToEvent(ev.tool_name || 'unknown', ev.tool_input || '', id)
+  // Parse full tool data JSON if available for rich rendering
+  let toolData: Record<string, any> | undefined
+  if (ev.tool_data) {
+    try { toolData = JSON.parse(ev.tool_data) } catch { /* ignore */ }
+  }
+  return mapToolNameToEvent(ev.tool_name || 'unknown', ev.tool_input || '', id, toolData)
 }
 
 // ── Active Streaming Message Registry ────────────────────────────
@@ -422,7 +523,8 @@ export function clearActiveQuestionId() {
 // ── Hook ─────────────────────────────────────────────────────
 
 function getMCPText(result: { content?: Array<{ text?: string }> }): string {
-  return result.content?.[0]?.text ?? ''
+  if (!result.content?.length) return ''
+  return result.content.map(c => c.text ?? '').join('\n')
 }
 
 export function useChatMCP() {
@@ -460,7 +562,6 @@ export function useChatMCP() {
         ) as Array<{ id: string; type: string; tool_name?: string; tool_input?: unknown; reason?: string; questions?: Array<{ question: string; header?: string; options: Array<{ label: string; description?: string }>; multiSelect?: boolean }> }>
 
         const mode = store.getState().chatMode
-        console.log('[copilot] permission poll:', pending.length, 'items, mode:', mode, pending.map(r => `${r.type}:${r.id.slice(0, 8)}`))
 
         for (const req of pending) {
           const sendingIds = store.getState().sendingSessionIds
@@ -490,7 +591,6 @@ export function useChatMCP() {
               // or dead session. Auto-dismiss them to clean the backend store.
               // Retry every poll cycle until the backend removes them.
               if (!_dismissedPermissionIds.has(req.id)) {
-                console.log('[copilot] auto-dismiss orphaned:', req.type, req.id.slice(0, 8))
                 _dismissedPermissionIds.add(req.id)
                 callTool('respond_permission', {
                   id: req.id,
@@ -511,7 +611,6 @@ export function useChatMCP() {
               // one isn't answered quickly. Auto-dismiss old questions and
               // only show the latest.
               if (_activeQuestionRequestId && _activeQuestionRequestId !== req.id) {
-                console.log('[copilot] auto-dismiss old question:', _activeQuestionRequestId.slice(0, 8), '→ new:', req.id.slice(0, 8))
                 // Fire-and-forget the old question dismissal (don't await)
                 callTool('respond_permission', {
                   id: _activeQuestionRequestId,
@@ -534,7 +633,6 @@ export function useChatMCP() {
                 questions,
                 status: 'running',
               }
-              console.log('[copilot] emitting QuestionCard:', req.id.slice(0, 8), 'q:', questions[0]?.question?.slice(0, 40))
               store.getState().appendEvent(sid, msgId, questionEvent)
               store.getState().setTypingStatus(sid,
                 `Waiting for answer: ${questions[0]?.header || 'question'}`)
@@ -548,7 +646,6 @@ export function useChatMCP() {
               const fingerprint = `${req.tool_name}::${inputStr ?? ''}`
 
               if (_emittedPermissionFingerprints.has(fingerprint)) {
-                console.log('[copilot] skip (duplicate fingerprint):', req.tool_name, req.id.slice(0, 8))
                 // Duplicate tool call — auto-approve silently so it doesn't block.
                 callTool('respond_permission', {
                   id: req.id,
@@ -567,7 +664,6 @@ export function useChatMCP() {
                 reason: req.reason,
                 status: 'running',
               }
-              console.log('[copilot] emitting PermissionCard:', req.tool_name, req.id.slice(0, 8))
               store.getState().appendEvent(sid, msgId, permEvent)
               store.getState().setTypingStatus(sid,
                 `Waiting for approval: ${req.tool_name || 'tool'}`)
@@ -596,9 +692,6 @@ export function useChatMCP() {
               ? notification.params
               : JSON.stringify(notification.params))
 
-        console.log('[copilot] streaming events received:', events.length, events.map(e => `${e.type}:${e.tool_name || e.text?.slice(0, 30) || ''}`))
-
-
         for (const ev of events) {
           // Find the active streaming message for this session.
           // The session_id from bridge-claude may be the internal claude session
@@ -620,7 +713,6 @@ export function useChatMCP() {
           }
 
           if (!targetSession || !targetMsgId) {
-            console.log('[copilot] event dropped (no active streaming message):', ev.type, ev.session_id, 'active:', [..._activeStreamingMessages.keys()])
             continue
           }
 
@@ -638,10 +730,24 @@ export function useChatMCP() {
             }
 
             case 'tool_end': {
-              // Find and update the matching event's status
+              // Find and update the matching event's status + merge result content
               const toolId = ev.tool_id || ev.tool_name || ''
               const newStatus = ev.tool_error ? 'error' : 'done'
-              store.getState().updateEvent(targetSession, targetMsgId, toolId, { status: newStatus })
+              const updates: Partial<ClaudeCodeEvent> = { status: newStatus }
+              // Merge tool result into the event for rich rendering (bash output, etc.)
+              if (ev.tool_result) {
+                const tn = (ev.tool_name || '').toLowerCase()
+                if (tn === 'bash') {
+                  (updates as any).output = ev.tool_result
+                } else if (tn === 'grep') {
+                  (updates as any).resultText = ev.tool_result
+                } else if (tn === 'read') {
+                  (updates as any).content = ev.tool_result
+                } else {
+                  (updates as any).resultText = ev.tool_result
+                }
+              }
+              store.getState().updateEvent(targetSession, targetMsgId, toolId, updates)
               break
             }
 
@@ -717,12 +823,21 @@ export function useChatMCP() {
     try {
       const result = await callTool('list_sessions')
       const parsed = parseSessions(getMCPText(result))
-      // Merge: keep existing messages for sessions we already have
+      // Bidirectional merge:
+      // 1. Update existing sessions with backend metadata, preserve messages
+      // 2. Add new backend sessions not in local store
+      // 3. Keep local-only sessions (not on backend) — they may still have messages
       const existing = store.getState().sessions
-      const merged = parsed.map(s => {
-        const old = existing.find(e => e.id === s.id)
-        return old ? { ...s, messages: old.messages } : s
-      })
+      const backendIds = new Set(parsed.map(s => s.id))
+      const merged = [
+        // Backend sessions: use backend metadata, keep local messages
+        ...parsed.map(s => {
+          const old = existing.find(e => e.id === s.id)
+          return old ? { ...s, messages: old.messages } : s
+        }),
+        // Local-only sessions: keep them (backend might not have them yet)
+        ...existing.filter(s => !backendIds.has(s.id)),
+      ]
       store.getState().setSessions(merged)
     } catch {
       // Silently fail — bridge plugin may not be running
@@ -751,17 +866,29 @@ export function useChatMCP() {
         })
       }
 
-      // Extract tool events from assistant messages so they render as cards
+      // Extract tool events from assistant messages so they render as cards.
+      // If a message already has events (from persisted turn data), skip the
+      // regex fallback — persisted events have full tool_data for rich rendering.
       const messagesWithEvents = parsed.messages.map(msg => {
         if (msg.role !== 'assistant' || !msg.content) return msg
+        if (msg.events && msg.events.length > 0) return msg // already has persisted events
         const { cleanedText, events } = extractToolEvents(msg.content)
         if (events.length === 0) return msg
         return { ...msg, content: cleanedText, events }
       })
 
-      store.getState().setSessionMessages(sessionId, messagesWithEvents)
+      // Only replace messages if the backend returned actual content.
+      // If the backend returns empty (server restart, missing turns),
+      // keep what's already in the store (from localStorage persistence).
+      const existingMessages = store.getState().getSession(sessionId)?.messages ?? []
+      if (messagesWithEvents.length > 0) {
+        store.getState().setSessionMessages(sessionId, messagesWithEvents)
+      } else if (existingMessages.length === 0) {
+        // Both empty — nothing to do
+      }
+      // else: backend empty but store has messages — keep store messages
     } catch {
-      // Failed to load
+      // Failed to load — keep existing messages in store
     }
   }, [status, callTool])
 
@@ -773,13 +900,11 @@ export function useChatMCP() {
     }
     const args: Record<string, unknown> = { id: requestId, decision }
     if (answer !== undefined) args.answer = answer
-    console.log('[copilot] respondPermission: fire-and-forget', requestId.slice(0, 8), decision, answer?.slice(0, 20))
     // Fire-and-forget: don't await. The backend handler removes the item
     // from the store and writes the answer to Claude CLI stdin. We don't
     // need confirmation — the permission poller will stop returning this ID.
-    callTool('respond_permission', args).then(
-      (result) => console.log('[copilot] respondPermission: ok', requestId.slice(0, 8), result?.content?.[0]?.text?.slice(0, 60)),
-      (err) => console.warn('[copilot] respondPermission: failed (non-blocking)', requestId.slice(0, 8), err),
+    callTool('respond_permission', args).catch(
+      (err) => console.warn('[copilot] respondPermission failed:', requestId.slice(0, 8), err),
     )
   }, [status, callTool])
 
@@ -813,11 +938,17 @@ export function useChatMCP() {
     store.getState().addSendingSession(sessionId)
     store.getState().setTypingStatus(sessionId, 'Thinking...')
 
+    // Auto-name session from first user message
+    const currentTitle = session.title
+    if (!currentTitle || currentTitle === session.id || currentTitle === 'New Chat') {
+      const autoTitle = text.trim().slice(0, 60) + (text.trim().length > 60 ? '...' : '')
+      store.getState().renameSession(sessionId, autoTitle)
+    }
+
     // Register this as the active streaming message so the event
     // notification handler knows where to append real-time events.
     _activeStreamingMessages.set(sessionId, assistantMsgId)
     streamedEventCountRef.current.set(sessionId, 0)
-    console.log('[copilot] registered streaming message:', sessionId, assistantMsgId)
 
     try {
       // ── 3. Call send_message (tools-sessions) ─────────────────
@@ -833,14 +964,19 @@ export function useChatMCP() {
         : currentMode === 'plan' ? 'plan'
         : 'bypassPermissions'
 
+      const selectedModel = store.getState().selectedModelId
       const result = await callTool('send_message', {
         session_id: sessionId,
         message: text.trim(),
         permission_mode: permMode,
+        ...(selectedModel ? { model: selectedModel } : {}),
       }, 5 * 60 * 1000)
 
       const raw = getMCPText(result)
+      // DEBUG: trace truncation — REMOVE after diagnosing
+      console.warn('[copilot:trunc] blocks:', result.content?.length, 'raw:', raw.length, 'raw tail:', raw.slice(-100))
       const { content, meta } = parseTurnResponse(raw)
+      console.warn('[copilot:trunc] parsed:', content.length, 'tail:', content.slice(-100))
 
       // Update session metadata (claude session ID for resume, model, tokens)
       if (meta.claudeSessionId || meta.model) {
@@ -858,24 +994,34 @@ export function useChatMCP() {
       // If yes, the message already has tool cards from real-time streaming.
       // If no, fall back to extracting events from the response text.
       const streamedCount = streamedEventCountRef.current.get(sessionId) || 0
-      console.log('[copilot] send_message done, streamed events:', streamedCount)
+
+      // Usage metadata to attach to the message for status bar display
+      const usageMeta = {
+        model: meta.model,
+        tokensIn: meta.tokensIn,
+        tokensOut: meta.tokensOut,
+        cost: meta.cost,
+        durationMs: meta.durationMs,
+      }
 
       if (streamedCount > 0) {
         // Real-time events were received — finalize with authoritative text.
         // Strip tool markers since events were already streamed as cards.
         const { cleanedText } = extractToolEvents(content)
+        console.warn('[copilot:trunc] streamed final:', cleanedText.length, 'tail:', cleanedText.slice(-100))
         store.getState().patchMessage(sessionId, assistantMsgId, {
           content: cleanedText || '(No response)',
           streaming: false,
-          model: meta.model,
+          ...usageMeta,
         })
       } else {
         // No streaming events received — extract from response text.
         const { cleanedText, events } = extractToolEvents(content)
+        console.warn('[copilot:trunc] fallback final:', cleanedText.length, 'events:', events.length, 'tail:', cleanedText.slice(-100))
         store.getState().patchMessage(sessionId, assistantMsgId, {
           content: cleanedText || '(No response)',
           streaming: false,
-          model: meta.model,
+          ...usageMeta,
           events: events.length > 0 ? events : undefined,
         })
       }
@@ -939,6 +1085,10 @@ export function useChatMCP() {
       if (name?.trim()) args.name = name.trim()
       if (systemPrompt?.trim()) args.system_prompt = systemPrompt.trim()
 
+      // Pass the selected model so the session uses the right one
+      const selectedModel = store.getState().selectedModelId
+      if (selectedModel) args.model = selectedModel
+
       // Map chatMode to permission_mode for the session
       const mode = store.getState().chatMode
       if (mode === 'manual') {
@@ -974,6 +1124,35 @@ export function useChatMCP() {
     }
   }, [status, callTool, fetchSessions, fetchAccounts])
 
+  const stopSession = useCallback(async (sessionId: string) => {
+    if (status !== 'connected') return
+    try {
+      const session = store.getState().getSession(sessionId)
+      const claudeSessionId = session?.lastTurnMeta?.claudeSessionId
+      if (claudeSessionId) {
+        await callTool('kill_session', { session_id: claudeSessionId })
+      }
+    } catch { /* best effort */ }
+
+    // Clean up UI state
+    const msgId = _activeStreamingMessages.get(sessionId)
+    if (msgId) {
+      const currentContent = store.getState().getSession(sessionId)?.messages.find(m => m.id === msgId)?.content
+      store.getState().patchMessage(sessionId, msgId, {
+        streaming: false,
+        content: currentContent || '(Stopped)',
+      })
+    }
+    _activeStreamingMessages.delete(sessionId)
+    streamedEventCountRef.current.delete(sessionId)
+    _emittedPermissionIds.clear()
+    _dismissedPermissionIds.clear()
+    _emittedPermissionFingerprints.clear()
+    _activeQuestionRequestId = null
+    store.getState().removeSendingSession(sessionId)
+    store.getState().setTypingStatus(sessionId, null)
+  }, [status, callTool])
+
   const deleteSession = useCallback(async (id: string) => {
     if (status !== 'connected') return
     try {
@@ -991,6 +1170,7 @@ export function useChatMCP() {
     sendMessage,
     createSession,
     deleteSession,
+    stopSession,
     fetchAccounts,
     respondPermission,
   }

@@ -472,8 +472,8 @@ export const ChatBox = ({
           <ChatMsgBubble
             key={msg.id}
             message={msg}
-            senderName={msg.role === 'user' ? userName : msg.role === 'assistant' ? assistantName : undefined}
             avatar={msg.role === 'user' ? userAvatar : msg.role === 'assistant' ? assistantAvatar : undefined}
+            assistantName={assistantName}
             actions={messageActions}
             contextActions={contextActions}
             onContextAction={onContextAction}

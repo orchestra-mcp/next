@@ -220,8 +220,8 @@
 }
 
 .chat-header__icon-btn--close:hover {
-  background-color: #e53935;
-  color: #ffffff;
+  background-color: var(--color-danger, #e53935);
+  color: #fff;
 }
 
 .chat-header__icon-btn--new {
@@ -356,8 +356,46 @@
 }
 
 .chat-header__dropdown-item-delete:hover {
-  background: #e53935;
+  background: var(--color-danger, #e53935);
   color: #fff;
+}
+
+/* Rename button */
+.chat-header__dropdown-item-rename {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--color-fg-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.12s ease;
+}
+
+.chat-header__dropdown-item:hover .chat-header__dropdown-item-rename {
+  opacity: 1;
+}
+
+.chat-header__dropdown-item-rename:hover {
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  color: var(--color-accent);
+}
+
+/* Inline rename input */
+.chat-header__dropdown-rename-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--color-accent);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 13px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  outline: none;
 }
 
 /* ── Compact variant ── */

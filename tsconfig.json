@@ -43,7 +43,8 @@
       "@orchestra-mcp/ai/ChatBox": ["./packages/@orchestra-mcp/ai/src/ChatBox/index.ts"],
       "@orchestra-mcp/ai/BubbleButton": ["./packages/@orchestra-mcp/ai/src/BubbleButton/index.ts"],
       "@orchestra-mcp/ai/types": ["./packages/@orchestra-mcp/ai/src/types/index.ts"],
-      "@orchestra-mcp/ai/ChatHeader": ["./packages/@orchestra-mcp/ai/src/ChatHeader/index.ts"]
+      "@orchestra-mcp/ai/ChatHeader": ["./packages/@orchestra-mcp/ai/src/ChatHeader/index.ts"],
+      "@orchestra-mcp/ai/PromptCardEditor": ["./packages/@orchestra-mcp/ai/src/PromptCardEditor/index.ts"]
     },
     "target": "ES2017"
   },

@@ -1,12 +1,14 @@
 /**
- * ChatTypingIndicator — animated loading dots with Gemini-style gradient shimmer
+ * ChatTypingIndicator — WhatsApp-style typing dots with Gemini glow border
  */
 
 .chat-typing {
   display: flex;
   align-self: flex-start;
-  max-width: 90%;
-  gap: 10px;
+  align-items: flex-end;
+  max-width: 85%;
+  gap: 8px;
+  margin-top: 6px;
   animation: typing-fadein 0.3s ease-out;
 }
 
@@ -15,15 +17,37 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Avatar — matches ChatMessage avatar (bottom-aligned, circular) */
+.chat-typing__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-end;
+  overflow: hidden;
+  background: var(--color-bg-active);
+}
+
+.chat-typing__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Bubble — matches assistant bubble background */
 .chat-typing__bubble {
   display: inline-flex;
   align-items: center;
-  padding: 16px 24px;
-  border-radius: 12px;
-  border-bottom-left-radius: 4px;
-  background-color: var(--color-bg-alt);
+  padding: 10px 16px;
+  border-radius: 7.5px;
+  background-color: color-mix(in srgb, var(--text, #f8f8f8) 10%, var(--bg, #0f0f12));
   position: relative;
   z-index: 0;
+  box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.08);
 }
 
 /* Gemini-style rotating border glow */
@@ -46,96 +70,69 @@
   padding: 2px;
   background: conic-gradient(
     from var(--typing-glow-angle),
-    #4285f4 0%,
-    #a855f7 25%,
-    #ea4335 50%,
-    #ec4899 75%,
-    #4285f4 100%
+    var(--brand-cyan, #00e5ff) 0%,
+    var(--brand-purple, #a900ff) 50%,
+    var(--brand-cyan, #00e5ff) 100%
   );
   animation: typing-glow-spin 2.5s linear infinite;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: xor;
-  opacity: 0.6;
 }
 
 .chat-typing__dots {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 20px;
+  gap: 4px;
+  height: 18px;
+  padding: 0 2px;
 }
 
-/* Each dot: base circle with Gemini gradient shimmer */
+/* WhatsApp-style dots: solid muted color, staggered bounce */
 .chat-typing__dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: linear-gradient(
-    135deg,
-    #4285f4 0%,
-    #a855f7 33%,
-    #ea4335 66%,
-    #4285f4 100%
-  );
-  background-size: 300% 300%;
-  animation:
-    typing-bounce 1.4s ease-in-out infinite,
-    typing-shimmer 2s ease-in-out infinite;
+  background: var(--color-fg-muted, rgba(255, 255, 255, 0.45));
+  animation: typing-whatsapp-bounce 1.2s ease-in-out infinite;
 }
 
 .chat-typing__dot:nth-child(1) {
-  animation-delay: 0s, 0s;
+  animation-delay: 0s;
 }
 
 .chat-typing__dot:nth-child(2) {
-  animation-delay: 0.15s, 0.3s;
+  animation-delay: 0.2s;
 }
 
 .chat-typing__dot:nth-child(3) {
-  animation-delay: 0.3s, 0.6s;
+  animation-delay: 0.4s;
 }
 
-/* Bounce up and down */
-@keyframes typing-bounce {
-  0%, 60%, 100% {
-    transform: translateY(0);
-    opacity: 0.4;
+/* WhatsApp bounce: grow + rise + fade */
+@keyframes typing-whatsapp-bounce {
+  0%, 44%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.35;
   }
-  30% {
-    transform: translateY(-8px);
-    opacity: 1;
-  }
-}
-
-/* Gradient position shift — Gemini shimmer effect */
-@keyframes typing-shimmer {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
+  22% {
+    transform: translateY(-5px) scale(1.05);
+    opacity: 0.9;
   }
 }
 
 /* Compact variant */
-[data-variant='compact'] .chat-typing__bubble {
-  padding: 10px 18px;
-  border-radius: 8px;
-  border-bottom-left-radius: 3px;
-}
-
-[data-variant='compact'] .chat-typing__dot {
-  width: 7px;
-  height: 7px;
-}
+[data-variant='compact'] .chat-typing { gap: 6px; }
+[data-variant='compact'] .chat-typing__avatar { width: 22px; height: 22px; }
+[data-variant='compact'] .chat-typing__bubble { padding: 8px 12px; border-radius: 6px; border-bottom-left-radius: 0; }
+[data-variant='compact'] .chat-typing__dot { width: 6px; height: 6px; }
+/* Hide tail in compact mode */
+[data-variant='compact'] .chat-typing__bubble::after { display: none; }
 
 /* Modern variant */
+[data-variant='modern'] .chat-typing__avatar { width: 34px; height: 34px; }
 [data-variant='modern'] .chat-typing__bubble {
-  border-radius: 16px;
-  border-bottom-left-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  border-bottom-left-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }

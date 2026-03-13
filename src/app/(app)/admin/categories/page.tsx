@@ -2,17 +2,21 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useRoleStore } from '@/store/roles'
 import { useAdminStore, type AdminCategory } from '@/store/admin'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 export default function AdminCategoriesPage() {
   const router = useRouter()
+  const t = useTranslations('admin')
   const { can, roleLoaded } = useRoleStore()
   const { categories, loading, error, fetchCategories, createCategory, deleteCategory, clearError } = useAdminStore()
 
   const [newName, setNewName] = useState('')
   const [adding, setAdding] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null)
 
   useEffect(() => {
     if (!roleLoaded) return
@@ -31,7 +35,7 @@ export default function AdminCategoriesPage() {
   const rowBorder = 'var(--color-bg-alt)'
 
   async function handleAdd() {
-    if (!newName.trim()) { setAddError('Name is required'); return }
+    if (!newName.trim()) { setAddError(t('nameRequired')); return }
     setAdding(true)
     setAddError(null)
     try {
@@ -44,13 +48,18 @@ export default function AdminCategoriesPage() {
     }
   }
 
-  async function handleDelete(c: AdminCategory) {
-    if (!window.confirm(`Delete category "${c.name}"?`)) return
-    try {
-      await deleteCategory(c.id)
-    } catch {
-      // error shown via store
-    }
+  function handleDelete(c: AdminCategory) {
+    setConfirmDialog({
+      message: t('deleteCategoryConfirm', { name: c.name }),
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          await deleteCategory(c.id)
+        } catch {
+          // error shown via store
+        }
+      },
+    })
   }
 
   function TypeBadge({ type }: { type: string }) {
@@ -72,22 +81,22 @@ export default function AdminCategoriesPage() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Link href="/admin" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
-          <i className="bx bx-left-arrow-alt rtl-flip" /> Admin
+          <i className="bx bx-left-arrow-alt rtl-flip" /> {t('backToAdmin')}
         </Link>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Categories</h1>
-        <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>{categories.length} total categories</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>{t('categories')}</h1>
+        <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>{t('totalCategories', { count: categories.length })}</p>
       </div>
 
       {/* Inline add form */}
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, padding: '18px 20px', marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: textDim, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 12 }}>Add Category</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: textDim, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 12 }}>{t('addCategory')}</div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <div style={{ flex: 1 }}>
             <input
               value={newName}
               onChange={e => { setNewName(e.target.value); setAddError(null) }}
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              placeholder="Category name…"
+              placeholder={t('categoryNamePlaceholder')}
               style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: `1px solid ${addError ? 'rgba(239,68,68,0.4)' : inputBorder}`, background: inputBg, color: textPrimary, fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
             />
             {addError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 5 }}>{addError}</div>}
@@ -97,7 +106,7 @@ export default function AdminCategoriesPage() {
             disabled={adding}
             style={{ padding: '9px 20px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
           >
-            {adding ? 'Adding…' : 'Add'}
+            {adding ? t('adding') : t('add')}
           </button>
         </div>
       </div>
@@ -112,22 +121,22 @@ export default function AdminCategoriesPage() {
       {/* Table */}
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
         <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 100px 60px', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-          <div>Name</div>
-          <div className="hide-mobile">Slug</div>
-          <div>Type</div>
-          <div style={{ textAlign: 'end' }}>Actions</div>
+          <div>{t('nameColumn')}</div>
+          <div className="hide-mobile">{t('slugColumn')}</div>
+          <div>{t('typeColumn')}</div>
+          <div style={{ textAlign: 'end' }}>{t('actionsColumn')}</div>
         </div>
 
         {loading && categories.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center', color: textDim, fontSize: 13 }}>
             <i className="bx bx-loader-alt bx-spin" style={{ fontSize: 24, display: 'block', marginBottom: 10 }} />
-            Loading categories…
+            {t('loadingCategories')}
           </div>
         ) : categories.length === 0 ? (
           <div style={{ padding: '56px 40px', textAlign: 'center' }}>
             <i className="bx bx-category" style={{ fontSize: 38, color: textDim, display: 'block', marginBottom: 10 }} />
-            <div style={{ fontSize: 14, fontWeight: 600, color: textMuted, marginBottom: 4 }}>No categories yet</div>
-            <div style={{ fontSize: 12, color: textDim }}>Add your first category using the form above.</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: textMuted, marginBottom: 4 }}>{t('noCategoriesYet')}</div>
+            <div style={{ fontSize: 12, color: textDim }}>{t('noCategoriesDesc')}</div>
           </div>
         ) : categories.map((c, idx) => (
           <div key={c.id} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 100px 60px', padding: '13px 20px', borderBottom: idx < categories.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
@@ -142,6 +151,16 @@ export default function AdminCategoriesPage() {
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDialog}
+        title={t('deleteCategory')}
+        message={confirmDialog?.message ?? ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => confirmDialog?.onConfirm()}
+        onCancel={() => setConfirmDialog(null)}
+      />
     </div>
   )
 }

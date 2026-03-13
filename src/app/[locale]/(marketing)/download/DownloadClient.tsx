@@ -1,6 +1,7 @@
 'use client'
 import { useThemeStore } from '@/store/theme'
 import { useTranslations } from 'next-intl'
+import { useScrollReveal, revealStyle } from '@/hooks/useScrollReveal'
 
 interface PlatformInfo {
   url?: string
@@ -83,14 +84,19 @@ export default function DownloadClient({ data }: { data: DownloadData }) {
     },
   ]
 
+  const headerReveal = useScrollReveal({ threshold: 0.2 })
+  const installReveal = useScrollReveal({ threshold: 0.15 })
+  const gridReveal = useScrollReveal({ threshold: 0.1 })
+  const quickstartReveal = useScrollReveal({ threshold: 0.15 })
+
   return (
     <div className="mkt-page" style={{ maxWidth: 900, margin: '0 auto', padding: '72px 32px' }}>
-      <div style={{ marginBottom: 56, textAlign: 'center' }}>
+      <div ref={headerReveal.ref} style={{ marginBottom: 56, textAlign: 'center', ...revealStyle(headerReveal.isVisible) }}>
         <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 800, letterSpacing: '-0.04em', color: textPrimary, marginBottom: 14 }}>{t('download.title')}</h1>
         <p style={{ fontSize: 17, color: textMuted, maxWidth: 480, margin: '0 auto' }}>{t('download.subtitle')}</p>
       </div>
 
-      <div style={{ marginBottom: 48, padding: '28px 32px', borderRadius: 16, border: '1px solid rgba(0,229,255,0.2)', background: installBg }}>
+      <div ref={installReveal.ref} style={{ marginBottom: 48, padding: '28px 32px', borderRadius: 16, border: '1px solid rgba(0,229,255,0.2)', background: installBg, ...revealStyle(installReveal.isVisible, 100) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
           <i className="bx bx-terminal" style={{ fontSize: 20, color: '#00e5ff' }} />
           <span style={{ fontSize: 15, fontWeight: 600, color: textPrimary }}>{t('download.installViaScript')}</span>
@@ -102,9 +108,9 @@ export default function DownloadClient({ data }: { data: DownloadData }) {
         </div>
       </div>
 
-      <div className="mkt-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 48 }}>
-        {platforms.map(p => (
-          <div key={p.id} style={{ padding: '28px', borderRadius: 16, border: `1px solid ${cardBorder}`, background: cardBg, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div ref={gridReveal.ref} className="mkt-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 48 }}>
+        {platforms.map((p, pi) => (
+          <div key={p.id} style={{ padding: '28px', borderRadius: 16, border: `1px solid ${cardBorder}`, background: cardBg, display: 'flex', flexDirection: 'column', gap: 16, ...revealStyle(gridReveal.isVisible, pi * 80) }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <i className={`bx ${p.icon}`} style={{ fontSize: 28, color: p.color === '#f8f8f8' ? (isDark ? '#f8f8f8' : '#0f0f12') : p.color }} />
               <div>
@@ -124,7 +130,7 @@ export default function DownloadClient({ data }: { data: DownloadData }) {
         ))}
       </div>
 
-      <div style={{ padding: '32px', borderRadius: 16, border: `1px solid ${cardBorder}`, background: cardBg }}>
+      <div ref={quickstartReveal.ref} style={{ padding: '32px', borderRadius: 16, border: `1px solid ${cardBorder}`, background: cardBg, ...revealStyle(quickstartReveal.isVisible) }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: textPrimary, marginBottom: 16 }}>{t('download.quickStart')}</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontFamily: 'JetBrains Mono, monospace', fontSize: 13 }}>
           {[

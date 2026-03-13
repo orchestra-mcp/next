@@ -55,6 +55,13 @@ export interface ChatMessage {
   events?: ClaudeCodeEvent[];
   /** Model that generated this message */
   model?: string;
+  /** Token usage */
+  tokensIn?: number;
+  tokensOut?: number;
+  /** Cost in USD */
+  cost?: number;
+  /** Duration in milliseconds */
+  durationMs?: number;
   /** Whether content is markdown (assistant messages default true) */
   markdown?: boolean;
   /** Whether this message is starred */

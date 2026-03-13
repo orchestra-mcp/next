@@ -16,6 +16,7 @@ export interface WidgetDefinition {
   defaultColSpan: number
   minColSpan: number
   maxColSpan: number
+  frameless?: boolean
 }
 
 export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
@@ -26,6 +27,7 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
     defaultColSpan: 12,
     minColSpan: 6,
     maxColSpan: 12,
+    frameless: true,
   },
   recent_projects: {
     type: 'recent_projects',

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
@@ -11,10 +11,16 @@ import { SettingGroupShell } from '@orchestra-mcp/settings'
 import type { SettingGroupType } from '@orchestra-mcp/settings'
 import '../../../../packages/@orchestra-mcp/settings/src/SettingsForm/SettingsForm.css'
 import { useAdminStore } from '@/store/admin'
+import { ContentLocaleTabs } from '@/components/ui/content-locale-tabs'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { apiFetch, isDevSeed } from '@/lib/api'
 import { useTranslations } from 'next-intl'
 import { usePreferencesStore } from '@/store/preferences'
+import { useChatStore } from '@/store/chat'
+import type { CopilotDockMode } from '@/store/chat'
+import { PromptCardEditor } from '@orchestra-mcp/ai/PromptCardEditor'
+import type { PromptCard } from '@orchestra-mcp/ai/PromptCardEditor'
 import { locales } from '@/i18n/config'
 import type { Locale } from '@/i18n/config'
 
@@ -60,20 +66,616 @@ function gravatarUrl(email: string, size = 40) {
 
 type Tab =
   | 'profile' | 'password' | 'appearance'
-  | '2fa' | 'passkeys' | 'social' | 'sessions' | 'apitokens'
-  | 'push'
+  | '2fa' | 'passkeys' | 'social' | 'integrations' | 'sessions' | 'apitokens'
+  | 'push' | 'copilot'
   | 'admin-general' | 'admin-features' | 'admin-homepage' | 'admin-agents'
   | 'admin-contact' | 'admin-pricing' | 'admin-download' | 'admin-integrations'
-  | 'admin-email' | 'admin-aimodels' | 'admin-seo' | 'admin-discord' | 'admin-slack'
+  | 'admin-email' | 'admin-seo' | 'admin-discord' | 'admin-slack' | 'admin-github' | 'admin-social'
 
-const TIMEZONES = ['UTC','America/New_York','America/Chicago','America/Denver','America/Los_Angeles','Europe/London','Europe/Paris','Europe/Berlin','Asia/Tokyo','Asia/Shanghai','Asia/Dubai','Australia/Sydney']
+const TIMEZONES = [
+  'UTC',
+  // Americas
+  'America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
+  'America/Anchorage','America/Adak','America/Phoenix','America/Boise',
+  'America/Detroit','America/Indiana/Indianapolis','America/Kentucky/Louisville',
+  'America/Toronto','America/Vancouver','America/Winnipeg','America/Edmonton',
+  'America/Halifax','America/St_Johns','America/Regina',
+  'America/Mexico_City','America/Cancun','America/Bogota','America/Lima',
+  'America/Santiago','America/Buenos_Aires','America/Sao_Paulo',
+  'America/Caracas','America/Montevideo','America/Asuncion',
+  'America/Guayaquil','America/La_Paz','America/Manaus',
+  'America/Havana','America/Jamaica','America/Panama',
+  'America/Costa_Rica','America/Guatemala','America/El_Salvador',
+  // Europe
+  'Europe/London','Europe/Dublin','Europe/Paris','Europe/Berlin','Europe/Madrid',
+  'Europe/Rome','Europe/Amsterdam','Europe/Brussels','Europe/Vienna',
+  'Europe/Zurich','Europe/Stockholm','Europe/Oslo','Europe/Copenhagen',
+  'Europe/Helsinki','Europe/Warsaw','Europe/Prague','Europe/Budapest',
+  'Europe/Bucharest','Europe/Sofia','Europe/Athens','Europe/Istanbul',
+  'Europe/Moscow','Europe/Kiev','Europe/Minsk','Europe/Lisbon',
+  'Europe/Belgrade','Europe/Zagreb','Europe/Ljubljana','Europe/Bratislava',
+  'Europe/Tallinn','Europe/Riga','Europe/Vilnius',
+  // Asia
+  'Asia/Tokyo','Asia/Shanghai','Asia/Hong_Kong','Asia/Taipei',
+  'Asia/Seoul','Asia/Singapore','Asia/Kuala_Lumpur','Asia/Bangkok',
+  'Asia/Jakarta','Asia/Ho_Chi_Minh','Asia/Manila','Asia/Kolkata',
+  'Asia/Mumbai','Asia/Colombo','Asia/Dhaka','Asia/Karachi',
+  'Asia/Tashkent','Asia/Almaty','Asia/Novosibirsk','Asia/Krasnoyarsk',
+  'Asia/Irkutsk','Asia/Vladivostok','Asia/Kamchatka',
+  'Asia/Dubai','Asia/Riyadh','Asia/Baghdad','Asia/Tehran',
+  'Asia/Beirut','Asia/Jerusalem','Asia/Amman','Asia/Kuwait',
+  'Asia/Qatar','Asia/Muscat','Asia/Baku','Asia/Tbilisi','Asia/Yerevan',
+  'Asia/Kabul','Asia/Kathmandu','Asia/Yangon',
+  // Africa
+  'Africa/Cairo','Africa/Lagos','Africa/Johannesburg','Africa/Nairobi',
+  'Africa/Casablanca','Africa/Algiers','Africa/Tunis','Africa/Accra',
+  'Africa/Addis_Ababa','Africa/Dar_es_Salaam','Africa/Khartoum',
+  'Africa/Maputo','Africa/Harare','Africa/Abidjan',
+  // Oceania
+  'Australia/Sydney','Australia/Melbourne','Australia/Brisbane',
+  'Australia/Perth','Australia/Adelaide','Australia/Hobart',
+  'Australia/Darwin','Australia/Lord_Howe',
+  'Pacific/Auckland','Pacific/Fiji','Pacific/Guam',
+  'Pacific/Honolulu','Pacific/Chatham','Pacific/Tongatapu',
+  'Pacific/Apia','Pacific/Noumea','Pacific/Port_Moresby',
+  // Atlantic / Indian
+  'Atlantic/Reykjavik','Atlantic/Azores','Atlantic/Cape_Verde',
+  'Indian/Maldives','Indian/Mauritius',
+]
 const GENDERS = ['', 'Male', 'Female', 'Non-binary', 'Prefer not to say']
 
+interface PasskeyItem { id: number; credential_id: string; name: string; aaguid: string; sign_count: number; transports: string; backup_eligible: boolean; backup_state: boolean; last_used_at: string | null; created_at: string }
+
+function PasskeysTab({ textPrimary, textMuted, textDim, cardBorder, saveBtnSt, SettingsCard }: {
+  textPrimary: string; textMuted: string; textDim: string; cardBorder: string; saveBtnSt: React.CSSProperties
+  SettingsCard: React.ComponentType<{ title: string; desc?: string; children: React.ReactNode }>
+}) {
+  const t = useTranslations('settings')
+  const { beginPasskeyRegistration, finishPasskeyRegistration } = useAuthStore()
+  const [passkeys, setPasskeys] = useState<PasskeyItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [registering, setRegistering] = useState(false)
+  const [naming, setNaming] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [pendingCred, setPendingCred] = useState<Credential | null>(null)
+  const [renamingId, setRenamingId] = useState<number | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchPasskeys = useCallback(async () => {
+    try {
+      const res = await apiFetch<{ passkeys: PasskeyItem[] }>('/api/settings/passkeys')
+      setPasskeys(res.passkeys ?? [])
+    } catch { /* empty */ } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { fetchPasskeys() }, [fetchPasskeys])
+
+  const handleRegister = async () => {
+    setError(null); setRegistering(true)
+    try {
+      const opts = await beginPasskeyRegistration()
+      const cred = await navigator.credentials.create({ publicKey: opts })
+      if (!cred) { setRegistering(false); return }
+      setPendingCred(cred); setNaming(true); setRegistering(false)
+    } catch (e) {
+      setError((e as Error).message); setRegistering(false)
+    }
+  }
+
+  const handleFinishRegister = async () => {
+    if (!pendingCred) return
+    setError(null); setRegistering(true)
+    try {
+      await finishPasskeyRegistration(pendingCred, newName || undefined)
+      setPendingCred(null); setNaming(false); setNewName('')
+      await fetchPasskeys()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally { setRegistering(false) }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Remove this passkey? You won\'t be able to sign in with it anymore.')) return
+    try {
+      await apiFetch(`/api/settings/passkeys/${id}`, { method: 'DELETE' })
+      setPasskeys(p => p.filter(k => k.id !== id))
+    } catch (e) { setError((e as Error).message) }
+  }
+
+  const handleRename = async (id: number) => {
+    try {
+      await apiFetch(`/api/settings/passkeys/${id}`, { method: 'PATCH', body: JSON.stringify({ name: renameValue }) })
+      setPasskeys(p => p.map(k => k.id === id ? { ...k, name: renameValue } : k))
+      setRenamingId(null)
+    } catch (e) { setError((e as Error).message) }
+  }
+
+  const browserSupported = typeof window !== 'undefined' && !!window.PublicKeyCredential
+
+  return (
+    <SettingsCard title={t('passkeysTitle')} desc={t('passkeysDesc')}>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 24 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <i className="bx bx-fingerprint" style={{ fontSize: 22, color: '#00e5ff' }} />
+        </div>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>{t('passkeySignIn')}</div>
+          <div style={{ fontSize: 13, color: textMuted, lineHeight: 1.6 }}>{t('passkeyExplain')}</div>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 8, fontSize: 13, background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+          {error}
+          <button onClick={() => setError(null)} style={{ float: 'right', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 14 }}><i className="bx bx-x" /></button>
+        </div>
+      )}
+
+      {/* Naming modal after credential creation */}
+      {naming && (
+        <div style={{ marginBottom: 20, padding: 16, borderRadius: 10, border: `1px solid rgba(0,229,255,0.2)`, background: 'rgba(0,229,255,0.04)' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 8 }}>Name your passkey</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={newName} onChange={e => setNewName(e.target.value)} placeholder='e.g. "MacBook Touch ID"' onKeyDown={e => e.key === 'Enter' && handleFinishRegister()} style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'var(--color-bg)', color: textPrimary, fontSize: 13, outline: 'none' }} autoFocus />
+            <button onClick={handleFinishRegister} disabled={registering} style={saveBtnSt}>
+              {registering ? <i className="bx bx-loader-alt bx-spin" /> : 'Save'}
+            </button>
+            <button onClick={() => { setNaming(false); setPendingCred(null) }} style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Register button */}
+      {!naming && (
+        <button onClick={handleRegister} disabled={registering || !browserSupported} style={{ ...saveBtnSt, opacity: !browserSupported ? 0.5 : 1, marginBottom: 20 }}>
+          {registering ? <><i className="bx bx-loader-alt bx-spin" style={{ marginInlineEnd: 6 }} />Registering...</> : <><i className="bx bx-plus" style={{ marginInlineEnd: 6 }} />{t('registerPasskey')}</>}
+        </button>
+      )}
+
+      {!browserSupported && <div style={{ fontSize: 12, color: '#f59e0b', marginBottom: 12 }}>Your browser does not support passkeys.</div>}
+
+      {/* Passkey list */}
+      {loading ? (
+        <div style={{ fontSize: 13, color: textDim }}><i className="bx bx-loader-alt bx-spin" style={{ marginRight: 6 }} />Loading passkeys...</div>
+      ) : passkeys.length === 0 ? (
+        <div style={{ fontSize: 12, color: textDim }}>{t('noPasskeys')}</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {passkeys.map(pk => (
+            <div key={pk.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, border: `1px solid ${cardBorder}`, background: 'var(--color-bg)' }}>
+              <i className="bx bx-fingerprint" style={{ fontSize: 20, color: '#00e5ff', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {renamingId === pk.id ? (
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input value={renameValue} onChange={e => setRenameValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleRename(pk.id)} style={{ flex: 1, padding: '4px 8px', borderRadius: 6, border: `1px solid ${cardBorder}`, background: 'var(--color-bg-alt)', color: textPrimary, fontSize: 13, outline: 'none' }} autoFocus />
+                    <button onClick={() => handleRename(pk.id)} style={{ background: 'none', border: 'none', color: '#00e5ff', cursor: 'pointer', fontSize: 14 }}><i className="bx bx-check" /></button>
+                    <button onClick={() => setRenamingId(null)} style={{ background: 'none', border: 'none', color: textDim, cursor: 'pointer', fontSize: 14 }}><i className="bx bx-x" /></button>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{pk.name || 'Passkey'}</div>
+                    <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>
+                      Added {new Date(pk.created_at).toLocaleDateString()}
+                      {pk.last_used_at && <> · Last used {new Date(pk.last_used_at).toLocaleDateString()}</>}
+                      {pk.sign_count > 0 && <> · {pk.sign_count} sign-ins</>}
+                    </div>
+                  </>
+                )}
+              </div>
+              {renamingId !== pk.id && (
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <button onClick={() => { setRenamingId(pk.id); setRenameValue(pk.name || '') }} style={{ background: 'none', border: 'none', color: textMuted, cursor: 'pointer', padding: 4 }} title="Rename"><i className="bx bx-pencil" style={{ fontSize: 15 }} /></button>
+                  <button onClick={() => handleDelete(pk.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4 }} title="Remove"><i className="bx bx-trash" style={{ fontSize: 15 }} /></button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </SettingsCard>
+  )
+}
+
+function SettingsCard({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
+  const group: SettingGroupType = { id: title, label: title, description: desc, order: 0 }
+  return <SettingGroupShell group={group}>{children}</SettingGroupShell>
+}
+
+function SocialPlatformsAdmin({ inputSt, labelSt, saveBtnSt, textDim, textMuted, textPrimary, cardBorder }: {
+  adminSettings: Record<string, Record<string, unknown>>
+  setAdminSettings: React.Dispatch<React.SetStateAction<Record<string, Record<string, unknown>>>>
+  handleSaveAdminSetting: (key: string) => Promise<void>
+  adminSaving: boolean; adminSaved: boolean
+  inputSt: React.CSSProperties; labelSt: React.CSSProperties; saveBtnSt: React.CSSProperties
+  textDim: string; textMuted: string; textPrimary: string; cardBorder: string
+}) {
+  const { fetchSetting, updateSetting } = useAdminStore()
+  const [platforms, setPlatforms] = useState<SocialPlatformDef[]>([])
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    fetchSetting('social_platforms').then(data => {
+      const list = data?.platforms
+      if (Array.isArray(list) && list.length > 0) {
+        setPlatforms(list as SocialPlatformDef[])
+      } else {
+        setPlatforms(DEFAULT_SOCIAL_PLATFORMS)
+      }
+      setLoaded(true)
+    }).catch(() => {
+      setPlatforms(DEFAULT_SOCIAL_PLATFORMS)
+      setLoaded(true)
+    })
+  }, [])
+
+  function addPlatform() {
+    setPlatforms(prev => [...prev, { value: '', label: '', icon: 'bx-link', placeholder: 'https://...' }])
+  }
+
+  function removePlatform(idx: number) {
+    setPlatforms(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  function movePlatform(idx: number, dir: -1 | 1) {
+    setPlatforms(prev => {
+      const next = [...prev]
+      const target = idx + dir
+      if (target < 0 || target >= next.length) return prev
+      ;[next[idx], next[target]] = [next[target], next[idx]]
+      return next
+    })
+  }
+
+  function updatePlatform(idx: number, field: keyof SocialPlatformDef, val: string) {
+    setPlatforms(prev => prev.map((p, i) => {
+      if (i !== idx) return p
+      const updated = { ...p, [field]: val }
+      // Auto-generate value from label if value is empty or matches old auto-generated value
+      if (field === 'label') {
+        const autoVal = val.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
+        if (!p.value || p.value === p.label.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')) {
+          updated.value = autoVal
+        }
+      }
+      return updated
+    }))
+  }
+
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updateSetting('social_platforms', { platforms } as Record<string, unknown>)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {}
+    finally { setSaving(false) }
+  }
+
+  if (!loaded) return null
+
+  return (
+    <SettingsCard title="Social Platforms" desc="Manage the social networks available for user profiles. Users pick from this list when adding their social links.">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {platforms.map((p, idx) => (
+          <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 12px', borderRadius: 10, border: `1px solid ${cardBorder}`, background: 'var(--color-bg-alt)' }}>
+            {/* Order controls */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+              <button type="button" onClick={() => movePlatform(idx, -1)} disabled={idx === 0} title="Move up"
+                style={{ width: 22, height: 18, borderRadius: '5px 5px 0 0', border: `1px solid ${cardBorder}`, background: 'var(--color-bg)', color: idx === 0 ? 'var(--color-border)' : textMuted, cursor: idx === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                <i className="bx bx-chevron-up" style={{ fontSize: 14, lineHeight: 1 }} />
+              </button>
+              <button type="button" onClick={() => movePlatform(idx, 1)} disabled={idx === platforms.length - 1} title="Move down"
+                style={{ width: 22, height: 18, borderRadius: '0 0 5px 5px', border: `1px solid ${cardBorder}`, borderTop: 'none', background: 'var(--color-bg)', color: idx === platforms.length - 1 ? 'var(--color-border)' : textMuted, cursor: idx === platforms.length - 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                <i className="bx bx-chevron-down" style={{ fontSize: 14, lineHeight: 1 }} />
+              </button>
+            </div>
+            {/* Order number */}
+            <span style={{ fontSize: 10, fontWeight: 700, color: textDim, width: 16, textAlign: 'center', flexShrink: 0 }}>{idx + 1}</span>
+            {/* Icon preview */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 8, background: 'var(--color-bg)', border: `1px solid ${cardBorder}`, flexShrink: 0 }}>
+              <i className={`bx ${p.icon || 'bx-link'}`} style={{ fontSize: 18, color: textPrimary }} />
+            </div>
+            {/* Fields */}
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, minWidth: 0 }}>
+              <div>
+                <label style={{ ...labelSt, fontSize: 10, marginBottom: 3 }}>Name</label>
+                <input style={{ ...inputSt, fontSize: 12, padding: '6px 10px' }} value={p.label} onChange={e => updatePlatform(idx, 'label', e.target.value)} placeholder="GitHub" />
+              </div>
+              <div>
+                <label style={{ ...labelSt, fontSize: 10, marginBottom: 3 }}>Icon (Boxicons)</label>
+                <input style={{ ...inputSt, fontSize: 12, padding: '6px 10px', fontFamily: 'monospace' }} value={p.icon} onChange={e => updatePlatform(idx, 'icon', e.target.value)} placeholder="bxl-github" />
+              </div>
+              <div>
+                <label style={{ ...labelSt, fontSize: 10, marginBottom: 3 }}>Placeholder</label>
+                <input style={{ ...inputSt, fontSize: 12, padding: '6px 10px' }} value={p.placeholder} onChange={e => updatePlatform(idx, 'placeholder', e.target.value)} placeholder="https://..." />
+              </div>
+            </div>
+            {/* Delete */}
+            <button onClick={() => removePlatform(idx)} type="button" title="Remove"
+              style={{ width: 30, height: 30, borderRadius: 7, border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <i className="bx bx-trash" style={{ fontSize: 14 }} />
+            </button>
+          </div>
+        ))}
+        {platforms.length === 0 && (
+          <div style={{ padding: '24px 16px', textAlign: 'center', color: textDim, fontSize: 12, border: `1px dashed ${cardBorder}`, borderRadius: 9 }}>
+            No social platforms configured. Click "Add Platform" to get started.
+          </div>
+        )}
+      </div>
+      <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={addPlatform} type="button" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 12, cursor: 'pointer' }}>
+          <i className="bx bx-plus" style={{ fontSize: 15 }} /> Add Platform
+        </button>
+      </div>
+      <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={handleSave} disabled={saving} style={saveBtnSt}>{saving ? 'Saving...' : 'Save Changes'}</button>
+        {saved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><i className="bx bx-check-circle" /> Saved</span>}
+      </div>
+      <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: 'var(--color-bg)', fontSize: 11, color: textDim }}>
+        <strong style={{ color: textMuted }}>Icon reference:</strong> Use <a href="https://boxicons.com" target="_blank" rel="noopener noreferrer" style={{ color: '#00e5ff', textDecoration: 'none' }}>Boxicons</a> class names.
+        Brand icons start with <code style={{ padding: '1px 4px', borderRadius: 3, background: 'var(--color-bg-alt)', fontSize: 10 }}>bxl-</code> (e.g. bxl-github, bxl-twitter, bxl-linkedin).
+        Generic icons start with <code style={{ padding: '1px 4px', borderRadius: 3, background: 'var(--color-bg-alt)', fontSize: 10 }}>bx-</code> (e.g. bx-globe, bx-link).
+      </div>
+    </SettingsCard>
+  )
+}
+
+export interface SocialPlatformDef {
+  value: string
+  label: string
+  icon: string
+  placeholder: string
+}
+
+const DEFAULT_SOCIAL_PLATFORMS: SocialPlatformDef[] = [
+  { value: 'github', label: 'GitHub', icon: 'bxl-github', placeholder: 'https://github.com/...' },
+  { value: 'twitter', label: 'Twitter / X', icon: 'bxl-twitter', placeholder: 'https://twitter.com/...' },
+  { value: 'linkedin', label: 'LinkedIn', icon: 'bxl-linkedin', placeholder: 'https://linkedin.com/in/...' },
+  { value: 'website', label: 'Website', icon: 'bx-globe', placeholder: 'https://...' },
+]
+
+function PublicProfileSettings({ inputSt, labelSt, saveBtnSt, textDim, textMuted, cardBorder }: {
+  inputSt: React.CSSProperties; labelSt: React.CSSProperties; saveBtnSt: React.CSSProperties
+  textDim: string; textMuted: string; cardBorder: string
+}) {
+  const { user, fetchMe } = useAuthStore()
+  const { fetchSetting } = useAdminStore()
+  const [platforms, setPlatforms] = useState<SocialPlatformDef[]>(DEFAULT_SOCIAL_PLATFORMS)
+  const [publicEnabled, setPublicEnabled] = useState(false)
+  const [handle, setHandle] = useState('')
+  const [bio, setBio] = useState('')
+  const [coverUrl, setCoverUrl] = useState('')
+  const [coverUploading, setCoverUploading] = useState(false)
+  const coverInputRef = useRef<HTMLInputElement>(null)
+  const [socialLinks, setSocialLinks] = useState<{ platform: string; url: string }[]>([])
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    let s: Record<string, unknown> | null = null
+    if (user?.settings && typeof user.settings === 'object') {
+      s = user.settings as Record<string, unknown>
+    } else if (isDevSeed()) {
+      try { s = JSON.parse(localStorage.getItem('orchestra_dev_settings') || 'null') } catch {}
+      if (s) useAuthStore.setState({ user: { ...user!, settings: s } })
+    }
+    if (!s) return
+    if (typeof s.public_profile_enabled === 'boolean') setPublicEnabled(s.public_profile_enabled)
+    if (typeof s.handle === 'string') setHandle(s.handle)
+    if (typeof s.bio === 'string') setBio(s.bio)
+    if (typeof s.cover_url === 'string') setCoverUrl(s.cover_url)
+    // Load social links — support both old object format and new array format
+    const raw = s.social_links
+    if (Array.isArray(raw)) {
+      setSocialLinks(raw.filter((l: any) => l.platform && l.url))
+    } else if (raw && typeof raw === 'object') {
+      const obj = raw as Record<string, string>
+      const links: { platform: string; url: string }[] = []
+      for (const [key, val] of Object.entries(obj)) {
+        if (val) links.push({ platform: key, url: val })
+      }
+      setSocialLinks(links)
+    }
+  }, [user])
+
+  useEffect(() => {
+    fetchSetting('social_platforms').then(data => {
+      const list = data?.platforms
+      if (Array.isArray(list) && list.length > 0) {
+        setPlatforms(list as SocialPlatformDef[])
+      }
+    }).catch(() => {})
+  }, [])
+
+  async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setCoverUploading(true)
+    if (isDevSeed()) {
+      // In dev seed mode, show a local preview via object URL
+      setCoverUrl(URL.createObjectURL(file))
+      setCoverUploading(false)
+      return
+    }
+    try {
+      const formData = new FormData()
+      formData.append('cover', file)
+      const res = await apiFetch<{ ok: boolean; cover_url: string }>('/api/settings/cover', { method: 'POST', body: formData })
+      setCoverUrl(res.cover_url)
+    } catch {}
+    finally { setCoverUploading(false) }
+  }
+
+  function addSocialLink() {
+    setSocialLinks(prev => [...prev, { platform: 'website', url: '' }])
+  }
+
+  function removeSocialLink(index: number) {
+    setSocialLinks(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function updateSocialLink(index: number, field: 'platform' | 'url', value: string) {
+    setSocialLinks(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item))
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    setSaved(false)
+    if (isDevSeed()) {
+      const newSettings = {
+        ...(user?.settings as Record<string, unknown> ?? {}),
+        public_profile_enabled: publicEnabled,
+        handle,
+        bio,
+        cover_url: coverUrl,
+        social_links: socialLinks.filter(l => l.url.trim()),
+      }
+      useAuthStore.setState({ user: { ...user!, settings: newSettings } })
+      localStorage.setItem('orchestra_dev_settings', JSON.stringify(newSettings))
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+      setSaving(false)
+      return
+    }
+    try {
+      await apiFetch('/api/settings/profile', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          public_profile_enabled: publicEnabled,
+          handle,
+          bio,
+          cover_url: coverUrl,
+          social_links: socialLinks.filter(l => l.url.trim()),
+        }),
+      })
+      setSaved(true)
+      await fetchMe()
+      setTimeout(() => setSaved(false), 2000)
+    } catch {}
+    finally { setSaving(false) }
+  }
+
+  const platformInfo = (value: string) => platforms.find(p => p.value === value) || { value, label: value, icon: 'bx-link', placeholder: 'https://...' }
+
+  return (
+    <SettingsCard title="Public Profile" desc="Configure your public community profile visible at /@handle.">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: `1px solid var(--color-border)` }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-fg)' }}>Enable Public Profile</div>
+          <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>Make your profile visible on the community page</div>
+        </div>
+        <button onClick={() => setPublicEnabled(!publicEnabled)} style={{ width: 44, height: 24, borderRadius: 100, border: 'none', cursor: 'pointer', background: publicEnabled ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : 'var(--color-border)', position: 'relative', flexShrink: 0 }}>
+          <span style={{ position: 'absolute', top: 3, left: publicEnabled ? 22 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+        </button>
+      </div>
+      <div style={{ marginTop: 16, marginBottom: 16 }}>
+        <label style={labelSt}>Handle</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          <span style={{ padding: '9px 10px 9px 12px', borderRadius: '9px 0 0 9px', border: `1px solid var(--color-border)`, borderRight: 'none', background: 'var(--color-bg-active)', color: textMuted, fontSize: 13 }}>@</span>
+          <input style={{ ...inputSt, borderRadius: '0 9px 9px 0' }} value={handle} onChange={e => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))} placeholder="username" />
+        </div>
+        <div style={{ fontSize: 11, color: textDim, marginTop: 4 }}>Your profile will be accessible at /@{handle || 'username'}</div>
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <label style={labelSt}>Bio</label>
+        <textarea style={{ ...inputSt, height: 80, resize: 'vertical' }} value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell the community about yourself..." />
+      </div>
+      {/* Cover Image Upload */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={labelSt}>Cover Image</label>
+        {coverUrl && (
+          <div style={{ position: 'relative', marginBottom: 8, borderRadius: 10, overflow: 'hidden', height: 120 }}>
+            <img src={coverUrl} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <button onClick={() => setCoverUrl('')} style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 6, border: 'none', background: 'rgba(0,0,0,0.5)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
+              <i className="bx bx-x" />
+            </button>
+          </div>
+        )}
+        <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} style={{ display: 'none' }} />
+        <button
+          onClick={() => coverInputRef.current?.click()}
+          disabled={coverUploading}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 12, cursor: 'pointer', width: '100%', justifyContent: 'center' }}
+        >
+          <i className={`bx ${coverUploading ? 'bx-loader-alt bx-spin' : 'bx-cloud-upload'}`} style={{ fontSize: 16 }} />
+          {coverUploading ? 'Uploading...' : coverUrl ? 'Change Cover Image' : 'Upload Cover Image'}
+        </button>
+      </div>
+      {/* Social Links Repeater */}
+      <div style={{ fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>Social Links</span>
+        <button onClick={addSocialLink} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 6, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 11, cursor: 'pointer', fontWeight: 500, textTransform: 'none', letterSpacing: 'normal' }}>
+          <i className="bx bx-plus" style={{ fontSize: 13 }} /> Add
+        </button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+        {socialLinks.length === 0 && (
+          <div style={{ padding: '20px 16px', textAlign: 'center', color: textDim, fontSize: 12, border: `1px dashed ${cardBorder}`, borderRadius: 9 }}>
+            No social links added yet. Click "Add" to get started.
+          </div>
+        )}
+        {socialLinks.map((link, idx) => {
+          const info = platformInfo(link.platform)
+          return (
+            <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button type="button" style={{ ...inputSt, width: 150, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', textAlign: 'start' }}>
+                    <i className={`bx ${info.icon}`} style={{ fontSize: 16, flexShrink: 0 }} />
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{info.label}</span>
+                    <i className="bx bx-chevron-down" style={{ fontSize: 14, color: textDim, flexShrink: 0 }} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" style={{ width: 190, maxHeight: 280, overflowY: 'auto' }}>
+                  {platforms.map(p => (
+                    <DropdownMenuItem
+                      key={p.value}
+                      onClick={() => updateSocialLink(idx, 'platform', p.value)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: link.platform === p.value ? 600 : 400 }}
+                    >
+                      <i className={`bx ${p.icon}`} style={{ fontSize: 16, width: 18, textAlign: 'center' }} />
+                      {p.label}
+                      {link.platform === p.value && <i className="bx bx-check" style={{ marginInlineStart: 'auto', fontSize: 15, color: '#00e5ff' }} />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <input
+                style={{ ...inputSt, flex: 1, minWidth: 0 }}
+                value={link.url}
+                onChange={e => updateSocialLink(idx, 'url', e.target.value)}
+                placeholder={info.placeholder}
+              />
+              <button
+                onClick={() => removeSocialLink(idx)}
+                type="button"
+                title="Remove"
+                style={{ width: 32, height: 32, borderRadius: 7, border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+              >
+                <i className="bx bx-trash" style={{ fontSize: 14 }} />
+              </button>
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={handleSave} disabled={saving} style={saveBtnSt}>{saving ? 'Saving...' : 'Save Changes'}</button>
+        {saved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><i className="bx bx-check-circle" /> Saved</span>}
+      </div>
+    </SettingsCard>
+  )
+}
+
 export default function SettingsPage() {
-  const { user, updateAvatarUrl } = useAuthStore()
+  const { user, updateAvatarUrl, fetchMe } = useAuthStore()
   const { sessions, apiKeys, connectedAccounts, fetchSessions, revokeSession, fetchApiKeys, createApiKey, revokeApiKey, fetchConnectedAccounts, unlinkAccount } = useSettingsStore()
   const { can } = useRoleStore()
-  const { fetchSetting, updateSetting } = useAdminStore()
+  const { fetchSetting, updateSetting, contentLocale, setContentLocale } = useAdminStore()
   const { theme, set: setTheme, setColorTheme } = useThemeStore()
   const t = useTranslations('settings')
   const { preferences, updatePreference } = usePreferencesStore()
@@ -89,7 +691,29 @@ export default function SettingsPage() {
   const [gender, setGender] = useState('')
   const [position, setPosition] = useState('')
   const [timezone, setTimezone] = useState('UTC')
+  const [pendingLanguage, setPendingLanguage] = useState(preferences.language)
   const [saved, setSaved] = useState(false)
+
+  // Load profile metadata from user.settings on mount / user change
+  useEffect(() => {
+    let s: Record<string, unknown> | null = null
+    if (user?.settings && typeof user.settings === 'object') {
+      s = user.settings as Record<string, unknown>
+    } else if (isDevSeed()) {
+      try { s = JSON.parse(localStorage.getItem('orchestra_dev_settings') || 'null') } catch {}
+      if (s) useAuthStore.setState({ user: { ...user!, settings: s } })
+    }
+    if (!s) return
+    if (typeof s.phone === 'string') setPhone(s.phone)
+    if (typeof s.gender === 'string') setGender(s.gender)
+    if (typeof s.position === 'string') setPosition(s.position)
+    if (typeof s.timezone === 'string') setTimezone(s.timezone)
+  }, [user])
+
+  // Sync pendingLanguage when preferences load from server
+  useEffect(() => {
+    setPendingLanguage(preferences.language)
+  }, [preferences.language])
 
   // Password
   const [pwCurrent, setPwCurrent] = useState('')
@@ -159,14 +783,58 @@ export default function SettingsPage() {
   const [adminSettings, setAdminSettings] = useState<Record<string, Record<string, unknown>>>({})
   const [adminSaving, setAdminSaving] = useState(false)
   const [adminSaved, setAdminSaved] = useState(false)
+  const [testEmailSending, setTestEmailSending] = useState(false)
+  const [testEmailResult, setTestEmailResult] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const [enabledProviders, setEnabledProviders] = useState<Record<string, boolean>>({})
+
+  // User integrations (Discord/Slack per-user config)
+  const [userIntegrations, setUserIntegrations] = useState<Record<string, { guild_id: string; channel_id: string; team_id: string; webhook_url: string }>>({})
+  const [appInstallUrls, setAppInstallUrls] = useState<Record<string, { install_url: string; name: string }>>({})
+  const [integrationSaving, setIntegrationSaving] = useState(false)
+  const [integrationSaved, setIntegrationSaved] = useState(false)
 
   // Map tab IDs to setting keys (where they differ)
-  const tabToSettingKey: Record<string, string> = { email: 'smtp' }
+  const tabToSettingKey: Record<string, string> = { email: 'smtp', social: 'social_platforms' }
+
+  // Translatable admin setting keys — these show locale tabs
+  const TRANSLATABLE_SETTINGS = new Set(['general', 'homepage', 'agents', 'contact', 'pricing', 'seo'])
+
+  function handleSettingsLocaleChange(locale: string) {
+    setContentLocale(locale)
+    // The useEffect on [tab, contentLocale] will re-fetch the setting
+  }
+
+  useEffect(() => {
+    apiFetch<{ value: Record<string, unknown> }>('/api/public/settings/integrations', { skipAuth: true })
+      .then(res => {
+        const providers: Record<string, boolean> = {}
+        for (const [k, v] of Object.entries(res.value ?? {})) {
+          if (k.endsWith('_enabled')) providers[k.replace('_enabled', '')] = !!v
+        }
+        setEnabledProviders(providers)
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (tab === 'sessions') fetchSessions()
     if (tab === 'apitokens') fetchApiKeys()
     if (tab === 'social') fetchConnectedAccounts()
+    if (tab === 'integrations') {
+      apiFetch<{ integrations: Array<{ provider: string; guild_id: string; channel_id: string; team_id: string; webhook_url: string }> }>('/api/settings/integrations/user')
+        .then(res => {
+          const map: Record<string, { guild_id: string; channel_id: string; team_id: string; webhook_url: string }> = {}
+          for (const i of res.integrations ?? []) {
+            map[i.provider] = { guild_id: i.guild_id, channel_id: i.channel_id, team_id: i.team_id, webhook_url: i.webhook_url }
+          }
+          setUserIntegrations(map)
+        })
+        .catch(() => {})
+      apiFetch<{ apps: Record<string, { install_url: string; name: string }> }>('/api/settings/integrations/apps')
+        .then(res => setAppInstallUrls(res.apps ?? {}))
+        .catch(() => {})
+    }
     if (tab.startsWith('admin-') && isAdmin) {
       const rawKey = tab.replace('admin-', '')
       const settingKey = tabToSettingKey[rawKey] ?? rawKey
@@ -176,7 +844,7 @@ export default function SettingsPage() {
         }
       }).catch(() => {})
     }
-  }, [tab])
+  }, [tab, contentLocale])
 
   // Theme
   const textPrimary = 'var(--color-fg)'
@@ -200,9 +868,23 @@ export default function SettingsPage() {
   const initials = user?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() ?? 'U'
 
   async function handleSaveProfile() {
-    if (isDevSeed()) { setSaved(true); setTimeout(() => setSaved(false), 2000); return }
+    if (isDevSeed()) {
+      const newSettings = { ...(user?.settings as Record<string, unknown> ?? {}), name, email, phone, gender, position, timezone }
+      useAuthStore.setState({ user: { ...user!, name, email, settings: newSettings } })
+      localStorage.setItem('orchestra_dev_settings', JSON.stringify(newSettings))
+      setSaved(true); setTimeout(() => setSaved(false), 2000); return
+    }
     try {
       await apiFetch('/api/settings/profile', { method: 'PATCH', body: JSON.stringify({ name, email, phone, gender, position, timezone }) })
+      await fetchMe() // refresh user in store so settings persist
+
+      // Apply language change only on save — reload page to get correct translations and dir
+      if (pendingLanguage !== preferences.language) {
+        await updatePreference('language', pendingLanguage)
+        window.location.reload()
+        return
+      }
+
       setSaved(true); setTimeout(() => setSaved(false), 2500)
     } catch { setSaved(false) }
   }
@@ -258,7 +940,7 @@ export default function SettingsPage() {
     const val = !!(adminSettings[settingKey]?.[field])
     const update = (v: boolean) => setAdminSettings(p => ({ ...p, [settingKey]: { ...p[settingKey], [field]: v } }))
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: `1px solid ${cardDivider}` }}>
+      <div key={`${settingKey}-${field}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: `1px solid ${cardDivider}` }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{label}</div>
           {desc && <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>{desc}</div>}
@@ -279,11 +961,6 @@ export default function SettingsPage() {
         {adminSaved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 5 }}><i className="bx bx-check-circle" /> {t('saved')}</span>}
       </div>
     )
-  }
-
-  function SettingsCard({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
-    const group: SettingGroupType = { id: title, label: title, description: desc, order: 0 }
-    return <SettingGroupShell group={group}>{children}</SettingGroupShell>
   }
 
   return (
@@ -355,8 +1032,8 @@ export default function SettingsPage() {
                   <label style={labelSt}>{t('language')}</label>
                   <select
                     style={selectSt}
-                    value={preferences.language}
-                    onChange={e => updatePreference('language', e.target.value)}
+                    value={pendingLanguage}
+                    onChange={e => setPendingLanguage(e.target.value)}
                   >
                     {locales.map((loc: Locale) => (
                       <option key={loc} value={loc}>{loc === 'en' ? 'English' : loc === 'ar' ? '\u0627\u0644\u0639\u0631\u0628\u064A\u0629' : loc}</option>
@@ -370,6 +1047,9 @@ export default function SettingsPage() {
                 {saved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><i className="bx bx-check-circle" /> {t('saved')}</span>}
               </div>
             </SettingsCard>
+
+            {/* Public Profile */}
+            <PublicProfileSettings inputSt={inputSt} labelSt={labelSt} saveBtnSt={saveBtnSt} textDim={textDim} textMuted={textMuted} cardBorder={cardBorder} />
 
             {/* Delete account */}
             <SettingsCard title={t('deleteAccount')} desc={t('deleteAccountDesc')}>
@@ -433,23 +1113,7 @@ export default function SettingsPage() {
         )}
 
         {/* ── Passkeys ── */}
-        {tab === 'passkeys' && (
-          <SettingsCard title={t('passkeysTitle')} desc={t('passkeysDesc')}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 24 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <i className="bx bx-fingerprint" style={{ fontSize: 22, color: '#00e5ff' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>{t('passkeySignIn')}</div>
-                <div style={{ fontSize: 13, color: textMuted, lineHeight: 1.6 }}>{t('passkeyExplain')}</div>
-              </div>
-            </div>
-            <button onClick={() => alert('Passkey registration coming soon!')} style={saveBtnSt}>
-              <i className="bx bx-plus" style={{ marginInlineEnd: 6 }} />{t('registerPasskey')}
-            </button>
-            <div style={{ fontSize: 12, color: textDim, marginTop: 12 }}>{t('noPasskeys')}</div>
-          </SettingsCard>
-        )}
+        {tab === 'passkeys' && <PasskeysTab textPrimary={textPrimary} textMuted={textMuted} textDim={textDim} cardBorder={cardBorder} saveBtnSt={saveBtnSt} SettingsCard={SettingsCard} />}
 
         {/* ── Connected Accounts ── */}
         {tab === 'social' && (
@@ -460,7 +1124,7 @@ export default function SettingsPage() {
                 { provider: 'github', label: 'GitHub', icon: 'bxl-github', color: textPrimary },
                 { provider: 'discord', label: 'Discord', icon: 'bxl-discord-alt', color: '#5865F2' },
                 { provider: 'slack', label: 'Slack', icon: 'bxl-slack', color: '#4A154B' },
-              ].map(({ provider, label, icon, color }) => {
+              ].filter(({ provider }) => enabledProviders[provider]).map(({ provider, label, icon, color }) => {
                 const connected = connectedAccounts.find(a => a.provider === provider)
                 return (
                   <div key={provider} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 10, border: `1px solid ${cardBorder}` }}>
@@ -479,6 +1143,118 @@ export default function SettingsPage() {
               })}
             </div>
           </SettingsCard>
+        )}
+
+        {/* ── Integrations (User-Level Discord/Slack) ── */}
+        {tab === 'integrations' && (
+          <>
+            {[
+              { provider: 'discord', label: 'Discord', icon: 'bxl-discord-alt', color: '#5865F2', fields: [
+                { key: 'guild_id', label: 'Server (Guild) ID' },
+                { key: 'channel_id', label: 'Default Channel ID' },
+                { key: 'webhook_url', label: 'Webhook URL', type: 'url' as const },
+              ]},
+              { provider: 'slack', label: 'Slack', icon: 'bxl-slack', color: '#4A154B', fields: [
+                { key: 'team_id', label: 'Workspace (Team) ID' },
+                { key: 'channel_id', label: 'Default Channel ID' },
+                { key: 'webhook_url', label: 'Webhook URL', type: 'url' as const },
+              ]},
+            ].filter(p => enabledProviders[p.provider]).map(provider => {
+              const data = userIntegrations[provider.provider] ?? { guild_id: '', channel_id: '', team_id: '', webhook_url: '' }
+              const installUrl = appInstallUrls[provider.provider]?.install_url
+              const connected = connectedAccounts.find(a => a.provider === provider.provider)
+              return (
+                <SettingsCard key={provider.provider} title={provider.label} desc={`Configure your ${provider.label} integration settings`}>
+                  {/* Connection status + Add to Server */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, padding: '14px 16px', borderRadius: 10, border: `1px solid ${cardBorder}`, background: 'var(--color-bg-alt)' }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 9, background: 'var(--color-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <i className={`bx ${provider.icon}`} style={{ fontSize: 20, color: provider.color }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>
+                        {connected ? `Connected as ${connected.name || connected.email}` : 'Not connected'}
+                      </div>
+                      <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>
+                        {connected ? connected.email : `Connect your ${provider.label} account in Connected Accounts`}
+                      </div>
+                    </div>
+                    {installUrl && (
+                      <a
+                        href={installUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          padding: '7px 14px', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600,
+                          background: provider.color, color: '#fff', textDecoration: 'none', cursor: 'pointer', flexShrink: 0,
+                        }}
+                      >
+                        <i className="bx bx-plus" style={{ fontSize: 14 }} />
+                        {provider.provider === 'discord' ? 'Add to Server' : 'Add to Workspace'}
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Config fields */}
+                  {provider.fields.map(field => (
+                    <div key={field.key} style={{ marginBottom: 14 }}>
+                      <label style={labelSt}>{field.label}</label>
+                      <input
+                        style={inputSt}
+                        type={field.type || 'text'}
+                        value={(data as Record<string, string>)[field.key] ?? ''}
+                        onChange={e => setUserIntegrations(prev => ({
+                          ...prev,
+                          [provider.provider]: { ...prev[provider.provider], [field.key]: e.target.value },
+                        }))}
+                        placeholder={field.label}
+                      />
+                    </div>
+                  ))}
+
+                  {/* Save / Remove */}
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
+                    <button
+                      disabled={integrationSaving}
+                      onClick={async () => {
+                        setIntegrationSaving(true)
+                        try {
+                          await apiFetch(`/api/settings/integrations/user/${provider.provider}`, {
+                            method: 'PUT',
+                            body: JSON.stringify(userIntegrations[provider.provider] ?? {}),
+                          })
+                          setIntegrationSaved(true); setTimeout(() => setIntegrationSaved(false), 2000)
+                        } catch {} finally { setIntegrationSaving(false) }
+                      }}
+                      style={saveBtnSt}
+                    >
+                      {integrationSaving ? t('saving') : t('saveChanges')}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await apiFetch(`/api/settings/integrations/user/${provider.provider}`, { method: 'DELETE' })
+                          setUserIntegrations(prev => { const n = { ...prev }; delete n[provider.provider]; return n })
+                        } catch {}
+                      }}
+                      style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.07)', color: '#ef4444', fontSize: 13, cursor: 'pointer' }}
+                    >
+                      Remove
+                    </button>
+                    {integrationSaved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><i className="bx bx-check-circle" /> {t('saved')}</span>}
+                  </div>
+                </SettingsCard>
+              )
+            })}
+            {Object.keys(enabledProviders).filter(k => enabledProviders[k] && (k === 'discord' || k === 'slack')).length === 0 && (
+              <SettingsCard title="Integrations">
+                <div style={{ textAlign: 'center', padding: '40px 0', color: textDim, fontSize: 13 }}>
+                  <i className="bx bx-plug" style={{ fontSize: 32, display: 'block', marginBottom: 10 }} />
+                  No integrations available. Ask your admin to enable Discord or Slack.
+                </div>
+              </SettingsCard>
+            )}
+          </>
         )}
 
         {/* ── Sessions ── */}
@@ -602,28 +1378,67 @@ export default function SettingsPage() {
           </>
         )}
 
+        {/* ── AI Copilot ── */}
+        {tab === 'copilot' && <CopilotSettingsTab textPrimary={textPrimary} textDim={textDim} cardBorder={cardBorder} cardDivider={cardDivider} labelSt={labelSt} saveBtnSt={saveBtnSt} SettingsCard={SettingsCard} />}
+
         {/* ── Admin: General ── */}
         {tab === 'admin-general' && isAdmin && (
           <SettingsCard title={t('adminGeneralTitle')} desc={t('adminGeneralDesc')}>
-            {adminField('general', 'site_name', 'Site name')}
-            {adminField('general', 'tagline', 'Tagline')}
-            {adminField('general', 'url', 'Site URL', 'url')}
-            {adminField('general', 'support_email', 'Support email', 'email')}
-            {adminToggle('general', 'maintenance_mode', 'Maintenance mode', 'Show maintenance page to all non-admin users')}
+            <ContentLocaleTabs activeLocale={contentLocale} onChange={handleSettingsLocaleChange} />
+            {adminField('general', 'site_name', t('generalSiteName'))}
+            {adminField('general', 'tagline', t('generalTagline'))}
+            {adminField('general', 'url', t('generalSiteUrl'), 'url')}
+            {adminField('general', 'support_email', t('generalSupportEmail'), 'email')}
+            {adminToggle('general', 'maintenance_mode', t('generalMaintenanceMode'), t('generalMaintenanceModeDesc'))}
             <SaveRow settingKey="general" />
+            <div style={{ marginTop: 20, padding: '16px', borderRadius: 10, border: `1px solid ${cardDivider}`, background: cardBg }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>{t('seedAllDefaults')}</div>
+              <div style={{ fontSize: 12, color: textDim, marginBottom: 12 }}>{t('seedAllDesc')}</div>
+              <button
+                style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                onClick={async () => {
+                  try {
+                    const res = await apiFetch<{ ok: boolean; count: number; seeded: string[] }>('/api/admin/settings/seed', { method: 'POST' })
+                    setAdminSaved(true); setTimeout(() => setAdminSaved(false), 3000)
+                    // Reload current tab setting
+                    const rawKey = tab.replace('admin-', '')
+                    const settingKey = tabToSettingKey[rawKey] ?? rawKey
+                    const val = await fetchSetting(settingKey)
+                    if (val) setAdminSettings(p => ({ ...p, [settingKey]: val }))
+                  } catch {}
+                }}
+              >
+                <i className="bx bx-data" style={{ fontSize: 15 }} /> {t('seedAllDefaults')}
+              </button>
+            </div>
           </SettingsCard>
         )}
 
         {/* ── Admin: Features ── */}
         {tab === 'admin-features' && isAdmin && (
           <SettingsCard title={t('adminFeaturesTitle')} desc={t('adminFeaturesDesc')}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>{t('platformFeatures')}</div>
             {[
-              { key: 'rag', label: 'RAG Memory', desc: 'Vector search and memory engine' },
-              { key: 'multi_agent', label: 'Multi-Agent', desc: 'Agent orchestration and workflows' },
-              { key: 'marketplace', label: 'Marketplace', desc: 'Pack marketplace and discovery' },
-              { key: 'quic_bridge', label: 'QUIC Bridge', desc: 'QUIC transport plugin' },
-              { key: 'web_gateway', label: 'Web Gateway', desc: 'HTTP/2 web dashboard gateway' },
-              { key: 'packs', label: 'Packs', desc: 'Skill and agent packs' },
+              { key: 'rag', label: t('featureRag'), desc: t('featureRagDesc') },
+              { key: 'multi_agent', label: t('featureMultiAgent'), desc: t('featureMultiAgentDesc') },
+              { key: 'marketplace', label: t('featureMarketplace'), desc: t('featureMarketplaceDesc') },
+              { key: 'quic_bridge', label: t('featureQuicBridge'), desc: t('featureQuicBridgeDesc') },
+              { key: 'web_gateway', label: t('featureWebGateway'), desc: t('featureWebGatewayDesc') },
+              { key: 'packs', label: t('featurePacks'), desc: t('featurePacksDesc') },
+            ].map(f => adminToggle('features', f.key, f.label, f.desc))}
+            <div style={{ fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.07em', textTransform: 'uppercase', marginTop: 24, marginBottom: 8 }}>{t('userPages')}</div>
+            {[
+              { key: 'projects', label: t('featureProjects'), desc: t('featureProjectsDesc') },
+              { key: 'notes', label: t('featureNotes'), desc: t('featureNotesDesc') },
+              { key: 'plans', label: t('featurePlans'), desc: t('featurePlansDesc') },
+              { key: 'wiki', label: t('featureWiki'), desc: t('featureWikiDesc') },
+              { key: 'devtools', label: t('featureDevTools'), desc: t('featureDevToolsDesc') },
+            ].map(f => adminToggle('features', f.key, f.label, f.desc))}
+            <div style={{ fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.07em', textTransform: 'uppercase', marginTop: 24, marginBottom: 8 }}>Public Pages</div>
+            {[
+              { key: 'sponsors', label: 'Sponsors', desc: 'Show sponsors page on the public site' },
+              { key: 'community', label: 'Community', desc: 'Enable community profiles and posts' },
+              { key: 'issues', label: 'GitHub Issues', desc: 'Show GitHub issues page on the public site' },
             ].map(f => adminToggle('features', f.key, f.label, f.desc))}
             <SaveRow settingKey="features" />
           </SettingsCard>
@@ -632,14 +1447,15 @@ export default function SettingsPage() {
         {/* ── Admin: Home Page ── */}
         {tab === 'admin-homepage' && isAdmin && (
           <SettingsCard title={t('adminHomepageTitle')} desc={t('adminHomepageDesc')}>
-            {adminField('homepage', 'hero_headline', 'Hero headline')}
-            {adminField('homepage', 'hero_subtext', 'Hero subtext', 'textarea')}
-            {adminField('homepage', 'cta_primary', 'Primary CTA label')}
-            {adminField('homepage', 'cta_secondary', 'Secondary CTA label')}
-            {adminField('homepage', 'stats_tools', 'Stats — Tools count')}
-            {adminField('homepage', 'stats_plugins', 'Stats — Plugins count')}
-            {adminField('homepage', 'stats_platforms', 'Stats — Platforms count')}
-            {adminField('homepage', 'stats_packs', 'Stats — Packs count')}
+            <ContentLocaleTabs activeLocale={contentLocale} onChange={handleSettingsLocaleChange} />
+            {adminField('homepage', 'hero_headline', t('homepageHeroHeadline'))}
+            {adminField('homepage', 'hero_subtext', t('homepageHeroSubtext'), 'textarea')}
+            {adminField('homepage', 'cta_primary', t('homepageCtaPrimary'))}
+            {adminField('homepage', 'cta_secondary', t('homepageCtaSecondary'))}
+            {adminField('homepage', 'stats_tools', t('homepageStatsTools'))}
+            {adminField('homepage', 'stats_plugins', t('homepageStatsPlugins'))}
+            {adminField('homepage', 'stats_platforms', t('homepageStatsPlatforms'))}
+            {adminField('homepage', 'stats_packs', t('homepageStatsPacks'))}
             <SaveRow settingKey="homepage" />
           </SettingsCard>
         )}
@@ -647,9 +1463,10 @@ export default function SettingsPage() {
         {/* ── Admin: Agents ── */}
         {tab === 'admin-agents' && isAdmin && (
           <SettingsCard title={t('adminAgentsTitle')} desc={t('adminAgentsDesc')}>
-            {adminField('agents', 'headline', 'Page headline')}
-            {adminField('agents', 'subtext', 'Page subtext', 'textarea')}
-            {adminField('agents', 'featured_ids', 'Featured agent IDs (comma-separated)')}
+            <ContentLocaleTabs activeLocale={contentLocale} onChange={handleSettingsLocaleChange} />
+            {adminField('agents', 'headline', t('agentsHeadline'))}
+            {adminField('agents', 'subtext', t('agentsSubtext'), 'textarea')}
+            {adminField('agents', 'featured_ids', t('agentsFeaturedIds'))}
             <SaveRow settingKey="agents" />
           </SettingsCard>
         )}
@@ -657,12 +1474,13 @@ export default function SettingsPage() {
         {/* ── Admin: Contact ── */}
         {tab === 'admin-contact' && isAdmin && (
           <SettingsCard title={t('adminContactTitle')} desc={t('adminContactDesc')}>
-            {adminField('contact', 'headline', 'Page headline')}
-            {adminField('contact', 'support_email', 'Support email', 'email')}
-            {adminField('contact', 'hours', 'Support hours')}
-            {adminField('contact', 'twitter', 'Twitter URL', 'url')}
-            {adminField('contact', 'github', 'GitHub URL', 'url')}
-            {adminField('contact', 'discord', 'Discord URL', 'url')}
+            <ContentLocaleTabs activeLocale={contentLocale} onChange={handleSettingsLocaleChange} />
+            {adminField('contact', 'headline', t('contactHeadline'))}
+            {adminField('contact', 'support_email', t('contactSupportEmail'), 'email')}
+            {adminField('contact', 'hours', t('contactHours'))}
+            {adminField('contact', 'twitter', t('contactTwitter'), 'url')}
+            {adminField('contact', 'github', t('contactGithub'), 'url')}
+            {adminField('contact', 'discord', t('contactDiscord'), 'url')}
             <SaveRow settingKey="contact" />
           </SettingsCard>
         )}
@@ -670,14 +1488,15 @@ export default function SettingsPage() {
         {/* ── Admin: Pricing ── */}
         {tab === 'admin-pricing' && isAdmin && (
           <SettingsCard title={t('adminPricingTitle')} desc={t('adminPricingDesc')}>
+            <ContentLocaleTabs activeLocale={contentLocale} onChange={handleSettingsLocaleChange} />
             {(['free', 'pro', 'enterprise'] as const).map(plan => (
               <div key={plan} style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}`, textTransform: 'capitalize' }}>{plan} Plan</div>
-                {adminField('pricing', `${plan}_name`, 'Plan name')}
-                {adminField('pricing', `${plan}_price`, 'Price', 'text')}
-                {adminField('pricing', `${plan}_period`, 'Billing period (e.g. /month)')}
-                {adminField('pricing', `${plan}_cta`, 'CTA button label')}
-                {adminField('pricing', `${plan}_features`, 'Features (one per line)', 'textarea')}
+                {adminField('pricing', `${plan}_name`, t('pricingPlanName'))}
+                {adminField('pricing', `${plan}_price`, t('pricingPrice'), 'text')}
+                {adminField('pricing', `${plan}_period`, t('pricingPeriod'))}
+                {adminField('pricing', `${plan}_cta`, t('pricingCta'))}
+                {adminField('pricing', `${plan}_features`, t('pricingFeatures'), 'textarea')}
               </div>
             ))}
             <SaveRow settingKey="pricing" />
@@ -690,9 +1509,9 @@ export default function SettingsPage() {
             {(['macos', 'windows', 'linux', 'ios', 'android'] as const).map(platform => (
               <div key={platform} style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}`, textTransform: 'capitalize' }}>{platform}</div>
-                {adminField('download', `${platform}_url`, 'Download URL', 'url')}
-                {adminField('download', `${platform}_version`, 'Version')}
-                {adminField('download', `${platform}_release_date`, 'Release date')}
+                {adminField('download', `${platform}_url`, t('downloadUrl'), 'url')}
+                {adminField('download', `${platform}_version`, t('downloadVersion'))}
+                {adminField('download', `${platform}_release_date`, t('downloadReleaseDate'))}
               </div>
             ))}
             <SaveRow settingKey="download" />
@@ -701,112 +1520,142 @@ export default function SettingsPage() {
 
         {/* ── Admin: Integrations ── */}
         {tab === 'admin-integrations' && isAdmin && (
-          <SettingsCard title={t('adminIntegrationsTitle')} desc={t('adminIntegrationsDesc')}>
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Google OAuth</div>
-              {adminField('integrations', 'google_client_id', 'Client ID')}
-              {adminField('integrations', 'google_client_secret', 'Client secret')}
+          <>
+            {([
+              { key: 'google', label: 'Google OAuth', icon: 'bxl-google', color: '#ea4335', desc: 'Allow users to sign in with their Google account' },
+              { key: 'github', label: 'GitHub OAuth', icon: 'bxl-github', color: textPrimary, desc: 'Allow users to sign in with their GitHub account' },
+              { key: 'discord', label: 'Discord OAuth', icon: 'bxl-discord-alt', color: '#5865F2', desc: 'Allow users to sign in with their Discord account' },
+              { key: 'slack', label: 'Slack OAuth', icon: 'bxl-slack', color: '#4A154B', desc: 'Allow users to sign in with their Slack account' },
+            ] as const).map(provider => {
+              const enabled = !!(adminSettings.integrations?.[`${provider.key}_enabled`])
+              return (
+                <SettingsCard key={provider.key} title={provider.label} desc={provider.desc}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: enabled ? 16 : 0 }}>
+                    <span style={{ fontSize: 13, color: textMuted }}>{enabled ? 'Enabled' : 'Disabled'}</span>
+                    <button onClick={() => setAdminSettings(p => ({ ...p, integrations: { ...p.integrations, [`${provider.key}_enabled`]: !enabled } }))} style={{ width: 44, height: 24, borderRadius: 100, border: 'none', cursor: 'pointer', background: enabled ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : 'var(--color-border)', position: 'relative', flexShrink: 0 }}>
+                      <span style={{ position: 'absolute', top: 3, left: enabled ? 22 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+                    </button>
+                  </div>
+                  {enabled && (
+                    <div style={{ paddingTop: 16, borderTop: `1px solid ${cardDivider}` }}>
+                      {adminField('integrations', `${provider.key}_client_id`, t('integrationsClientId'))}
+                      {adminField('integrations', `${provider.key}_client_secret`, t('integrationsClientSecret'))}
+                    </div>
+                  )}
+                </SettingsCard>
+              )
+            })}
+            <div style={{ marginTop: 8 }}>
+              <SaveRow settingKey="integrations" />
             </div>
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>GitHub OAuth</div>
-              {adminField('integrations', 'github_client_id', 'Client ID')}
-              {adminField('integrations', 'github_client_secret', 'Client secret')}
-            </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Discord OAuth</div>
-              {adminField('integrations', 'discord_client_id', 'Client ID')}
-              {adminField('integrations', 'discord_client_secret', 'Client secret')}
-            </div>
-            <div style={{ marginTop: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Slack OAuth</div>
-              {adminField('integrations', 'slack_client_id', 'Client ID')}
-              {adminField('integrations', 'slack_client_secret', 'Client secret')}
-            </div>
-            <SaveRow settingKey="integrations" />
-          </SettingsCard>
+          </>
         )}
 
         {/* ── Admin: Email / SMTP ── */}
         {tab === 'admin-email' && isAdmin && (
           <SettingsCard title={t('adminEmailTitle')} desc={t('adminEmailDesc')}>
-            {adminField('smtp', 'host', 'SMTP host')}
-            {adminField('smtp', 'port', 'SMTP port', 'number')}
-            {adminField('smtp', 'username', 'Username')}
-            {adminField('smtp', 'password', 'Password')}
-            {adminField('smtp', 'from_name', 'From name')}
-            {adminField('smtp', 'from_email', 'From email', 'email')}
-            <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
+            {adminField('smtp', 'host', t('smtpHost'))}
+            {adminField('smtp', 'port', t('smtpPort'), 'number')}
+            {adminField('smtp', 'username', t('smtpUsername'))}
+            {adminField('smtp', 'password', t('smtpPassword'))}
+            {adminField('smtp', 'from_name', t('smtpFromName'))}
+            {adminField('smtp', 'from_email', t('smtpFromEmail'), 'email')}
+            <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <button style={saveBtnSt} onClick={() => handleSaveAdminSetting('smtp')}>{t('saveChanges')}</button>
-              <button style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>{t('sendTestEmail')}</button>
+              <button
+                style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textPrimary, fontSize: 13, fontWeight: 500, cursor: testEmailSending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, opacity: testEmailSending ? 0.6 : 1 }}
+                disabled={testEmailSending}
+                onClick={async () => {
+                  setTestEmailSending(true); setTestEmailResult(null)
+                  try {
+                    // Save SMTP settings first, then send test
+                    await handleSaveAdminSetting('smtp')
+                    const res = await apiFetch<{ ok: boolean; sent_to?: string; error?: string }>('/api/admin/settings/test-email', { method: 'POST' })
+                    setTestEmailResult({ ok: true, text: `Test email sent to ${res.sent_to}` })
+                  } catch (e: any) {
+                    setTestEmailResult({ ok: false, text: e?.message || 'Failed to send test email' })
+                  } finally { setTestEmailSending(false) }
+                }}
+              >
+                <i className="bx bx-paper-plane" style={{ fontSize: 14 }} />
+                {testEmailSending ? 'Sending...' : t('sendTestEmail')}
+              </button>
               {adminSaved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><i className="bx bx-check-circle" /> {t('saved')}</span>}
+              {testEmailResult && (
+                <span style={{ fontSize: 12, color: testEmailResult.ok ? '#22c55e' : '#ef4444', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <i className={`bx ${testEmailResult.ok ? 'bx-check-circle' : 'bx-error-circle'}`} />
+                  {testEmailResult.text}
+                </span>
+              )}
             </div>
-          </SettingsCard>
-        )}
-
-        {/* ── Admin: AI Models ── */}
-        {tab === 'admin-aimodels' && isAdmin && (
-          <SettingsCard title={t('adminAITitle')} desc={t('adminAIDesc')}>
-            {[
-              { provider: 'claude', label: 'Anthropic Claude', envKey: 'ANTHROPIC_API_KEY' },
-              { provider: 'openai', label: 'OpenAI', envKey: 'OPENAI_API_KEY' },
-              { provider: 'gemini', label: 'Google Gemini', envKey: 'GEMINI_API_KEY' },
-              { provider: 'ollama', label: 'Ollama', envKey: 'OLLAMA_BASE_URL' },
-            ].map(({ provider, label, envKey }) => (
-              <div key={provider} style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>{label}</div>
-                {adminField('aimodels', `${provider}_api_key`, envKey)}
-                {adminField('aimodels', `${provider}_default_model`, 'Default model')}
-              </div>
-            ))}
-            <SaveRow settingKey="aimodels" />
           </SettingsCard>
         )}
 
         {/* ── Admin: SEO ── */}
         {tab === 'admin-seo' && isAdmin && (
           <SettingsCard title={t('adminSEOTitle')} desc={t('adminSEODesc')}>
-            {adminField('seo', 'title_template', 'Title template (e.g. %s — Orchestra)')}
-            {adminField('seo', 'meta_description', 'Meta description', 'textarea')}
-            {adminField('seo', 'og_image_url', 'OG image URL', 'url')}
-            {adminField('seo', 'robots_txt', 'robots.txt content', 'textarea')}
-            {adminField('seo', 'sitemap_url', 'Sitemap URL', 'url')}
+            <ContentLocaleTabs activeLocale={contentLocale} onChange={handleSettingsLocaleChange} />
+            {adminField('seo', 'title_template', t('seoTitleTemplate'))}
+            {adminField('seo', 'meta_description', t('seoMetaDescription'), 'textarea')}
+            {adminField('seo', 'og_image_url', t('seoOgImageUrl'), 'url')}
+            {adminField('seo', 'robots_txt', t('seoRobotsTxt'), 'textarea')}
+            {adminField('seo', 'sitemap_url', t('seoSitemapUrl'), 'url')}
+            <div style={{ marginTop: 20, padding: '16px', borderRadius: 10, border: `1px solid ${cardDivider}`, background: cardBg }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>{t('seoGenerateSitemap')}</div>
+              <div style={{ fontSize: 12, color: textDim, marginBottom: 12 }}>{t('seoSitemapPreview')}</div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button
+                  style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                  onClick={async () => {
+                    try {
+                      const res = await apiFetch<{ ok: boolean; sitemap: string }>('/api/admin/settings/generate-sitemap', { method: 'POST' })
+                      if (res.sitemap) {
+                        setAdminSettings(p => ({ ...p, seo: { ...p.seo, generated_sitemap: res.sitemap } }))
+                      }
+                    } catch {}
+                  }}
+                >
+                  <i className="bx bx-sitemap" style={{ fontSize: 15 }} /> {t('seoGenerateSitemap')}
+                </button>
+                {(adminSettings.seo?.generated_sitemap as string) && (
+                  <button
+                    style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                    onClick={() => {
+                      const blob = new Blob([adminSettings.seo?.generated_sitemap as string], { type: 'application/xml' })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url; a.download = 'sitemap.xml'; a.click()
+                      URL.revokeObjectURL(url)
+                    }}
+                  >
+                    <i className="bx bx-download" style={{ fontSize: 15 }} /> {t('seoDownloadSitemap')}
+                  </button>
+                )}
+              </div>
+              {(adminSettings.seo?.generated_sitemap as string) && (
+                <pre style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'var(--color-bg)', border: `1px solid ${cardDivider}`, fontSize: 11, color: textDim, overflow: 'auto', maxHeight: 200, whiteSpace: 'pre-wrap' }}>
+                  {adminSettings.seo?.generated_sitemap as string}
+                </pre>
+              )}
+            </div>
             <SaveRow settingKey="seo" />
           </SettingsCard>
         )}
 
         {/* ── Admin: Discord Bot ── */}
         {tab === 'admin-discord' && isAdmin && (
-          <SettingsCard title="Discord Bot" desc="Configure the Discord bot connection, allowed users, and notification settings.">
+          <SettingsCard title={t('adminDiscordTitle')} desc={t('adminDiscordDesc')}>
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Bot Configuration</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                <label style={{ fontSize: 13, fontWeight: 500, color: textMuted }}>Enabled</label>
-                <input
-                  type="checkbox"
-                  checked={adminSettings.discord?.enabled === true || adminSettings.discord?.enabled === 'true'}
-                  onChange={e => {
-                    const val = { ...adminSettings.discord, enabled: e.target.checked }
-                    setAdminSettings(s => ({ ...s, discord: val }))
-                  }}
-                  style={{ width: 18, height: 18, accentColor: '#a900ff', cursor: 'pointer' }}
-                />
-              </div>
-              {adminField('discord', 'bot_token', 'Bot Token')}
-              {adminField('discord', 'application_id', 'Application ID')}
-              {adminField('discord', 'guild_id', 'Guild ID')}
-              {adminField('discord', 'channel_id', 'Default Channel ID')}
-              {adminField('discord', 'command_prefix', 'Command Prefix')}
-              {adminField('discord', 'webhook_url', 'Webhook URL', 'url')}
+              {adminToggle('discord', 'enabled', t('discordEnabled'), t('discordEnabledDesc'))}
+              {adminField('discord', 'bot_token', t('discordBotToken'))}
+              {adminField('discord', 'application_id', t('discordAppId'))}
+              {adminField('discord', 'guild_id', t('discordGuildId'))}
+              {adminField('discord', 'channel_id', t('discordChannelId'))}
+              {adminField('discord', 'command_prefix', t('discordCommandPrefix'))}
+              {adminField('discord', 'webhook_url', t('discordWebhookUrl'), 'url')}
             </div>
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>OAuth Credentials</div>
-              {adminField('discord', 'client_id', 'Client ID')}
-              {adminField('discord', 'client_secret', 'Client Secret')}
-            </div>
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Allowed Users</div>
-              <div style={{ fontSize: 12, color: textDim, marginBottom: 12 }}>Enter Discord usernames (e.g. user#1234) that are allowed to interact with the bot. Leave empty to allow all users.</div>
-              {adminField('discord', 'allowed_users', 'Allowed users (comma-separated)', 'textarea')}
+              {adminField('discord', 'allowed_users', t('discordAllowedUsers'), 'textarea')}
             </div>
             <SaveRow settingKey="discord" />
           </SettingsCard>
@@ -814,39 +1663,259 @@ export default function SettingsPage() {
 
         {/* ── Admin: Slack Bot ── */}
         {tab === 'admin-slack' && isAdmin && (
-          <SettingsCard title="Slack Bot" desc="Configure the Slack bot connection (Socket Mode), allowed users, and notification settings.">
+          <SettingsCard title={t('adminSlackTitle')} desc={t('adminSlackDesc')}>
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Bot Configuration</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                <label style={{ fontSize: 13, fontWeight: 500, color: textMuted }}>Enabled</label>
-                <input
-                  type="checkbox"
-                  checked={adminSettings.slack?.enabled === true || adminSettings.slack?.enabled === 'true'}
-                  onChange={e => {
-                    const val = { ...adminSettings.slack, enabled: e.target.checked }
-                    setAdminSettings(s => ({ ...s, slack: val }))
-                  }}
-                  style={{ width: 18, height: 18, accentColor: '#a900ff', cursor: 'pointer' }}
-                />
-              </div>
-              {adminField('slack', 'bot_token', 'Bot Token (xoxb-...)')}
-              {adminField('slack', 'app_token', 'App-Level Token (xapp-...)')}
-              {adminField('slack', 'signing_secret', 'Signing Secret')}
-              {adminField('slack', 'app_id', 'App ID')}
-              {adminField('slack', 'channel_id', 'Default Channel ID')}
-              {adminField('slack', 'team_id', 'Team / Workspace ID')}
-              {adminField('slack', 'command_prefix', 'Command Prefix')}
-              {adminField('slack', 'webhook_url', 'Incoming Webhook URL', 'url')}
+              {adminToggle('slack', 'enabled', t('slackEnabled'), t('slackEnabledDesc'))}
+              {adminField('slack', 'bot_token', t('slackBotToken'))}
+              {adminField('slack', 'app_token', t('slackAppToken'))}
+              {adminField('slack', 'signing_secret', t('slackSigningSecret'))}
+              {adminField('slack', 'app_id', t('slackAppId'))}
+              {adminField('slack', 'channel_id', t('slackChannelId'))}
+              {adminField('slack', 'team_id', t('slackTeamId'))}
+              {adminField('slack', 'command_prefix', t('slackCommandPrefix'))}
+              {adminField('slack', 'webhook_url', t('slackWebhookUrl'), 'url')}
             </div>
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${cardDivider}` }}>Allowed Users</div>
-              <div style={{ fontSize: 12, color: textDim, marginBottom: 12 }}>Enter Slack user IDs (e.g. U12345ABC) that are allowed to interact with the bot. Leave empty to allow all users.</div>
-              {adminField('slack', 'allowed_users', 'Allowed users (comma-separated)', 'textarea')}
+              {adminField('slack', 'allowed_users', t('slackAllowedUsers'), 'textarea')}
             </div>
             <SaveRow settingKey="slack" />
           </SettingsCard>
         )}
 
+        {/* ── Admin: GitHub ── */}
+        {tab === 'admin-github' && isAdmin && (
+          <SettingsCard title="GitHub Integration" desc="Connect GitHub repositories for the public issues page.">
+            {adminField('github', 'token', 'Personal Access Token')}
+            {adminField('github', 'default_repos', 'Default Repositories', 'textarea')}
+            <div style={{ fontSize: 11, color: textDim, marginTop: -8, marginBottom: 12 }}>Comma-separated, e.g. orchestra-mcp/framework, orchestra-mcp/cli</div>
+            {adminField('github', 'sync_interval', 'Sync Interval (minutes)')}
+            <SaveRow settingKey="github" />
+          </SettingsCard>
+        )}
+
+        {/* ── Admin: Social Platforms ── */}
+        {tab === 'admin-social' && isAdmin && (
+          <SocialPlatformsAdmin
+            adminSettings={adminSettings}
+            setAdminSettings={setAdminSettings}
+            handleSaveAdminSetting={handleSaveAdminSetting}
+            adminSaving={adminSaving}
+            adminSaved={adminSaved}
+            inputSt={inputSt}
+            labelSt={labelSt}
+            saveBtnSt={saveBtnSt}
+            textDim={textDim}
+            textMuted={textMuted}
+            textPrimary={textPrimary}
+            cardBorder={cardBorder}
+          />
+        )}
+
     </div>
+  )
+}
+
+/* ── AI Copilot Settings Tab ─────────────────────────────── */
+
+const DOCK_MODES: { id: CopilotDockMode; label: string; desc: string; icon: string }[] = [
+  { id: 'bubble', label: 'Bubble', desc: 'Floating draggable window', icon: 'bx-chat' },
+  { id: 'sideover', label: 'Side Panel', desc: 'Docked to right edge', icon: 'bx-dock-right' },
+  { id: 'modal', label: 'Modal', desc: 'Centered overlay dialog', icon: 'bx-window' },
+  { id: 'fullscreen', label: 'Fullscreen', desc: 'Replaces main content area', icon: 'bx-fullscreen' },
+]
+
+const ICON_STYLES: { id: 'bot' | 'chat' | 'sparkle'; label: string; icon: string }[] = [
+  { id: 'bot', label: 'Robot', icon: 'bx-bot' },
+  { id: 'chat', label: 'Chat', icon: 'bx-chat' },
+  { id: 'sparkle', label: 'Sparkle', icon: 'bx-star' },
+]
+
+const CHAT_MODES_LIST: { id: 'auto' | 'plan' | 'manual'; label: string; desc: string }[] = [
+  { id: 'auto', label: 'Auto', desc: 'AI decides when to edit or plan' },
+  { id: 'plan', label: 'Plan', desc: 'AI asks before making changes' },
+  { id: 'manual', label: 'Manual', desc: 'Full manual control' },
+]
+
+function CopilotSettingsTab({ textPrimary, textDim, cardBorder, cardDivider, labelSt, saveBtnSt, SettingsCard }: {
+  textPrimary: string; textDim: string; cardBorder: string; cardDivider: string
+  labelSt: React.CSSProperties; saveBtnSt: React.CSSProperties
+  SettingsCard: React.ComponentType<{ title: string; desc?: string; children: React.ReactNode }>
+}) {
+  const copilotMode = useChatStore(s => s.copilotMode)
+  const setCopilotMode = useChatStore(s => s.setCopilotMode)
+  const chatIconStyle = useChatStore(s => s.chatIconStyle)
+  const setChatIconStyle = useChatStore(s => s.setChatIconStyle)
+  const selectedModelId = useChatStore(s => s.selectedModelId)
+  const setSelectedModelId = useChatStore(s => s.setSelectedModelId)
+  const chatMode = useChatStore(s => s.chatMode)
+  const setChatMode = useChatStore(s => s.setChatMode)
+  const accounts = useChatStore(s => s.accounts)
+  const userStartupPrompts = useChatStore(s => s.userStartupPrompts)
+  const setUserStartupPrompts = useChatStore(s => s.setUserStartupPrompts)
+  const userQuickActions = useChatStore(s => s.userQuickActions)
+  const setUserQuickActions = useChatStore(s => s.setUserQuickActions)
+
+  return (
+    <>
+      {/* Dock Mode */}
+      <SettingsCard title="Dock Mode" desc="Choose how the AI copilot window appears">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
+          {DOCK_MODES.map(m => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setCopilotMode(m.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
+                borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                border: copilotMode === m.id ? '2px solid var(--color-accent)' : `1px solid ${cardBorder}`,
+                background: copilotMode === m.id ? 'color-mix(in srgb, var(--color-accent) 8%, transparent)' : 'transparent',
+                color: textPrimary,
+              }}
+            >
+              <i className={`bx ${m.icon}`} style={{ fontSize: 20, color: copilotMode === m.id ? 'var(--color-accent)' : textDim, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{m.label}</div>
+                <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>{m.desc}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </SettingsCard>
+
+      {/* Chat Icon */}
+      <SettingsCard title="Chat Icon" desc="Choose the icon style for the copilot bubble button">
+        <div style={{ display: 'flex', gap: 10 }}>
+          {ICON_STYLES.map(s => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setChatIconStyle(s.id)}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                padding: '14px 20px', borderRadius: 10, cursor: 'pointer',
+                border: chatIconStyle === s.id ? '2px solid var(--color-accent)' : `1px solid ${cardBorder}`,
+                background: chatIconStyle === s.id ? 'color-mix(in srgb, var(--color-accent) 8%, transparent)' : 'transparent',
+                color: textPrimary, minWidth: 80,
+              }}
+            >
+              <i className={`bx ${s.icon}`} style={{ fontSize: 24, color: chatIconStyle === s.id ? 'var(--color-accent)' : textDim }} />
+              <span style={{ fontSize: 12, fontWeight: 500 }}>{s.label}</span>
+            </button>
+          ))}
+        </div>
+      </SettingsCard>
+
+      {/* Default Model */}
+      {accounts.length > 0 && (
+        <SettingsCard title="Default Model" desc="Select which AI model to use by default">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {accounts.map(acc => (
+              <label
+                key={acc.id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                  borderRadius: 9, cursor: 'pointer',
+                  border: selectedModelId === acc.id ? '2px solid var(--color-accent)' : `1px solid ${cardBorder}`,
+                  background: selectedModelId === acc.id ? 'color-mix(in srgb, var(--color-accent) 8%, transparent)' : 'transparent',
+                }}
+              >
+                <input
+                  type="radio"
+                  name="copilot-model"
+                  checked={selectedModelId === acc.id}
+                  onChange={() => setSelectedModelId(acc.id)}
+                  style={{ accentColor: 'var(--color-accent)' }}
+                />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{acc.name}</div>
+                  {acc.model && <div style={{ fontSize: 11, color: textDim, marginTop: 1 }}>{acc.model}</div>}
+                </div>
+              </label>
+            ))}
+          </div>
+        </SettingsCard>
+      )}
+
+      {/* Default Chat Mode */}
+      <SettingsCard title="Default Chat Mode" desc="Control how the AI behaves when you send a message">
+        <div style={{ display: 'flex', gap: 10 }}>
+          {CHAT_MODES_LIST.map(m => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setChatMode(m.id)}
+              style={{
+                flex: 1, padding: '12px 14px', borderRadius: 10, cursor: 'pointer', textAlign: 'center',
+                border: chatMode === m.id ? '2px solid var(--color-accent)' : `1px solid ${cardBorder}`,
+                background: chatMode === m.id ? 'color-mix(in srgb, var(--color-accent) 8%, transparent)' : 'transparent',
+                color: textPrimary,
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{m.label}</div>
+              <div style={{ fontSize: 11, color: textDim, marginTop: 4 }}>{m.desc}</div>
+            </button>
+          ))}
+        </div>
+      </SettingsCard>
+
+      {/* Startup Prompts */}
+      <SettingsCard title="Startup Prompts" desc="Customize the prompt cards shown when starting a new chat">
+        <PromptCardEditor
+          value={userStartupPrompts as PromptCard[]}
+          onChange={(cards) => setUserStartupPrompts(cards.map(c => ({
+            id: c.id,
+            title: c.title || '',
+            description: c.description,
+            prompt: c.prompt || '',
+            color: c.color,
+            icon: c.icon,
+          })))}
+          fields={[
+            { key: 'title', label: 'Title', placeholder: 'e.g. Project Status' },
+            { key: 'description', label: 'Description', placeholder: 'Short description' },
+            { key: 'prompt', label: 'Prompt', placeholder: 'The message to send', type: 'textarea' },
+          ]}
+          previewMode="prompts"
+        />
+        {userStartupPrompts.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setUserStartupPrompts([])}
+            style={{ marginTop: 12, padding: '6px 14px', borderRadius: 7, border: `1px solid ${cardBorder}`, background: 'transparent', color: textDim, fontSize: 12, cursor: 'pointer' }}
+          >
+            Reset to defaults
+          </button>
+        )}
+      </SettingsCard>
+
+      {/* Quick Actions */}
+      <SettingsCard title="Quick Actions" desc="Customize the action chips shown above the chat input">
+        <PromptCardEditor
+          value={userQuickActions as PromptCard[]}
+          onChange={(cards) => setUserQuickActions(cards.map(c => ({
+            id: c.id,
+            label: c.label || '',
+            prompt: c.prompt || '',
+            color: c.color,
+            icon: c.icon,
+          })))}
+          fields={[
+            { key: 'label', label: 'Label', placeholder: 'e.g. Run Tests' },
+            { key: 'prompt', label: 'Prompt', placeholder: 'The message to send', type: 'textarea' },
+          ]}
+          previewMode="actions"
+        />
+        {userQuickActions.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setUserQuickActions([])}
+            style={{ marginTop: 12, padding: '6px 14px', borderRadius: 7, border: `1px solid ${cardBorder}`, background: 'transparent', color: textDim, fontSize: 12, cursor: 'pointer' }}
+          >
+            Reset to defaults
+          </button>
+        )}
+      </SettingsCard>
+    </>
   )
 }

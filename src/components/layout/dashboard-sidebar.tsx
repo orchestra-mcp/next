@@ -10,7 +10,7 @@ import { TunnelSwitcher } from '@/components/tunnel-switcher'
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: 'bx-home-alt' },
   { href: '/projects', label: 'Projects', icon: 'bx-folder' },
-  { href: '/repos', label: 'Repos', icon: 'bx-git-repo-forked' },
+  { href: '/repos', label: 'Version Control', icon: 'bx-git-branch' },
   { href: '/notes', label: 'Notes', icon: 'bx-note' },
   { href: '/settings', label: 'Settings', icon: 'bx-cog' },
 ]
@@ -40,7 +40,7 @@ export function DashboardSidebar() {
               fontSize: 14, fontWeight: active ? 500 : 400,
               color: active ? '#f8f8f8' : 'rgba(255,255,255,0.45)',
               background: active ? 'rgba(169,0,255,0.15)' : 'transparent',
-              borderInlineStart: `2px solid ${active ? '#a900ff' : 'transparent'}`,
+              /* no left border */
               transition: 'all 0.15s',
             }}>
               <i className={`bx ${item.icon}`} style={{ fontSize: 16 }} />

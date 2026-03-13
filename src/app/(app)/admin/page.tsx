@@ -254,7 +254,7 @@ export default function AdminPage() {
               <div>
                 <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary, marginBottom: 2 }}>Coming Soon Mode</div>
                 <div style={{ fontSize: 11.5, color: textMuted }}>
-                  {comingSoon ? 'All visitors see the coming soon page. Admins bypass it.' : 'Site is publicly accessible.'}
+                  {comingSoon ? 'Unauthenticated visitors see the coming soon page. Logged-in users bypass it.' : 'Site is publicly accessible.'}
                 </div>
               </div>
               <button

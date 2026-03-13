@@ -27,8 +27,16 @@ export interface ChatHeaderProps {
   onSessionSelect?: (id: string) => void;
   /** Called when user deletes a session */
   onSessionDelete?: (id: string) => void;
+  /** Called when user renames a session */
+  onSessionRename?: (id: string, title: string) => void;
   /** Called when user clicks the + new chat button */
   onNewChat?: () => void;
+  /** Expand to fullscreen/panel */
+  onExpand?: () => void;
+  /** Collapse back to bubble */
+  onCollapse?: () => void;
+  /** Current dock mode */
+  dockMode?: string;
   className?: string;
 }
 
@@ -43,7 +51,11 @@ export const ChatHeader = ({
   activeSessionId,
   onSessionSelect,
   onSessionDelete,
+  onSessionRename,
   onNewChat,
+  onExpand,
+  onCollapse,
+  dockMode,
   className,
 }: ChatHeaderProps) => {
   const cls = ['chat-header', className].filter(Boolean).join(' ');
@@ -54,6 +66,11 @@ export const ChatHeader = ({
   const [search, setSearch] = useState('');
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Inline rename state
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   // Close on outside click
   useEffect(() => {
@@ -72,6 +89,20 @@ export const ChatHeader = ({
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
+
+  // Focus rename input when editing
+  useEffect(() => {
+    if (renamingId) renameInputRef.current?.focus();
+  }, [renamingId]);
+
+  const commitRename = (id: string) => {
+    const trimmed = renameValue.trim();
+    if (trimmed && onSessionRename) {
+      onSessionRename(id, trimmed);
+    }
+    setRenamingId(null);
+    setRenameValue('');
+  };
 
   // Active session title
   const activeTitle = useMemo(() => {
@@ -146,10 +177,14 @@ export const ChatHeader = ({
                       <div
                         key={s.id}
                         className={`chat-header__dropdown-item${s.id === activeSessionId ? ' chat-header__dropdown-item--active' : ''}`}
-                        onClick={() => { onSessionSelect?.(s.id); setOpen(false); setSearch(''); }}
+                        onClick={() => {
+                          if (renamingId === s.id) return;
+                          onSessionSelect?.(s.id); setOpen(false); setSearch('');
+                        }}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => {
+                          if (renamingId === s.id) return;
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             onSessionSelect?.(s.id);
@@ -158,10 +193,42 @@ export const ChatHeader = ({
                           }
                         }}
                       >
-                        <span className="chat-header__dropdown-item-title">{s.title}</span>
+                        {renamingId === s.id ? (
+                          <input
+                            ref={renameInputRef}
+                            type="text"
+                            className="chat-header__dropdown-rename-input"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') { e.preventDefault(); commitRename(s.id); }
+                              if (e.key === 'Escape') { e.preventDefault(); setRenamingId(null); }
+                            }}
+                            onBlur={() => commitRename(s.id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <span className="chat-header__dropdown-item-title">{s.title}</span>
+                        )}
                         <div className="chat-header__dropdown-item-right">
                           {s.messageCount > 0 && (
                             <span className="chat-header__dropdown-item-badge">{s.messageCount}</span>
+                          )}
+                          {onSessionRename && renamingId !== s.id && (
+                            <button
+                              type="button"
+                              className="chat-header__dropdown-item-rename"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRenamingId(s.id);
+                                setRenameValue(s.title);
+                              }}
+                              aria-label={`Rename ${s.title}`}
+                            >
+                              <svg width="10" height="10" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                <path d="M10.5 1.5l2 2-7.5 7.5H3v-2l7.5-7.5z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </button>
                           )}
                           {onSessionDelete && (
                             <button
@@ -200,6 +267,20 @@ export const ChatHeader = ({
 
         {/* Right: window controls */}
         <div className="chat-header__right">
+          {onExpand && dockMode !== 'fullscreen' && dockMode !== 'sideover' && (
+            <button type="button" className="chat-header__icon-btn" onClick={onExpand} aria-label="Expand" data-testid="chat-header-expand">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M2 2h4M2 2v4M12 12h-4M12 12v-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
+          {onCollapse && (dockMode === 'fullscreen' || dockMode === 'sideover' || dockMode === 'modal') && (
+            <button type="button" className="chat-header__icon-btn" onClick={onCollapse} aria-label="Collapse" data-testid="chat-header-collapse">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M5 2v3H2M9 12V9h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
           {onMinimize && (
             <button type="button" className="chat-header__icon-btn" onClick={onMinimize} aria-label="Minimize" data-testid="chat-header-minimize">
               <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">

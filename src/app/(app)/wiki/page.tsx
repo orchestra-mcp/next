@@ -15,16 +15,26 @@ interface DocResponse {
 export default function WikiPage() {
   const searchParams = useSearchParams()
   const docId = searchParams.get('file')
+  const project = searchParams.get('project')
 
   const [doc, setDoc] = useState<DocResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [editing, setEditing] = useState(false)
-  const [editTitle, setEditTitle] = useState('')
   const [editBody, setEditBody] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // Load doc content when file changes
+  // Build the API path based on whether we have a project slug.
+  // Project-scoped docs: /api/projects/:slug/docs/:id (requires auth)
+  // System docs:         /api/docs/:id (public, no auth)
+  const docApiPath = useCallback((id: string) => {
+    if (project) {
+      return `/api/projects/${encodeURIComponent(project)}/docs/${encodeURIComponent(id)}`
+    }
+    return `/api/docs/${encodeURIComponent(id)}`
+  }, [project])
+
+  // Load doc content when file or project changes
   useEffect(() => {
     if (!docId) {
       setDoc(null)
@@ -38,7 +48,26 @@ export default function WikiPage() {
       setError(false)
       setEditing(false)
       try {
-        const result = await apiFetch<DocResponse>(`/api/docs/${encodeURIComponent(docId!)}`)
+        // Try project-scoped endpoint first, then fall back to system endpoint.
+        let result: DocResponse | null = null
+        if (project) {
+          try {
+            result = await apiFetch<DocResponse>(
+              `/api/projects/${encodeURIComponent(project)}/docs/${encodeURIComponent(docId!)}`
+            )
+          } catch {
+            // Project endpoint failed — try system endpoint as fallback
+            result = await apiFetch<DocResponse>(
+              `/api/docs/${encodeURIComponent(docId!)}`,
+              { skipAuth: true }
+            )
+          }
+        } else {
+          result = await apiFetch<DocResponse>(
+            `/api/docs/${encodeURIComponent(docId!)}`,
+            { skipAuth: true }
+          )
+        }
         if (!cancelled) setDoc(result)
       } catch (e) {
         console.error('[wiki] doc fetch error:', e)
@@ -49,11 +78,10 @@ export default function WikiPage() {
     }
     loadContent()
     return () => { cancelled = true }
-  }, [docId])
+  }, [docId, project])
 
   const handleEdit = useCallback(() => {
     if (doc) {
-      setEditTitle(doc.title)
       setEditBody(doc.body)
       setEditing(true)
     }
@@ -61,7 +89,6 @@ export default function WikiPage() {
 
   const handleCancel = useCallback(() => {
     setEditing(false)
-    setEditTitle('')
     setEditBody('')
   }, [])
 
@@ -69,20 +96,21 @@ export default function WikiPage() {
     if (!docId || !doc) return
     setSaving(true)
     try {
-      const updated = await apiFetch<DocResponse>(`/api/docs/${encodeURIComponent(docId)}`, {
-        method: 'PUT',
-        body: JSON.stringify({ title: editTitle, body: editBody }),
-      })
+      // Save uses the system endpoint (PUT /api/docs/:id) which requires auth.
+      // Project-scoped docs don't have a PUT endpoint yet.
+      const updated = await apiFetch<DocResponse>(
+        `/api/docs/${encodeURIComponent(docId)}`,
+        { method: 'PUT', body: JSON.stringify({ body: editBody }) }
+      )
       setDoc(updated)
       setEditing(false)
-      setEditTitle('')
       setEditBody('')
     } catch (e) {
       console.error('[wiki] save error:', e)
     } finally {
       setSaving(false)
     }
-  }, [docId, doc, editTitle, editBody])
+  }, [docId, doc, editBody])
 
   // No file selected
   if (!docId) {
@@ -130,25 +158,13 @@ export default function WikiPage() {
 
   return (
     <div className="page-wrapper" style={{ padding: '28px 32px', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Title row with edit button */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexShrink: 0 }}>
-        {editing ? (
-          <input
-            value={editTitle}
-            onChange={e => setEditTitle(e.target.value)}
-            style={{
-              flex: 1, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em',
-              background: 'var(--color-bg-secondary)', color: 'var(--color-fg)',
-              border: '1px solid var(--color-border)', borderRadius: 6,
-              padding: '4px 10px', outline: 'none',
-            }}
-          />
-        ) : (
-          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: '-0.02em', flex: 1 }}>
-            {doc?.title || docId}
-          </h1>
-        )}
-        {!editing ? (
+      {/* Breadcrumb + toolbar */}
+      {!editing ? (
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, flexShrink: 0 }}>
+          <span style={{ fontSize: 13, color: 'var(--color-fg-muted)', fontFamily: 'var(--font-mono, monospace)', opacity: 0.7 }}>
+            /docs/{docId}
+          </span>
+          <div style={{ flex: 1 }} />
           <button
             onClick={handleEdit}
             style={{
@@ -161,35 +177,39 @@ export default function WikiPage() {
             <i className="bx bx-edit-alt" style={{ fontSize: 14 }} />
             Edit
           </button>
-        ) : (
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button
-              onClick={handleCancel}
-              disabled={saving}
-              style={{
-                padding: '5px 12px', borderRadius: 6, border: '1px solid var(--color-border)',
-                background: 'var(--color-bg-secondary)', color: 'var(--color-fg-muted)',
-                fontSize: 12, fontWeight: 500, cursor: 'pointer', opacity: saving ? 0.5 : 1,
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 14px', borderRadius: 6, border: 'none',
-                background: '#00e5ff', color: '#000',
-                fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.5 : 1,
-              }}
-            >
-              {saving ? <i className="bx bx-loader-alt bx-spin" style={{ fontSize: 13 }} /> : <i className="bx bx-check" style={{ fontSize: 14 }} />}
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, flexShrink: 0 }}>
+          <span style={{ fontSize: 13, color: 'var(--color-fg-muted)', fontFamily: 'var(--font-mono, monospace)', opacity: 0.7 }}>
+            /docs/{docId}
+          </span>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={handleCancel}
+            disabled={saving}
+            style={{
+              padding: '5px 12px', borderRadius: 6, border: '1px solid var(--color-border)',
+              background: 'var(--color-bg-secondary)', color: 'var(--color-fg-muted)',
+              fontSize: 12, fontWeight: 500, cursor: 'pointer', opacity: saving ? 0.5 : 1,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '5px 14px', borderRadius: 6, border: 'none',
+              background: '#00e5ff', color: '#000',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.5 : 1,
+            }}
+          >
+            {saving ? <i className="bx bx-loader-alt bx-spin" style={{ fontSize: 13 }} /> : <i className="bx bx-check" style={{ fontSize: 14 }} />}
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      )}
 
       {/* Full body */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>

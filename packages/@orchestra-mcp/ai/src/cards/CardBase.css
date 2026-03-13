@@ -246,3 +246,42 @@
 [data-variant='modern'] .card-base__content {
   padding: 12px 16px;
 }
+
+/* ── Inside event-msg bubbles: strip card chrome, let the bubble be the message ── */
+.chat-msg__event-msg .card-base {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.chat-msg__event-msg .card-base__header-row {
+  border-bottom: none;
+}
+
+.chat-msg__event-msg .card-base__header {
+  display: none;
+}
+
+.chat-msg__event-msg .card-base__actions {
+  display: none;
+}
+
+.chat-msg__event-msg .card-base__content {
+  padding: 0;
+}
+
+.chat-msg__event-msg .card-base__body {
+  grid-template-rows: 1fr !important;
+}
+
+.chat-msg__event-msg .card-base__body--collapsed {
+  grid-template-rows: 1fr !important;
+}
+
+/* Remove running glow on cards inside bubbles (bubble itself can glow) */
+.chat-msg__event-msg .card-base[data-status="running"] {
+  border-color: transparent;
+  box-shadow: none;
+  animation: none;
+}

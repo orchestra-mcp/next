@@ -1,4 +1,20 @@
+import type { Metadata } from 'next'
 import DocsClient from './DocsClient'
+
+export const metadata: Metadata = {
+  title: 'Documentation',
+  description: 'Comprehensive guides, tutorials, and API reference for Orchestra MCP. Learn to build plugins, manage projects, and orchestrate AI agents.',
+  openGraph: {
+    title: 'Documentation | Orchestra',
+    description: 'Guides, tutorials, and API reference for Orchestra MCP.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Documentation | Orchestra',
+    description: 'Guides, tutorials, and API reference for Orchestra MCP.',
+  },
+}
 
 async function getDocsData() {
   try {

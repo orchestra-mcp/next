@@ -65,7 +65,7 @@
 
 .bubble__action:hover {
   background-color: var(--color-accent);
-  color: #ffffff;
+  color: #fff;
   transform: scale(1.1);
 }
 
@@ -73,8 +73,8 @@
 .bubble__trigger {
   border: none;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-accent), #a78bfa);
-  color: #ffffff;
+  background: var(--brand-gradient, linear-gradient(135deg, #00e5ff, #a900ff));
+  color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;

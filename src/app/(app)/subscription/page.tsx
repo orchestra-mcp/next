@@ -90,7 +90,7 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <div className="page-wrapper" style={{ maxWidth: 800, padding: '28px 32px' }}>
+    <div className="page-wrapper" style={{ padding: '28px 32px' }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Subscription</h1>

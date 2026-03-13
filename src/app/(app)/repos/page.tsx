@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 
 interface RepoWorkspace {
@@ -48,10 +49,15 @@ export default function ReposPage() {
   const [chatLoading, setChatLoading] = useState(false)
   const [syncingId, setSyncingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [githubConnected, setGithubConnected] = useState<boolean | null>(null)
 
   const fetchRepos = useCallback(async () => {
     try {
-      const data = await apiFetch<RepoWorkspace[]>('/repos')
+      const accounts = await apiFetch<Array<{ provider: string }>>('/api/settings/connected-accounts')
+      const hasGithub = accounts.some(a => a.provider === 'github')
+      setGithubConnected(hasGithub)
+      if (!hasGithub) { setLoading(false); return }
+      const data = await apiFetch<RepoWorkspace[]>('/api/repos')
       setRepos(data)
     } catch (e) {
       console.error('[repos] fetch error:', e)
@@ -70,7 +76,7 @@ export default function ReposPage() {
     setShowAdd(true)
     setGhLoading(true)
     try {
-      const data = await apiFetch<GitHubRepo[]>('/repos/github')
+      const data = await apiFetch<GitHubRepo[]>('/api/repos/github')
       setGithubRepos(data)
     } catch (e) {
       console.error('[repos] github list error:', e)
@@ -82,7 +88,7 @@ export default function ReposPage() {
   async function addRepo(gh: GitHubRepo) {
     setAddingRepo(gh.full_name)
     try {
-      await apiFetch('/repos', {
+      await apiFetch('/api/repos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -107,7 +113,7 @@ export default function ReposPage() {
   async function handleSync(id: string) {
     setSyncingId(id)
     try {
-      await apiFetch(`/repos/${id}/sync`, { method: 'POST' })
+      await apiFetch(`/api/repos/${id}/sync`, { method: 'POST' })
       await fetchRepos()
     } catch (e) {
       console.error('[repos] sync error:', e)
@@ -121,7 +127,7 @@ export default function ReposPage() {
     setChatLoading(true)
     setChatResponse('')
     try {
-      const data = await apiFetch<{ response: string }>(`/repos/${id}/chat`, {
+      const data = await apiFetch<{ response: string }>(`/api/repos/${id}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
@@ -138,7 +144,7 @@ export default function ReposPage() {
     if (!confirm('Delete this repository workspace?')) return
     setDeletingId(id)
     try {
-      await apiFetch(`/repos/${id}`, { method: 'DELETE' })
+      await apiFetch(`/api/repos/${id}`, { method: 'DELETE' })
       await fetchRepos()
     } catch (e) {
       console.error('[repos] delete error:', e)
@@ -176,6 +182,39 @@ export default function ReposPage() {
     r.full_name.toLowerCase().includes(ghSearch.toLowerCase()) ||
     (r.description || '').toLowerCase().includes(ghSearch.toLowerCase())
   )
+
+  if (githubConnected === false) {
+    return (
+      <div className="page-wrapper" style={{ padding: '28px 32px' }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: '0 0 24px', letterSpacing: '-0.02em' }}>Repositories</h1>
+        <div style={{ ...card, padding: '60px 40px', textAlign: 'center' }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 16, margin: '0 auto 18px',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <i className="bx bxl-github" style={{ fontSize: 32, color: textMuted }} />
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: textPrimary, marginBottom: 8 }}>Connect your GitHub account</div>
+          <div style={{ fontSize: 13, color: textMuted, maxWidth: 360, margin: '0 auto 20px', lineHeight: 1.6 }}>
+            Link your GitHub account to add repositories, sync code, and chat with AI about your codebase.
+          </div>
+          <Link
+            href="/settings?tab=social"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '10px 22px', borderRadius: 9, fontSize: 13, fontWeight: 600,
+              background: 'linear-gradient(135deg, #00e5ff, #a900ff)',
+              color: '#fff', textDecoration: 'none',
+            }}
+          >
+            <i className="bx bxl-github" style={{ fontSize: 16 }} />
+            Connect GitHub
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="page-wrapper" style={{ padding: '28px 32px' }}>

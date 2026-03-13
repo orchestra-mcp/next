@@ -12,6 +12,11 @@
   letter-spacing: 0.01em;
 }
 
+/* Vertical spacing for markdown content inside chat bubbles */
+.chat-markdown .markdown-renderer {
+  padding: 4px 0 6px;
+}
+
 /* --- Headings --- */
 .chat-markdown h1 {
   font-size: 1.4em;

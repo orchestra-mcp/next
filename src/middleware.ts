@@ -26,6 +26,7 @@ const PUBLIC_ROUTES = [
   '/contact', '/privacy', '/terms', '/report', '/coming-soon',
   '/login', '/register', '/forgot-password', '/reset-password',
   '/magic-login', '/two-factor', '/verify-otp',
+  '/community', '/member', '/sponsors', '/issues',
 ]
 
 function isPublicRoute(pathname: string): boolean {
@@ -44,6 +45,17 @@ export async function middleware(req: NextRequest) {
   // Always allow static assets and API routes
   if (PUBLIC_PREFIXES.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
+  }
+
+  // Rewrite /@handle paths to /member/handle (and /@handle/post/ID to /member/handle/post/ID)
+  const atMatch = pathname.match(/^\/(en|ar)?\/?@([a-zA-Z0-9_-]+)(\/.*)?$/)
+  if (atMatch) {
+    const locale = atMatch[1] || 'en'
+    const handle = atMatch[2]
+    const rest = atMatch[3] || ''
+    const url = req.nextUrl.clone()
+    url.pathname = `/${locale}/member/${handle}${rest}`
+    return NextResponse.rewrite(url)
   }
 
   // Fast bypass — never block auth pages or coming-soon itself, even when
@@ -86,7 +98,6 @@ async function handleComingSoon(req: NextRequest): Promise<NextResponse> {
   // Fetch coming soon setting from backend
   const apiBase = process.env.INTERNAL_API_URL || 'http://localhost:8080'
   let comingSoon = false
-  let isAdmin = false
 
   try {
     const res = await fetch(`${apiBase}/api/public/settings/coming_soon`, {
@@ -104,11 +115,16 @@ async function handleComingSoon(req: NextRequest): Promise<NextResponse> {
     return NextResponse.next()
   }
 
-  // Coming soon is enabled — check if the user is an admin via their JWT
+  // Coming soon is enabled — check if the user is authenticated
   const token = req.cookies.get('orchestra_token')?.value ||
     req.headers.get('authorization')?.replace('Bearer ', '')
 
-  if (token && token !== 'dev_seed_token') {
+  if (token) {
+    // dev_seed_token always bypasses (development mode)
+    if (token === 'dev_seed_token') {
+      return NextResponse.next()
+    }
+    // Any valid JWT token means the user is logged in — let them through
     try {
       const parts = token.split('.')
       if (parts.length === 3) {
@@ -116,21 +132,19 @@ async function handleComingSoon(req: NextRequest): Promise<NextResponse> {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (meRes.ok) {
-          const user = await meRes.json()
-          isAdmin = user?.role === 'admin'
+          return NextResponse.next()
         }
       }
     } catch {
-      // Invalid token — treat as non-admin
+      // Invalid token — treat as unauthenticated
     }
   }
 
-  if (isAdmin) {
-    return NextResponse.next()
-  }
-
+  // Redirect to the locale-prefixed coming-soon page to avoid an extra
+  // intl-middleware redirect hop (e.g. /coming-soon → /en/coming-soon).
+  const localeFromPath = pathname.match(/^\/(en|ar)(\/|$)/)?.[1] ?? 'en'
   const url = req.nextUrl.clone()
-  url.pathname = '/coming-soon'
+  url.pathname = `/${localeFromPath}/coming-soon`
   return NextResponse.redirect(url)
 }
 

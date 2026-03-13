@@ -1,7 +1,6 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
 
 export interface Note {
   id: string
@@ -18,12 +17,6 @@ export function RecentNotesWidget({ notes }: RecentNotesWidgetProps) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)' }}>{t('recentNotes')}</span>
-        <Link href="/notes" style={{ fontSize: 12, color: '#00e5ff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-          {t('viewAll')} <i className="bx bx-right-arrow-alt rtl-flip" />
-        </Link>
-      </div>
       {notes.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '28px 0', color: 'var(--color-fg-dim)', fontSize: 13 }}>
           <i className="bx bx-note" style={{ fontSize: 28, display: 'block', marginBottom: 8 }} />

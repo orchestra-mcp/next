@@ -195,7 +195,7 @@ export function TunnelSwitcher() {
                   padding: '8px 12px',
                   cursor: 'pointer',
                   background: isActive ? 'rgba(169,0,255,0.1)' : 'transparent',
-                  borderInlineStart: `2px solid ${isActive ? '#a900ff' : 'transparent'}`,
+                  /* no left border */
                   transition: 'background 0.1s',
                 }}
               >
@@ -226,6 +226,9 @@ export function TunnelSwitcher() {
                     color: 'rgba(255,255,255,0.25)',
                   }}>
                     {tunnel.hostname} &middot; {tunnel.tool_count} tools
+                    {tunnel.workspace && (
+                      <span style={{ display: 'block', marginTop: 1, opacity: 0.8 }}>{tunnel.workspace}</span>
+                    )}
                   </div>
                 </div>
                 {isActive && (

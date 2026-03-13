@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useRoleStore } from '@/store/roles'
 import { useAdminStore, type AdminNotificationSent } from '@/store/admin'
 
@@ -18,6 +19,7 @@ const EMPTY_FORM = {
 
 export default function AdminNotificationsPage() {
   const router = useRouter()
+  const t = useTranslations('admin')
   const { can, roleLoaded } = useRoleStore()
   const { notifications, loading, error, fetchNotificationsSent, sendNotification, seedNotifications, clearError } = useAdminStore()
 
@@ -54,9 +56,9 @@ export default function AdminNotificationsPage() {
   }
 
   async function handleSend() {
-    if (!form.title.trim()) { setSendError('Title is required'); return }
-    if (!form.message.trim()) { setSendError('Message is required'); return }
-    if (form.recipient === 'user' && !form.user_id.trim()) { setSendError('User ID is required for specific user'); return }
+    if (!form.title.trim()) { setSendError(t('titleRequired')); return }
+    if (!form.message.trim()) { setSendError(t('messageRequired')); return }
+    if (form.recipient === 'user' && !form.user_id.trim()) { setSendError(t('userIdRequired')); return }
     setSending(true)
     setSendError(null)
     setSendSuccess(false)
@@ -102,30 +104,30 @@ export default function AdminNotificationsPage() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Link href="/admin" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
-          <i className="bx bx-left-arrow-alt rtl-flip" /> Admin
+          <i className="bx bx-left-arrow-alt rtl-flip" /> {t('backToAdmin')}
         </Link>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Notifications</h1>
-        <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>Send notifications and view history.</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>{t('notifications')}</h1>
+        <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>{t('notificationsDesc')}</p>
       </div>
 
       {/* Send form card */}
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, padding: '20px 24px', marginBottom: 24 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: textDim, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 18 }}>Send Notification</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: textDim, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 18 }}>{t('sendNotification')}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Recipients */}
           <div>
-            <label style={labelSt}>Recipients</label>
+            <label style={labelSt}>{t('recipientsLabel')}</label>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <select style={{ ...inputSt, width: 'auto', flex: '0 0 auto' }} value={form.recipient} onChange={e => setForm(f => ({ ...f, recipient: e.target.value as RecipientType, user_id: '' }))}>
-                <option value="all">All Users</option>
-                <option value="user">Specific User</option>
+                <option value="all">{t('allUsers')}</option>
+                <option value="user">{t('specificUser')}</option>
               </select>
               {form.recipient === 'user' && (
                 <input
                   style={{ ...inputSt, flex: 1 }}
                   value={form.user_id}
                   onChange={e => setForm(f => ({ ...f, user_id: e.target.value }))}
-                  placeholder="User ID…"
+                  placeholder={t('userIdPlaceholder')}
                   type="number"
                 />
               )}
@@ -135,29 +137,29 @@ export default function AdminNotificationsPage() {
           {/* Title + Type row */}
           <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 14 }}>
             <div>
-              <label style={labelSt}>Title</label>
-              <input style={inputSt} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Notification title…" />
+              <label style={labelSt}>{t('titleLabel')}</label>
+              <input style={inputSt} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={t('notificationTitlePlaceholder')} />
             </div>
             <div>
-              <label style={labelSt}>Type</label>
+              <label style={labelSt}>{t('typeLabel')}</label>
               <select style={inputSt} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as NotifType }))}>
-                <option value="info">Info</option>
-                <option value="success">Success</option>
-                <option value="warning">Warning</option>
-                <option value="error">Error</option>
+                <option value="info">{t('typeInfo')}</option>
+                <option value="success">{t('typeSuccess')}</option>
+                <option value="warning">{t('typeWarning')}</option>
+                <option value="error">{t('typeError')}</option>
               </select>
             </div>
           </div>
 
           {/* Message */}
           <div>
-            <label style={labelSt}>Message</label>
-            <textarea style={{ ...inputSt, height: 88, resize: 'vertical' }} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} placeholder="Notification message…" />
+            <label style={labelSt}>{t('messageLabel')}</label>
+            <textarea style={{ ...inputSt, height: 88, resize: 'vertical' }} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} placeholder={t('messagePlaceholder')} />
           </div>
 
           {/* Feedback */}
           {sendError && <div style={{ fontSize: 12, color: '#ef4444', padding: '8px 12px', borderRadius: 7, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>{sendError}</div>}
-          {sendSuccess && <div style={{ fontSize: 12, color: '#22c55e', padding: '8px 12px', borderRadius: 7, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', gap: 6 }}><i className="bx bx-check-circle" /> Notification sent successfully.</div>}
+          {sendSuccess && <div style={{ fontSize: 12, color: '#22c55e', padding: '8px 12px', borderRadius: 7, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', gap: 6 }}><i className="bx bx-check-circle" /> {t('notificationSent')}</div>}
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button
@@ -166,7 +168,7 @@ export default function AdminNotificationsPage() {
               style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 20px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: sending ? 0.7 : 1 }}
             >
               <i className="bx bx-send" />
-              {sending ? 'Sending…' : 'Send Notification'}
+              {sending ? t('sending') : t('sendNotificationBtn')}
             </button>
             <button
               onClick={async () => { setSeeding(true); try { await seedNotifications() } finally { setSeeding(false) } }}
@@ -174,7 +176,7 @@ export default function AdminNotificationsPage() {
               style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 20px', borderRadius: 9, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, fontWeight: 500, cursor: 'pointer', opacity: seeding ? 0.7 : 1 }}
             >
               <i className="bx bx-test-tube" />
-              {seeding ? 'Seeding…' : 'Seed Test Notifications'}
+              {seeding ? t('seeding') : t('seedTestNotifications')}
             </button>
           </div>
         </div>
@@ -189,27 +191,27 @@ export default function AdminNotificationsPage() {
 
       {/* Sent history table */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Sent History</div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{t('sentHistory')}</div>
       </div>
 
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
         <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 110px 1fr 120px', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-          <div>Title</div>
-          <div>Type</div>
-          <div className="hide-mobile">Target</div>
-          <div className="hide-mobile">Sent</div>
+          <div>{t('titleColumn')}</div>
+          <div>{t('typeColumn')}</div>
+          <div className="hide-mobile">{t('targetColumn')}</div>
+          <div className="hide-mobile">{t('sentColumn')}</div>
         </div>
 
         {loading && notifications.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center', color: textDim, fontSize: 13 }}>
             <i className="bx bx-loader-alt bx-spin" style={{ fontSize: 24, display: 'block', marginBottom: 10 }} />
-            Loading history…
+            {t('loadingHistory')}
           </div>
         ) : notifications.length === 0 ? (
           <div style={{ padding: '56px 40px', textAlign: 'center' }}>
             <i className="bx bx-bell-off" style={{ fontSize: 38, color: textDim, display: 'block', marginBottom: 10 }} />
-            <div style={{ fontSize: 14, fontWeight: 600, color: textMuted, marginBottom: 4 }}>No notifications sent yet</div>
-            <div style={{ fontSize: 12, color: textDim }}>Use the form above to send your first notification.</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: textMuted, marginBottom: 4 }}>{t('noNotificationsSent')}</div>
+            <div style={{ fontSize: 12, color: textDim }}>{t('noNotificationsDesc')}</div>
           </div>
         ) : notifications.map((n, idx) => (
           <div key={n.id} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 110px 1fr 120px', padding: '13px 20px', borderBottom: idx < notifications.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
@@ -221,11 +223,11 @@ export default function AdminNotificationsPage() {
             <div className="hide-mobile" style={{ fontSize: 12, color: textMuted }}>
               {n.target === 'all' ? (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <i className="bx bx-group" style={{ fontSize: 13 }} /> All Users
+                  <i className="bx bx-group" style={{ fontSize: 13 }} /> {t('allUsersTarget')}
                 </span>
               ) : (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <i className="bx bx-user" style={{ fontSize: 13 }} /> User #{n.target_user_id}
+                  <i className="bx bx-user" style={{ fontSize: 13 }} /> {t('userTarget', { id: n.target_user_id })}
                 </span>
               )}
             </div>

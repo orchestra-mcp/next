@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useAuthStore } from '@/store/auth'
 import { useThemeStore } from '@/store/theme'
 import { useTranslations } from 'next-intl'
+import { apiFetch } from '@/lib/api'
 
 export default function RegisterPage() {
   const t = useTranslations()
@@ -16,6 +17,19 @@ export default function RegisterPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [enabledProviders, setEnabledProviders] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    apiFetch<{ value: Record<string, unknown> }>('/api/public/settings/integrations', { skipAuth: true })
+      .then(res => {
+        const providers: Record<string, boolean> = {}
+        for (const [k, v] of Object.entries(res.value ?? {})) {
+          if (k.endsWith('_enabled')) providers[k.replace('_enabled', '')] = !!v
+        }
+        setEnabledProviders(providers)
+      })
+      .catch(() => {})
+  }, [])
 
   // If already logged in (returning user), go to dashboard
   useEffect(() => {
@@ -75,20 +89,26 @@ export default function RegisterPage() {
 
       <div className="auth-card" style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: '32px 28px', backdropFilter: 'blur(16px)', boxShadow: cardShadow }}>
         {/* Social buttons */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
-          {[{ icon: 'bxl-google', label: 'Google' }, { icon: 'bxl-github', label: 'GitHub' }].map(s => (
-            <button key={s.label} type="button" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, border: `1px solid ${socialBtnBorder}`, background: socialBtnBg, color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
-              <i className={`bx ${s.icon}`} style={{ fontSize: 16 }} /> {s.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <div style={{ flex: 1, height: 1, background: dividerBg }} />
-          <span style={{ fontSize: 12, color: dividerText }}>{t('auth.orContinueWithEmail')}</span>
-          <div style={{ flex: 1, height: 1, background: dividerBg }} />
-        </div>
+        {(() => {
+          const providers = [{ icon: 'bxl-google', label: 'Google', provider: 'google' }, { icon: 'bxl-github', label: 'GitHub', provider: 'github' }, { icon: 'bxl-discord-alt', label: 'Discord', provider: 'discord' }, { icon: 'bxl-slack', label: 'Slack', provider: 'slack' }].filter(s => enabledProviders[s.provider])
+          if (providers.length === 0) return null
+          return (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: providers.length === 1 ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 24 }}>
+                {providers.map(s => (
+                  <button key={s.label} type="button" onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/oauth/${s.provider}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, border: `1px solid ${socialBtnBorder}`, background: socialBtnBg, color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    <i className={`bx ${s.icon}`} style={{ fontSize: 16 }} /> {s.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                <div style={{ flex: 1, height: 1, background: dividerBg }} />
+                <span style={{ fontSize: 12, color: dividerText }}>{t('auth.orContinueWithEmail')}</span>
+                <div style={{ flex: 1, height: 1, background: dividerBg }} />
+              </div>
+            </>
+          )
+        })()}
 
         {error && (
           <div style={{ marginBottom: 20, padding: '10px 14px', borderRadius: 8, fontSize: 13, background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>

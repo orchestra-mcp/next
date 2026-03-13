@@ -19,6 +19,7 @@ export interface Tunnel {
   version: string
   tool_count: number
   local_ip?: string
+  workspace?: string
   created_at: string
   updated_at: string
 }

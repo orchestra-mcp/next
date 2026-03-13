@@ -2,19 +2,21 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useRoleStore } from '@/store/roles'
 
-const DOC_SECTIONS = [
-  'Getting Started',
-  'Installation',
-  'Configuration',
-  'API Reference',
-  'Plugins',
-  'MCP Tools',
-]
+const DOC_SECTION_KEYS = [
+  'gettingStarted',
+  'installation',
+  'configuration',
+  'apiReference',
+  'plugins',
+  'mcpTools',
+] as const
 
 export default function AdminDocsPage() {
   const router = useRouter()
+  const t = useTranslations('admin')
   const { can, roleLoaded } = useRoleStore()
   const [selected, setSelected] = useState<string | null>(null)
   const [content, setContent] = useState('')
@@ -36,10 +38,10 @@ export default function AdminDocsPage() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Link href="/admin" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
-          <i className="bx bx-left-arrow-alt rtl-flip" /> Admin
+          <i className="bx bx-left-arrow-alt rtl-flip" /> {t('backToAdmin')}
         </Link>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Documentation</h1>
-        <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>Manage documentation sections and content.</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>{t('documentation')}</h1>
+        <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>{t('documentationDesc')}</p>
       </div>
 
       {/* Split layout */}
@@ -47,20 +49,21 @@ export default function AdminDocsPage() {
         {/* Left: doc tree */}
         <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            Sections
+            {t('sections')}
           </div>
-          {DOC_SECTIONS.map((section, idx) => {
-            const isActive = selected === section
+          {DOC_SECTION_KEYS.map((sectionKey, idx) => {
+            const isActive = selected === sectionKey
+            const section = t(sectionKey)
             return (
               <button
-                key={section}
-                onClick={() => setSelected(section)}
+                key={sectionKey}
+                onClick={() => setSelected(sectionKey)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 9, width: '100%',
                   padding: '11px 16px', border: 'none', cursor: 'pointer', textAlign: 'start',
                   background: isActive ? navActiveBg : 'transparent',
-                  borderBottom: idx < DOC_SECTIONS.length - 1 ? `1px solid ${rowBorder}` : 'none',
-                  borderInlineStart: isActive ? '2px solid #00e5ff' : '2px solid transparent',
+                  borderBottom: idx < DOC_SECTION_KEYS.length - 1 ? `1px solid ${rowBorder}` : 'none',
+                  /* no left border */
                   transition: 'background 0.15s',
                 }}
                 onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = navHoverBg }}
@@ -80,13 +83,13 @@ export default function AdminDocsPage() {
           <div style={{ padding: '14px 20px', borderBottom: `1px solid ${cardBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>
-                {selected || 'No section selected'}
+                {selected ? t(selected as any) : t('noSectionSelected')}
               </div>
-              {selected && <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>Edit content below</div>}
+              {selected && <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>{t('editContentBelow')}</div>}
             </div>
             {selected && (
               <button style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                Save
+                {t('save')}
               </button>
             )}
           </div>
@@ -94,12 +97,12 @@ export default function AdminDocsPage() {
             {selected ? (
               <>
                 <div style={{ fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 10 }}>
-                  Edit content
+                  {t('editContent')}
                 </div>
                 <textarea
                   value={content}
                   onChange={e => setContent(e.target.value)}
-                  placeholder={`Write content for "${selected}"…`}
+                  placeholder={t('writeContentPlaceholder', { section: t(selected as any) })}
                   style={{
                     width: '100%', minHeight: 360, padding: '12px 14px', borderRadius: 10,
                     border: `1px solid ${inputBorder}`, background: inputBg, color: textPrimary,
@@ -108,15 +111,15 @@ export default function AdminDocsPage() {
                   }}
                 />
                 <div style={{ marginTop: 10, fontSize: 11, color: textDim }}>
-                  Markdown is supported. Use headers, lists, code blocks.
+                  {t('markdownSupported')}
                 </div>
               </>
             ) : (
               <div style={{ padding: '60px 40px', textAlign: 'center' }}>
                 <i className="bx bx-book-open" style={{ fontSize: 40, color: textDim, display: 'block', marginBottom: 12 }} />
-                <div style={{ fontSize: 14, fontWeight: 600, color: textMuted, marginBottom: 4 }}>Select a doc section</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: textMuted, marginBottom: 4 }}>{t('selectDocSection')}</div>
                 <div style={{ fontSize: 12, color: textDim }}>
-                  Select a doc section from the left to edit…
+                  {t('selectDocSectionDesc')}
                 </div>
               </div>
             )}

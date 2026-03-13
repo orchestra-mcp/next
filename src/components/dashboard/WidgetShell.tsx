@@ -13,6 +13,7 @@ export interface WidgetShellProps {
   onToggle: () => void
   onLock: () => void
   loading?: boolean
+  headerAction?: ReactNode
   children: ReactNode
 }
 
@@ -24,6 +25,7 @@ export function WidgetShell({
   onToggle,
   onLock,
   loading = false,
+  headerAction,
   children,
 }: WidgetShellProps) {
   const t = useTranslations('dashboard')
@@ -92,7 +94,9 @@ export function WidgetShell({
             )}
           </div>
 
-          {/* Right: action buttons (edit mode) */}
+          {/* Right: header action + edit buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {!editMode && headerAction}
           {editMode && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               {/* Resize dropdown */}
@@ -200,6 +204,7 @@ export function WidgetShell({
               </button>
             </div>
           )}
+          </div>
         </div>
 
         {/* Body */}

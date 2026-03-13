@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth'
 import { useRoleStore } from '@/store/roles'
 import { useThemeStore } from '@/store/theme'
 import { useTranslations } from 'next-intl'
+import { apiFetch } from '@/lib/api'
 
 // Dev seed credentials (shown in UI for easy access)
 const DEV_SEEDS = [
@@ -19,7 +20,7 @@ const DEV_SEEDS = [
 export default function LoginPage() {
   const t = useTranslations()
   const router = useRouter()
-  const { login, loading, error, token, clearError, user } = useAuthStore()
+  const { login, loginWithPasskey, loading, error, token, clearError, user } = useAuthStore()
   const { seedAdmin, setCurrentRole } = useRoleStore()
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
@@ -27,9 +28,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showDevPanel, setShowDevPanel] = useState(false)
+  const [enabledProviders, setEnabledProviders] = useState<Record<string, boolean>>({})
+  const [passkeySupported, setPasskeySupported] = useState(false)
+  const [passkeyError, setPasskeyError] = useState('')
 
   useEffect(() => {
+    setPasskeySupported(typeof window !== 'undefined' && !!window.PublicKeyCredential)
     setShowDevPanel(localStorage.getItem('show_dev_panel') === 'true')
+    apiFetch<{ value: Record<string, unknown> }>('/api/public/settings/integrations', { skipAuth: true })
+      .then(res => {
+        const providers: Record<string, boolean> = {}
+        for (const [k, v] of Object.entries(res.value ?? {})) {
+          if (k.endsWith('_enabled')) providers[k.replace('_enabled', '')] = !!v
+        }
+        setEnabledProviders(providers)
+      })
+      .catch(() => {})
   }, [])
 
   useEffect(() => { if (token) router.replace('/dashboard') }, [token, router])
@@ -97,20 +111,26 @@ export default function LoginPage() {
       {/* Card */}
       <div className="auth-card" style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: '32px 28px', backdropFilter: 'blur(16px)', boxShadow: cardShadow }}>
         {/* Social buttons */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
-          {[{ icon: 'bxl-google', label: 'Google', provider: 'google' }, { icon: 'bxl-github', label: 'GitHub', provider: 'github' }, { icon: 'bxl-discord-alt', label: 'Discord', provider: 'discord' }, { icon: 'bxl-slack', label: 'Slack', provider: 'slack' }].map(s => (
-            <button key={s.label} type="button" onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/oauth/${s.provider}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, border: `1px solid ${socialBtnBorder}`, background: socialBtnBg, color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
-              <i className={`bx ${s.icon}`} style={{ fontSize: 16 }} /> {s.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <div style={{ flex: 1, height: 1, background: dividerBg }} />
-          <span style={{ fontSize: 12, color: dividerText }}>{t('auth.orContinueWithEmail')}</span>
-          <div style={{ flex: 1, height: 1, background: dividerBg }} />
-        </div>
+        {(() => {
+          const providers = [{ icon: 'bxl-google', label: 'Google', provider: 'google' }, { icon: 'bxl-github', label: 'GitHub', provider: 'github' }, { icon: 'bxl-discord-alt', label: 'Discord', provider: 'discord' }, { icon: 'bxl-slack', label: 'Slack', provider: 'slack' }].filter(s => enabledProviders[s.provider])
+          if (providers.length === 0) return null
+          return (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: providers.length === 1 ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 24 }}>
+                {providers.map(s => (
+                  <button key={s.label} type="button" onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/oauth/${s.provider}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, border: `1px solid ${socialBtnBorder}`, background: socialBtnBg, color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    <i className={`bx ${s.icon}`} style={{ fontSize: 16 }} /> {s.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                <div style={{ flex: 1, height: 1, background: dividerBg }} />
+                <span style={{ fontSize: 12, color: dividerText }}>{t('auth.orContinueWithEmail')}</span>
+                <div style={{ flex: 1, height: 1, background: dividerBg }} />
+              </div>
+            </>
+          )
+        })()}
 
         {error && (
           <div style={{ marginBottom: 20, padding: '10px 14px', borderRadius: 8, fontSize: 13, background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
@@ -164,6 +184,42 @@ export default function LoginPage() {
           <i className="bx bx-paper-plane" style={{ fontSize: 14 }} /> {t('auth.signInWithoutPassword')}
         </Link>
       </p>
+
+      {/* Passkey login */}
+      {passkeySupported && (
+        <div style={{ marginTop: 16, textAlign: 'center' }}>
+          {passkeyError && (
+            <div style={{ marginBottom: 10, padding: '8px 12px', borderRadius: 8, fontSize: 12, background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+              {passkeyError}
+            </div>
+          )}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={async () => {
+              setPasskeyError('')
+              try {
+                await loginWithPasskey()
+                router.push('/dashboard')
+              } catch (e: any) {
+                setPasskeyError(e?.message || 'Passkey authentication failed')
+              }
+            }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '11px 24px', borderRadius: 10,
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+              background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+              color: textPrimary, fontSize: 13, fontWeight: 500,
+              cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+              opacity: loading ? 0.5 : 1,
+            }}
+          >
+            <i className="bx bx-fingerprint" style={{ fontSize: 18 }} />
+            {t('auth.signInWithPasskey')}
+          </button>
+        </div>
+      )}
 
       {/* Dev seed panel */}
       {showDevPanel && <div style={{ marginTop: 32, borderRadius: 14, border: `1px solid ${isDark ? 'rgba(255,229,0,0.15)' : 'rgba(200,160,0,0.2)'}`, background: isDark ? 'rgba(255,229,0,0.04)' : 'rgba(255,240,0,0.04)', padding: '16px 18px' }}>

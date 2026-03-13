@@ -1,18 +1,37 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useRoleStore } from '@/store/roles'
+import { apiFetch } from '@/lib/api'
+
+interface AdminTeam {
+  id: string
+  name: string
+  slug: string
+  plan: string
+  avatar_url?: string
+  member_count: number
+  owner_name?: string
+  created_at: string
+}
 
 export default function AdminTeamsPage() {
   const router = useRouter()
-  const { can, roleLoaded, team, members, allUsers, fetchTeam, fetchMembers, fetchAllUsers } = useRoleStore()
+  const { can, roleLoaded, allUsers, fetchAllUsers } = useRoleStore()
+  const [allTeams, setAllTeams] = useState<AdminTeam[]>([])
+  const [teamsLoading, setTeamsLoading] = useState(true)
+
   useEffect(() => {
     if (!roleLoaded) return
     if (!can('canViewAdmin')) { router.replace('/dashboard'); return }
-    if (!team) fetchTeam()
-    if (members.length === 0) fetchMembers()
     if (allUsers.length === 0) fetchAllUsers()
+    // Fetch ALL teams system-wide (admin endpoint)
+    setTeamsLoading(true)
+    apiFetch<{ teams: AdminTeam[] }>('/api/admin/teams')
+      .then(res => setAllTeams(res.teams ?? []))
+      .catch(() => setAllTeams([]))
+      .finally(() => setTeamsLoading(false))
   }, [roleLoaded])
 
   const textPrimary = 'var(--color-fg)'
@@ -20,7 +39,6 @@ export default function AdminTeamsPage() {
   const textDim = 'var(--color-fg-dim)'
   const cardBg = 'var(--color-bg-alt)'
   const cardBorder = 'var(--color-border)'
-  const divider = 'var(--color-border)'
   const rowBorder = 'var(--color-bg-alt)'
 
   const planColors: Record<string, string> = {
@@ -29,7 +47,7 @@ export default function AdminTeamsPage() {
     enterprise: '#a900ff',
   }
 
-  if (!roleLoaded) {
+  if (!roleLoaded || teamsLoading) {
     return (
       <div className="page-wrapper" style={{ padding: '28px 32px' }}>
         {[1, 2, 3].map(i => (
@@ -39,8 +57,7 @@ export default function AdminTeamsPage() {
     )
   }
 
-  // In a real app this would list all teams; here we show the current team as a demo
-  const teams = team ? [team] : []
+  const totalMembers = allTeams.reduce((sum, t) => sum + t.member_count, 0)
 
   return (
     <div className="page-wrapper" style={{ padding: '28px 32px' }}>
@@ -52,7 +69,7 @@ export default function AdminTeamsPage() {
         <div className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Teams</h1>
-            <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>{teams.length} team{teams.length !== 1 ? 's' : ''} registered</p>
+            <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>{allTeams.length} team{allTeams.length !== 1 ? 's' : ''} registered</p>
           </div>
         </div>
       </div>
@@ -60,10 +77,10 @@ export default function AdminTeamsPage() {
       {/* Summary stats */}
       <div className="grid-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
         {[
-          { icon: 'bx-buildings', label: 'Teams', value: String(teams.length), color: '#22c55e' },
-          { icon: 'bx-group', label: 'Members', value: String(allUsers.length), color: '#00e5ff' },
+          { icon: 'bx-buildings', label: 'Teams', value: String(allTeams.length), color: '#22c55e' },
+          { icon: 'bx-group', label: 'Members', value: String(totalMembers), color: '#00e5ff' },
           { icon: 'bx-check-circle', label: 'Active', value: String(allUsers.filter(u => u.status === 'active').length), color: '#22c55e' },
-          { icon: 'bx-package', label: 'Plan', value: team?.plan ?? '—', color: planColors[team?.plan ?? 'free'] },
+          { icon: 'bx-package', label: 'Plans', value: `${allTeams.filter(t => t.plan === 'pro').length} Pro / ${allTeams.filter(t => t.plan === 'enterprise').length} Ent`, color: '#a900ff' },
         ].map(s => (
           <div key={s.label} className="stat-card" style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, padding: '18px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -79,33 +96,35 @@ export default function AdminTeamsPage() {
 
       {/* Teams list */}
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden', marginBottom: 20 }}>
-        <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr 1fr', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           <div>Team</div>
           <div className="hide-mobile">Slug</div>
           <div>Plan</div>
+          <div className="hide-mobile">Owner</div>
           <div className="hide-mobile">Members</div>
           <div style={{ textAlign: 'end' }}>Actions</div>
         </div>
 
-        {teams.length === 0 ? (
+        {allTeams.length === 0 ? (
           <div style={{ padding: '48px 40px', textAlign: 'center' }}>
             <i className="bx bx-buildings" style={{ fontSize: 36, color: textDim, display: 'block', marginBottom: 10 }} />
             <div style={{ fontSize: 14, color: textMuted }}>No teams found</div>
           </div>
         ) : (
-          teams.map((t, idx) => {
-            const pc = planColors[t.plan]
+          allTeams.map((t, idx) => {
+            const pc = planColors[t.plan] ?? 'var(--color-fg-muted)'
             return (
-              <div key={t.id} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: idx < teams.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
+              <div key={t.id} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: idx < allTeams.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
                 {/* Team name */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(169,0,255,0.1)', border: '1px solid rgba(169,0,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#a900ff', flexShrink: 0 }}>
-                    {(t.name || 'T')[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{t.name}</div>
-                    {t.description && <div style={{ fontSize: 11, color: textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{t.description}</div>}
-                  </div>
+                  {t.avatar_url ? (
+                    <img src={t.avatar_url} alt={t.name} style={{ width: 34, height: 34, borderRadius: 9, objectFit: 'cover', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(169,0,255,0.1)', border: '1px solid rgba(169,0,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#a900ff', flexShrink: 0 }}>
+                      {(t.name || 'T')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{t.name}</div>
                 </div>
                 {/* Slug */}
                 <div className="hide-mobile" style={{ fontSize: 12, color: textMuted, fontFamily: 'monospace' }}>{t.slug}</div>
@@ -115,19 +134,16 @@ export default function AdminTeamsPage() {
                     {t.plan}
                   </span>
                 </div>
+                {/* Owner */}
+                <div className="hide-mobile" style={{ fontSize: 12, color: textMuted }}>{t.owner_name || '—'}</div>
                 {/* Member count */}
                 <div className="hide-mobile" style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{t.member_count}</div>
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                  <Link href="/team/settings"
+                  <Link href={`/admin/teams/${t.id}`}
                     style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
-                    title="Edit team">
-                    <i className="bx bx-edit-alt" />
-                  </Link>
-                  <Link href="/team/members"
-                    style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid rgba(0,229,255,0.3)`, background: 'rgba(0,229,255,0.06)', color: '#00e5ff', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
-                    title="View members">
-                    <i className="bx bx-group" />
+                    title="View team details">
+                    <i className="bx bx-show" />
                   </Link>
                 </div>
               </div>
@@ -135,33 +151,6 @@ export default function AdminTeamsPage() {
           })
         )}
       </div>
-
-      {/* Members breakdown for this team */}
-      {members.length > 0 && (
-        <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${cardBorder}` }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>Team Members</div>
-            <Link href="/team/members" style={{ fontSize: 12, color: '#00e5ff', textDecoration: 'none' }}>Manage</Link>
-          </div>
-          <div className="grid-3col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: divider }}>
-            {members.map(m => {
-              const statusColor = m.status === 'active' ? '#22c55e' : m.status === 'invited' ? '#f97316' : '#ef4444'
-              return (
-                <div key={m.id} style={{ background: cardBg, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,229,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#00e5ff', flexShrink: 0 }}>
-                    {m.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
-                  </div>
-                  <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 500, color: textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
-                    <div style={{ fontSize: 10, color: textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.email}</div>
-                  </div>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor, flexShrink: 0 }} title={m.status} />
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

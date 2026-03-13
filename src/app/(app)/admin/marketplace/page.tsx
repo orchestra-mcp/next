@@ -2,7 +2,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useRoleStore } from '@/store/roles'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 interface MarketplacePack {
   name: string
@@ -22,9 +24,11 @@ const MOCK_PACKS: MarketplacePack[] = [
 
 export default function AdminMarketplacePage() {
   const router = useRouter()
+  const t = useTranslations('admin')
   const { can, roleLoaded } = useRoleStore()
   const [search, setSearch] = useState('')
   const [packs, setPacks] = useState(MOCK_PACKS)
+  const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null)
 
   const textPrimary = 'var(--color-fg)'
   const textMuted = 'var(--color-fg-muted)'
@@ -44,8 +48,13 @@ export default function AdminMarketplacePage() {
   }
 
   function handleReject(name: string) {
-    if (!window.confirm(`Reject pack "${name}"? It will be removed from the list.`)) return
-    setPacks(prev => prev.filter(p => p.name !== name))
+    setConfirmDialog({
+      message: t('rejectConfirm', { name }),
+      onConfirm: () => {
+        setConfirmDialog(null)
+        setPacks(prev => prev.filter(p => p.name !== name))
+      },
+    })
   }
 
   function VersionBadge({ version }: { version: string }) {
@@ -58,9 +67,9 @@ export default function AdminMarketplacePage() {
 
   function StatusBadge({ status }: { status: 'active' | 'pending' }) {
     if (status === 'active') {
-      return <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)', fontWeight: 600 }}>Active</span>
+      return <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)', fontWeight: 600 }}>{t('active')}</span>
     }
-    return <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)', fontWeight: 600 }}>Pending</span>
+    return <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)', fontWeight: 600 }}>{t('pending')}</span>
   }
 
   return (
@@ -68,12 +77,12 @@ export default function AdminMarketplacePage() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Link href="/admin" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
-          <i className="bx bx-left-arrow-alt rtl-flip" /> Admin
+          <i className="bx bx-left-arrow-alt rtl-flip" /> {t('backToAdmin')}
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Marketplace</h1>
-            <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>Packs available in the registry</p>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>{t('marketplace')}</h1>
+            <p style={{ fontSize: 13, color: textMuted, marginTop: 5 }}>{t('marketplaceDesc')}</p>
           </div>
         </div>
       </div>
@@ -84,7 +93,7 @@ export default function AdminMarketplacePage() {
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search packs…"
+          placeholder={t('searchPacks')}
           style={{ width: '100%', padding: '8px 12px 8px 32px', borderRadius: 9, border: `1px solid ${inputBorder}`, background: searchBg, color: textPrimary, fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
         />
       </div>
@@ -92,18 +101,18 @@ export default function AdminMarketplacePage() {
       {/* Table */}
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
         <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 100px 1fr', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-          <div>Pack Name</div>
-          <div className="hide-mobile">Version</div>
-          <div className="hide-mobile">Downloads</div>
-          <div>Status</div>
-          <div style={{ textAlign: 'end' }}>Actions</div>
+          <div>{t('packNameColumn')}</div>
+          <div className="hide-mobile">{t('versionColumn')}</div>
+          <div className="hide-mobile">{t('downloadsColumn')}</div>
+          <div>{t('statusColumn')}</div>
+          <div style={{ textAlign: 'end' }}>{t('actionsColumn')}</div>
         </div>
 
         {filtered.length === 0 ? (
           <div style={{ padding: '56px 40px', textAlign: 'center' }}>
             <i className="bx bx-package" style={{ fontSize: 38, color: textDim, display: 'block', marginBottom: 10 }} />
-            <div style={{ fontSize: 14, fontWeight: 600, color: textMuted, marginBottom: 4 }}>No packs found</div>
-            <div style={{ fontSize: 12, color: textDim }}>Try adjusting your search query.</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: textMuted, marginBottom: 4 }}>{t('noPacksFound')}</div>
+            <div style={{ fontSize: 12, color: textDim }}>{t('noPacksDesc')}</div>
           </div>
         ) : filtered.map((p, idx) => (
           <div key={p.name} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 100px 1fr', padding: '13px 20px', borderBottom: idx < filtered.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
@@ -120,19 +129,29 @@ export default function AdminMarketplacePage() {
               {p.status === 'pending' ? (
                 <>
                   <button onClick={() => handleApprove(p.name)} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.08)', color: '#22c55e', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    Approve
+                    {t('approve')}
                   </button>
                   <button onClick={() => handleReject(p.name)} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    Reject
+                    {t('reject')}
                   </button>
                 </>
               ) : (
-                <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 500 }}>Active</span>
+                <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 500 }}>{t('active')}</span>
               )}
             </div>
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDialog}
+        title={t('rejectPack')}
+        message={confirmDialog?.message ?? ''}
+        confirmLabel={t('reject')}
+        variant="warning"
+        onConfirm={() => confirmDialog?.onConfirm()}
+        onCancel={() => setConfirmDialog(null)}
+      />
     </div>
   )
 }

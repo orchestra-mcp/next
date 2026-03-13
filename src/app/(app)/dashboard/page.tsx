@@ -9,6 +9,7 @@ import { WIDGET_REGISTRY } from '@/types/dashboard'
 import { WIDGET_COMPONENTS } from '@/components/dashboard/widgets'
 import type { Project } from '@/components/dashboard/widgets/RecentProjectsWidget'
 import type { Note } from '@/components/dashboard/widgets/RecentNotesWidget'
+import Link from 'next/link'
 import { WidgetShell } from '@/components/dashboard/WidgetShell'
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid'
 import { DashboardToolbar } from '@/components/dashboard/DashboardToolbar'
@@ -121,6 +122,17 @@ export default function DashboardPage() {
     quick_actions: {},
   }
 
+  const viewAllLink = (href: string) => (
+    <Link href={href} style={{ fontSize: 12, color: '#00e5ff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+      {t('viewAll')} <i className="bx bx-right-arrow-alt rtl-flip" />
+    </Link>
+  )
+
+  const headerActions: Partial<Record<string, React.ReactNode>> = {
+    recent_projects: viewAllLink('/projects'),
+    recent_notes: viewAllLink('/notes'),
+  }
+
   return (
     <div className="page-wrapper" style={{ padding: '28px 32px' }}>
       {/* Page header */}
@@ -149,6 +161,22 @@ export default function DashboardPage() {
         {(widget) => {
           const def = WIDGET_REGISTRY[widget.type]
           const Component = WIDGET_COMPONENTS[widget.type]
+
+          // Frameless widgets render directly without the shell chrome
+          if (def.frameless && !editMode) {
+            if (widget.hidden) return null
+            return loading ? (
+              <div style={{ display: 'flex', gap: 14 }}>
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} style={{ flex: 1, height: 100, borderRadius: 14, background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', animation: 'shimmer 1.5s ease-in-out infinite alternate' }} />
+                ))}
+                <style>{`@keyframes shimmer { from { opacity: 0.4; } to { opacity: 1; } }`}</style>
+              </div>
+            ) : (
+              <Component {...(widgetProps[widget.type] ?? {})} />
+            )
+          }
+
           return (
             <WidgetShell
               widget={widget}
@@ -158,6 +186,7 @@ export default function DashboardPage() {
               onToggle={() => toggleWidget(widget.id)}
               onLock={() => lockWidget(widget.id)}
               loading={loading}
+              headerAction={headerActions[widget.type]}
             >
               <Component {...(widgetProps[widget.type] ?? {})} />
             </WidgetShell>

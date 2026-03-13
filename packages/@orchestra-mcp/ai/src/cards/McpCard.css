@@ -67,6 +67,46 @@
   margin: 10px 0;
 }
 
+/* Human-readable result summary */
+.mcp-card__summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-fg);
+  line-height: 1.4;
+}
+
+.mcp-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.mcp-card__detail {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.mcp-card__detail-label {
+  color: var(--color-fg-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.mcp-card__detail-value {
+  color: var(--color-fg);
+  font-weight: 500;
+}
+
+/* Orchestra-specific card accent */
+.mcp-card--orchestra .card-base__badge--info {
+  background: linear-gradient(135deg, rgba(169,0,255,0.15), rgba(0,229,255,0.15));
+  color: var(--brand-cyan, #00e5ff);
+}
+
 /* Key-value argument display */
 .mcp-card__args {
   display: flex;

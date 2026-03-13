@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { LanguageSwitcher } from '@/components/ui/language-switcher'
 
 function getBreadcrumb(pathname: string): string[] {
   const parts = pathname.split('/').filter(Boolean)
@@ -30,6 +31,7 @@ export function DashboardHeader() {
 
       {/* Right actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <LanguageSwitcher />
         <a href="https://github.com/orchestra-mcp" target="_blank" rel="noopener" style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>
           <i className="bx bxl-github" style={{ fontSize: 16 }} />
         </a>

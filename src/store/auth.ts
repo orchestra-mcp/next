@@ -3,12 +3,29 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { apiFetch } from '@/lib/api'
 
+function base64urlToBuffer(b64: string): ArrayBuffer {
+  const s = b64.replace(/-/g, '+').replace(/_/g, '/')
+  const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4))
+  const bin = atob(s + pad)
+  const buf = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i)
+  return buf.buffer
+}
+
+function bufferToBase64url(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf)
+  let s = ''
+  for (const b of bytes) s += String.fromCharCode(b)
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
 export interface User {
   id: number
   name: string
   email: string
   avatar_url?: string | null
   two_factor_enabled?: boolean
+  settings?: Record<string, unknown> | null
 }
 
 export interface ImpersonatingUser {
@@ -43,6 +60,10 @@ interface AuthActions {
   confirm2FA: (code: string) => Promise<void>
   disable2FA: (code: string) => Promise<void>
   verify2FA: (code: string, tempToken: string) => Promise<void>
+  // Passkeys
+  beginPasskeyRegistration: () => Promise<PublicKeyCredentialCreationOptions>
+  finishPasskeyRegistration: (credential: Credential, name?: string) => Promise<void>
+  loginWithPasskey: () => Promise<void>
   // Avatar
   updateAvatarUrl: (avatarUrl: string) => void
   // Impersonation
@@ -271,6 +292,96 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           localStorage.setItem('orchestra_token', res.token)
           sessionStorage.removeItem('orchestra_2fa_token')
           sessionStorage.removeItem('orchestra_2fa_email')
+          set({ token: res.token, user: res.user, loading: false })
+        } catch (e) {
+          set({ error: (e as Error).message, loading: false })
+          throw e
+        }
+      },
+
+      beginPasskeyRegistration: async () => {
+        const res = await apiFetch<{ publicKey: PublicKeyCredentialCreationOptions }>('/api/auth/passkey/register/begin', { method: 'POST' })
+        // Decode base64url fields for the Web Credentials API
+        const opts = res.publicKey
+        opts.challenge = base64urlToBuffer(opts.challenge as unknown as string)
+        opts.user.id = base64urlToBuffer(opts.user.id as unknown as string)
+        if (opts.excludeCredentials) {
+          opts.excludeCredentials = opts.excludeCredentials.map(c => ({
+            ...c,
+            id: base64urlToBuffer(c.id as unknown as string),
+          }))
+        }
+        return opts
+      },
+
+      finishPasskeyRegistration: async (credential, name) => {
+        const cred = credential as PublicKeyCredential
+        const attestation = cred.response as AuthenticatorAttestationResponse
+        await apiFetch('/api/auth/passkey/register/finish', {
+          method: 'POST',
+          body: JSON.stringify({
+            id: cred.id,
+            raw_id: bufferToBase64url(cred.rawId),
+            type: cred.type,
+            name: name || undefined,
+            response: {
+              attestation_object: bufferToBase64url(attestation.attestationObject),
+              client_data_json: bufferToBase64url(attestation.clientDataJSON),
+              transports: attestation.getTransports?.() ?? [],
+            },
+          }),
+        })
+      },
+
+      loginWithPasskey: async () => {
+        set({ loading: true, error: null })
+        try {
+          // Step 1: Get challenge from server
+          const beginRes = await apiFetch<{
+            publicKey: { challenge: string; rpId: string; timeout: number; userVerification: string; allowCredentials?: Array<{ id: string; type: string; transports?: string[] }> }
+            session_id: string
+          }>('/api/auth/passkey/authenticate/begin', { method: 'POST', skipAuth: true })
+
+          const opts: PublicKeyCredentialRequestOptions = {
+            challenge: base64urlToBuffer(beginRes.publicKey.challenge),
+            rpId: beginRes.publicKey.rpId,
+            timeout: beginRes.publicKey.timeout,
+            userVerification: beginRes.publicKey.userVerification as UserVerificationRequirement,
+          }
+          if (beginRes.publicKey.allowCredentials?.length) {
+            opts.allowCredentials = beginRes.publicKey.allowCredentials.map(c => ({
+              id: base64urlToBuffer(c.id),
+              type: c.type as PublicKeyCredentialType,
+              transports: c.transports as AuthenticatorTransport[],
+            }))
+          }
+
+          // Step 2: Prompt user's authenticator
+          const credential = await navigator.credentials.get({ publicKey: opts }) as PublicKeyCredential | null
+          if (!credential) { set({ loading: false }); throw new Error('Passkey authentication cancelled') }
+
+          const assertion = credential.response as AuthenticatorAssertionResponse
+
+          // Step 3: Send to server for verification
+          const res = await apiFetch<{ token: string; user: User }>('/api/auth/passkey/authenticate/finish', {
+            method: 'POST',
+            body: JSON.stringify({
+              id: credential.id,
+              raw_id: bufferToBase64url(credential.rawId),
+              type: credential.type,
+              session_id: beginRes.session_id,
+              response: {
+                authenticator_data: bufferToBase64url(assertion.authenticatorData),
+                client_data_json: bufferToBase64url(assertion.clientDataJSON),
+                signature: bufferToBase64url(assertion.signature),
+                user_handle: assertion.userHandle ? bufferToBase64url(assertion.userHandle) : undefined,
+              },
+            }),
+            skipAuth: true,
+          })
+
+          localStorage.setItem('orchestra_token', res.token)
+          document.cookie = `orchestra_token=${res.token};path=/;max-age=86400;SameSite=Lax`
           set({ token: res.token, user: res.user, loading: false })
         } catch (e) {
           set({ error: (e as Error).message, loading: false })

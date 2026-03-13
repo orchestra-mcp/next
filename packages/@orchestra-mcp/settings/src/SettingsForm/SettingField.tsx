@@ -753,32 +753,19 @@ interface MarkdownSettingFieldProps {
 }
 
 const MarkdownSettingField = ({ setting, value, onChange, disabled }: MarkdownSettingFieldProps) => {
-  // Lazy import to avoid circular deps — use dynamic import pattern
-  // Fall back to a textarea if MarkdownEditor isn't available
-  try {
-    const { MarkdownEditor } = require('../MarkdownEditor');
-    return (
-      <div className="setting-field__markdown">
-        <MarkdownEditor
-          value={value ?? ''}
-          onChange={onChange}
-          placeholder={setting.placeholder}
-          readOnly={disabled}
-        />
-      </div>
-    );
-  } catch {
-    return (
-      <textarea
-        className="setting-field__input setting-field__code"
-        value={value ?? ''}
-        placeholder={setting.placeholder || 'Write markdown...'}
-        disabled={disabled}
-        rows={8}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    );
-  }
+  // Use a plain textarea for markdown settings. The @orchestra-mcp/editor
+  // MarkdownEditor is not a declared dependency of this package and importing
+  // it via require() causes build-time "Module not found" errors in Next.js.
+  return (
+    <textarea
+      className="setting-field__input setting-field__code"
+      value={value ?? ''}
+      placeholder={setting.placeholder || 'Write markdown...'}
+      disabled={disabled}
+      rows={8}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
 };
 
 /* ── Shared Icons ──────────────────────────────── */

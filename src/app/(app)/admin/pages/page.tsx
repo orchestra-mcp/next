@@ -2,8 +2,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useRoleStore } from '@/store/roles'
 import { useAdminStore, type AdminPage } from '@/store/admin'
+import { ContentLocaleTabs } from '@/components/ui/content-locale-tabs'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 type ModalMode = 'create' | 'edit' | null
 
@@ -11,20 +14,23 @@ const EMPTY_FORM = { title: '', content: '', status: 'draft' as 'draft' | 'publi
 
 export default function AdminPagesPage() {
   const router = useRouter()
+  const t = useTranslations('admin')
   const { can, roleLoaded } = useRoleStore()
-  const { pages, loading, error, fetchPages, createPage, updatePage, deletePage, clearError } = useAdminStore()
+  const { pages, loading, error, fetchPages, createPage, updatePage, deletePage, clearError, contentLocale } = useAdminStore()
 
   const [modal, setModal] = useState<ModalMode>(null)
   const [editTarget, setEditTarget] = useState<AdminPage | null>(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [formLocale, setFormLocale] = useState('en')
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null)
 
   useEffect(() => {
     if (!roleLoaded) return
     if (!can('canViewAdmin')) { router.replace('/dashboard'); return }
     fetchPages()
-  }, [roleLoaded])
+  }, [roleLoaded, contentLocale])
 
   const textPrimary = 'var(--color-fg)'
   const textMuted = 'var(--color-fg-muted)'
@@ -51,15 +57,36 @@ export default function AdminPagesPage() {
   function openCreate() {
     setForm(EMPTY_FORM)
     setEditTarget(null)
+    setFormLocale('en')
     setFormError(null)
     setModal('create')
   }
 
   function openEdit(p: AdminPage) {
-    setForm({ title: p.title, content: p.content, status: p.status })
+    setFormLocale(contentLocale)
+    if (contentLocale !== 'en' && p.translations?.[contentLocale]) {
+      const tr = p.translations[contentLocale]
+      setForm({ title: tr.title || '', content: tr.content || '', status: p.status })
+    } else {
+      setForm({ title: p.title, content: p.content, status: p.status })
+    }
     setEditTarget(p)
     setFormError(null)
     setModal('edit')
+  }
+
+  function handleFormLocaleChange(locale: string) {
+    if (!editTarget) { setFormLocale(locale); return }
+    // Save current form values before switching
+    setFormLocale(locale)
+    if (locale !== 'en' && editTarget.translations?.[locale]) {
+      const tr = editTarget.translations[locale]
+      setForm(f => ({ ...f, title: tr.title || '', content: tr.content || '' }))
+    } else if (locale === 'en') {
+      setForm(f => ({ ...f, title: editTarget.title, content: editTarget.content }))
+    } else {
+      setForm(f => ({ ...f, title: '', content: '' }))
+    }
   }
 
   function closeModal() {
@@ -70,15 +97,17 @@ export default function AdminPagesPage() {
   }
 
   async function handleSave() {
-    if (!form.title.trim()) { setFormError('Title is required'); return }
+    if (formLocale === 'en' && !form.title.trim()) { setFormError(t('titleRequired')); return }
     setSaving(true)
     setFormError(null)
     try {
+      const payload = { ...form, locale: formLocale }
       if (modal === 'edit' && editTarget) {
-        await updatePage(editTarget.id, form)
+        await updatePage(editTarget.id, payload)
       } else {
-        await createPage(form)
+        await createPage(payload)
       }
+      await fetchPages()
       closeModal()
     } catch (e) {
       setFormError((e as Error).message)
@@ -87,13 +116,18 @@ export default function AdminPagesPage() {
     }
   }
 
-  async function handleDelete(p: AdminPage) {
-    if (!window.confirm(`Delete page "${p.title}"? This cannot be undone.`)) return
-    try {
-      await deletePage(p.id)
-    } catch {
-      // error shown via store
-    }
+  function handleDelete(p: AdminPage) {
+    setConfirmDialog({
+      message: t('deletePageConfirm', { title: p.title }),
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          await deletePage(p.id)
+        } catch {
+          // error shown via store
+        }
+      },
+    })
   }
 
   function StatusBadge({ status }: { status: 'draft' | 'published' }) {
@@ -101,8 +135,8 @@ export default function AdminPagesPage() {
     const bg = status === 'published' ? 'rgba(34,197,94,0.1)' : 'var(--color-bg-active)'
     const border = status === 'published' ? 'rgba(34,197,94,0.25)' : 'var(--color-border)'
     return (
-      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: bg, color, border: `1px solid ${border}`, fontWeight: 600, textTransform: 'capitalize' }}>
-        {status}
+      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: bg, color, border: `1px solid ${border}`, fontWeight: 600 }}>
+        {t(status)}
       </span>
     )
   }
@@ -116,11 +150,11 @@ export default function AdminPagesPage() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Link href="/admin" style={{ fontSize: 13, color: textDim, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
-          <i className="bx bx-left-arrow-alt rtl-flip" /> Admin
+          <i className="bx bx-left-arrow-alt rtl-flip" /> {t('backToAdmin')}
         </Link>
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>Pages</h1>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>{t('pages')}</h1>
             <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 100, background: 'var(--color-bg-active)', color: textMuted }}>
               {pages.length}
             </span>
@@ -129,7 +163,7 @@ export default function AdminPagesPage() {
             onClick={openCreate}
             style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
           >
-            <i className="bx bx-plus" /> New Page
+            <i className="bx bx-plus" /> {t('newPage')}
           </button>
         </div>
       </div>
@@ -144,23 +178,23 @@ export default function AdminPagesPage() {
       {/* Table */}
       <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, overflow: 'hidden' }}>
         <div className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 100px 120px 80px', padding: '11px 20px', borderBottom: `1px solid ${cardBorder}`, fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-          <div>Title</div>
-          <div className="hide-mobile">Slug</div>
-          <div>Status</div>
-          <div className="hide-mobile">Updated</div>
-          <div style={{ textAlign: 'end' }}>Actions</div>
+          <div>{t('titleColumn')}</div>
+          <div className="hide-mobile">{t('slugColumn')}</div>
+          <div>{t('statusColumn')}</div>
+          <div className="hide-mobile">{t('updatedColumn')}</div>
+          <div style={{ textAlign: 'end' }}>{t('actionsColumn')}</div>
         </div>
 
         {loading && pages.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center', color: textDim, fontSize: 13 }}>
             <i className="bx bx-loader-alt bx-spin" style={{ fontSize: 24, display: 'block', marginBottom: 10 }} />
-            Loading pages…
+            {t('loadingPages')}
           </div>
         ) : pages.length === 0 ? (
           <div style={{ padding: '56px 40px', textAlign: 'center' }}>
             <i className="bx bx-file-blank" style={{ fontSize: 38, color: textDim, display: 'block', marginBottom: 10 }} />
-            <div style={{ fontSize: 14, fontWeight: 600, color: textMuted, marginBottom: 4 }}>No pages yet</div>
-            <div style={{ fontSize: 12, color: textDim }}>Create your first page to get started.</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: textMuted, marginBottom: 4 }}>{t('noPagesYet')}</div>
+            <div style={{ fontSize: 12, color: textDim }}>{t('noPagesDesc')}</div>
           </div>
         ) : pages.map((p, idx) => (
           <div key={p.id} className="grid-admin-users" style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 100px 120px 80px', padding: '13px 20px', borderBottom: idx < pages.length - 1 ? `1px solid ${rowBorder}` : 'none', alignItems: 'center' }}>
@@ -180,39 +214,51 @@ export default function AdminPagesPage() {
         ))}
       </div>
 
+      <ConfirmDialog
+        open={!!confirmDialog}
+        title={t('deletePage')}
+        message={confirmDialog?.message ?? ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => confirmDialog?.onConfirm()}
+        onCancel={() => setConfirmDialog(null)}
+      />
+
       {/* Modal */}
       {modal && (
         <div onClick={closeModal} style={{ position: 'fixed', inset: 0, background: overlayBg, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: modalBg, border: `1px solid var(--color-border)`, borderRadius: 16, padding: 28, width: '100%', maxWidth: 520, boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: textPrimary }}>
-                {modal === 'create' ? 'New Page' : 'Edit Page'}
+                {modal === 'create' ? t('newPage') : t('editPage')}
               </div>
               <button onClick={closeModal} style={{ background: 'none', border: 'none', color: textMuted, cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>✕</button>
             </div>
 
+            {modal === 'edit' && <ContentLocaleTabs activeLocale={formLocale} onChange={handleFormLocaleChange} />}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={labelSt}>Title</label>
-                <input style={inputSt} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Page title…" />
+                <label style={labelSt}>{t('titleLabel')}{formLocale !== 'en' && <span style={{ fontWeight: 400, color: textDim }}> ({formLocale.toUpperCase()})</span>}</label>
+                <input style={inputSt} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={formLocale !== 'en' && editTarget ? editTarget.title : t('titlePlaceholder')} />
               </div>
               <div>
-                <label style={labelSt}>Content</label>
-                <textarea style={{ ...inputSt, height: 140, resize: 'vertical' }} value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder="Page content…" />
+                <label style={labelSt}>{t('contentLabel')}{formLocale !== 'en' && <span style={{ fontWeight: 400, color: textDim }}> ({formLocale.toUpperCase()})</span>}</label>
+                <textarea style={{ ...inputSt, height: 140, resize: 'vertical' }} value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder={formLocale !== 'en' && editTarget ? editTarget.content?.slice(0, 100) : t('contentPlaceholder')} />
               </div>
               <div>
-                <label style={labelSt}>Status</label>
+                <label style={labelSt}>{t('statusLabel')}</label>
                 <select style={inputSt} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as 'draft' | 'published' }))}>
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
+                  <option value="draft">{t('draft')}</option>
+                  <option value="published">{t('published')}</option>
                 </select>
               </div>
               {formError && <div style={{ fontSize: 12, color: '#ef4444', padding: '8px 12px', borderRadius: 7, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>{formError}</div>}
               <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
                 <button onClick={handleSave} disabled={saving} style={{ flex: 1, padding: '9px 20px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                  {saving ? 'Saving…' : modal === 'create' ? 'Create Page' : 'Save Changes'}
+                  {saving ? t('saving') : modal === 'create' ? t('createPage') : t('saveChanges')}
                 </button>
-                <button onClick={closeModal} style={{ padding: '9px 16px', borderRadius: 9, border: `1px solid ${inputBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={closeModal} style={{ padding: '9px 16px', borderRadius: 9, border: `1px solid ${inputBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>{t('cancel')}</button>
               </div>
             </div>
           </div>

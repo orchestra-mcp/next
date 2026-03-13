@@ -1,102 +1,25 @@
 'use client'
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { usePathname } from 'next/navigation'
 import { ChatBox } from '@orchestra-mcp/ai/ChatBox'
 import { BubbleButton } from '@orchestra-mcp/ai/BubbleButton'
 import { ChatHeader } from '@orchestra-mcp/ai/ChatHeader'
-import type { ChatSession } from '@orchestra-mcp/ai/ChatHeader'
-import type { QuickAction, StartupPrompt, AIModel } from '@orchestra-mcp/ai/types'
 import { useChatStore } from '@/store/chat'
 import type { CopilotPosition } from '@/store/chat'
-import { useChatMCP, clearActiveQuestionId } from '@/hooks/useChatMCP'
+import { useCopilotChat, LOADING_MESSAGES } from './useCopilotChat'
 
-// ── Page Context ─────────────────────────────────────────────
+// ── Mobile detection ─────────────────────────────────────────
 
-function getPageContext(pathname: string): { label: string; quickActions: QuickAction[] } {
-  if (pathname.startsWith('/projects')) {
-    return {
-      label: 'Projects',
-      quickActions: [
-        { id: 'qa-status', label: 'Project Status', prompt: 'Show the project workflow status and feature breakdown', color: '#00e5ff' },
-        { id: 'qa-features', label: 'List Features', prompt: 'List all features with their current status', color: '#a900ff' },
-        { id: 'qa-next', label: 'Next Feature', prompt: 'What is the next feature to work on?', color: '#22c55e' },
-      ],
-    }
-  }
-  if (pathname.startsWith('/notes')) {
-    return {
-      label: 'Notes',
-      quickActions: [
-        { id: 'qa-notes', label: 'Search Notes', prompt: 'Search my notes', color: '#22c55e' },
-        { id: 'qa-create-note', label: 'Create Note', prompt: 'Create a new note titled ', color: '#f59e0b' },
-      ],
-    }
-  }
-  if (pathname.startsWith('/plans')) {
-    return {
-      label: 'Plans',
-      quickActions: [
-        { id: 'qa-plans', label: 'List Plans', prompt: 'List all plans with their status', color: '#8b5cf6' },
-        { id: 'qa-create-plan', label: 'Create Plan', prompt: 'Create a plan for ', color: '#a900ff' },
-      ],
-    }
-  }
-  if (pathname.startsWith('/wiki')) {
-    return {
-      label: 'Wiki',
-      quickActions: [
-        { id: 'qa-docs', label: 'Search Docs', prompt: 'Search the documentation for ', color: '#f97316' },
-      ],
-    }
-  }
-  if (pathname.startsWith('/devtools')) {
-    return {
-      label: 'DevTools',
-      quickActions: [
-        { id: 'qa-git', label: 'Git Status', prompt: 'Show the git status summary', color: '#f97316' },
-        { id: 'qa-test', label: 'Run Tests', prompt: 'Run the test suite', color: '#14b8a6' },
-      ],
-    }
-  }
-  return {
-    label: 'Dashboard',
-    quickActions: [
-      { id: 'qa-status', label: 'Project Status', prompt: 'Show the project status overview', color: '#00e5ff' },
-      { id: 'qa-help', label: 'What can you do?', prompt: 'What tools and capabilities do you have?', color: '#8b5cf6' },
-    ],
-  }
-}
-
-const STARTUP_PROMPTS: StartupPrompt[] = [
-  { id: 'sp-status', title: 'Project Status', description: 'Get an overview of current progress', prompt: 'Show me the project status and workflow breakdown', color: '#00e5ff' },
-  { id: 'sp-features', title: 'My Features', description: 'See features assigned to me', prompt: 'List my assigned features with their current status', color: '#a900ff' },
-  { id: 'sp-review', title: 'Review Queue', description: 'Check what needs review', prompt: 'Show the review queue', color: '#f59e0b' },
-  { id: 'sp-help', title: 'Help', description: 'Learn what I can do', prompt: 'What can you help me with? List the available tools and capabilities.', color: '#22c55e' },
-]
-
-const LOADING_MESSAGES = [
-  'Analyzing your request...',
-  'Working on it...',
-  'Processing with AI...',
-  'Almost there...',
-  'Generating response...',
-]
-
-// ── Provider Mapping ─────────────────────────────────────────
-
-function providerToAIProvider(provider: string): AIModel['provider'] {
-  const p = provider.toLowerCase()
-  if (p.includes('claude') || p.includes('anthropic')) return 'anthropic'
-  if (p.includes('openai') || p.includes('gpt')) return 'openai'
-  if (p.includes('gemini') || p.includes('google')) return 'google'
-  if (p.includes('ollama')) return 'ollama'
-  if (p.includes('grok')) return 'grok'
-  if (p.includes('deepseek')) return 'deepseek'
-  if (p.includes('perplexity')) return 'perplexity'
-  if (p.includes('qwen')) return 'qwen'
-  if (p.includes('kimi')) return 'kimi'
-  return 'custom'
+function useIsMobile(breakpoint = 768): boolean {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${breakpoint}px)`)
+    setIsMobile(mql.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [breakpoint])
+  return isMobile
 }
 
 // ── Drag Hook ────────────────────────────────────────────────
@@ -120,7 +43,6 @@ function useDrag(
   const posRef = useRef(pos)
   posRef.current = pos
 
-  // Sync when store changes externally — always clamp
   useEffect(() => {
     if (initialPos) setPos(clampPos(initialPos))
   }, [initialPos])
@@ -189,32 +111,85 @@ function useObservedResize(
   }, [ref])
 }
 
+// ── Bubble icon ──────────────────────────────────────────────
+
+const ICON_MAP: Record<string, string> = {
+  bot: 'bx-bot',
+  chat: 'bx-message-dots',
+  sparkle: 'bx-star',
+}
+
+// Claude AI avatar — official Anthropic logo
+const ClaudeAvatar = () => (
+  <div style={{
+    width: '100%', height: '100%',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: '#1a1a1a',
+    padding: 4,
+  }}>
+    <img
+      src="/claude-logo.svg"
+      alt="Claude"
+      draggable={false}
+      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+    />
+  </div>
+)
+
 // ── Component ────────────────────────────────────────────────
 
-const DEFAULT_BOX_POS: CopilotPosition = { x: -1, y: -1 } // -1 means "compute on mount"
-const DEFAULT_BUBBLE_POS: CopilotPosition = { x: -1, y: -1 }
+const DEFAULT_BOX_POS: CopilotPosition = { x: -1, y: -1 }
 
 export function CopilotBubble() {
-  const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
+  const isMobile = useIsMobile()
 
   const {
-    copilotOpen, copilotSessionId, sessions, accounts,
-    sendingSessionIds, typingStatus, selectedModelId, chatMode, showThinking,
-    copilotPosition, copilotBubblePosition, copilotSize,
-    setCopilotOpen, setCopilotSessionId,
-    setSelectedModelId, setChatMode, setShowThinking,
+    copilotPosition, copilotBubblePosition, copilotSize, chatIconStyle,
     setCopilotPosition, setCopilotBubblePosition, setCopilotSize,
   } = useChatStore()
 
   const {
-    connected, sendMessage, createSession, deleteSession,
-    loadSession, respondPermission,
-  } = useChatMCP()
+    connected, copilotOpen, copilotSessionId, copilotMode,
+    chatSessions, models, messages, isSending, currentTypingStatus,
+    selectedModelId, chatMode, showThinking,
+    quickActions, startupPrompts, pageContext, sessions,
+    userName, userAvatarUrl,
+
+    handleSend, handleStop, handleNewChat,
+    handleSessionSelect, handleSessionDelete, handleSessionRename,
+    handleQuestionAnswer, handlePermissionDecision,
+    handleToggle, handleExpand, handleCollapse,
+    setSelectedModelId, setChatMode, setShowThinking,
+    setCopilotOpen, setCopilotMode,
+  } = useCopilotChat()
 
   useEffect(() => { setMounted(true) }, [])
 
-  // Compute default positions after mount (needs window dimensions)
+  // Auto-fullscreen on mobile
+  useEffect(() => {
+    if (isMobile && copilotOpen && copilotMode === 'bubble') {
+      setCopilotMode('fullscreen')
+    }
+  }, [isMobile, copilotOpen, copilotMode, setCopilotMode])
+
+  // ESC key: stop session or collapse non-bubble modes
+  useEffect(() => {
+    if (!copilotOpen) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      // If actively sending, ChatInput handles ESC → onStop internally.
+      // If not sending but in non-bubble mode, collapse back to bubble.
+      if (!isSending && copilotMode !== 'bubble') {
+        e.preventDefault()
+        setCopilotMode('bubble')
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [copilotOpen, isSending, copilotMode, setCopilotMode])
+
+  // Compute default positions after mount
   const resolvedBoxPos = useMemo<CopilotPosition>(() => {
     if (!mounted) return { x: 100, y: 100 }
     if (copilotPosition && copilotPosition.x >= 0) return copilotPosition
@@ -227,7 +202,7 @@ export function CopilotBubble() {
     return { x: window.innerWidth - 76, y: window.innerHeight - 76 }
   }, [mounted, copilotBubblePosition])
 
-  // Drag for the floating box
+  // Drag for floating box (bubble mode only)
   const { pos: boxPos, onMouseDown: onBoxDragStart } = useDrag(
     resolvedBoxPos, DEFAULT_BOX_POS,
     useCallback((p: CopilotPosition) => setCopilotPosition(p), [setCopilotPosition]),
@@ -239,265 +214,269 @@ export function CopilotBubble() {
     setCopilotSize(s)
   }, [setCopilotSize]))
 
-  // Load session messages when copilot session changes
-  useEffect(() => {
-    if (connected && copilotSessionId) {
-      loadSession(copilotSessionId)
-    }
-  }, [connected, copilotSessionId, loadSession])
+  const bubbleIcon = ICON_MAP[chatIconStyle] || 'bx-bot'
 
-  // Map store sessions to ChatBox ChatSession format
-  const chatSessions: ChatSession[] = useMemo(() =>
-    sessions.map(s => ({
-      id: s.id,
-      title: s.title || s.id,
-      updatedAt: s.updatedAt,
-      messageCount: s.messages.length,
-    })),
-  [sessions])
-
-  // Map accounts to AIModel format — use acc.id as the stable key
-  const models: AIModel[] = useMemo(() =>
-    accounts.map(acc => ({
-      id: acc.id,
-      name: acc.model ? `${acc.name} (${acc.model})` : acc.name,
-      provider: providerToAIProvider(acc.provider),
-      providerName: acc.provider,
-      configured: true,
-    })),
-  [accounts])
-
-  // Auto-select first model if current selection doesn't match any account
-  useEffect(() => {
-    if (models.length > 0 && !models.some(m => m.id === selectedModelId)) {
-      setSelectedModelId(models[0].id)
-    }
-  }, [models, selectedModelId, setSelectedModelId])
-
-  // Current session data
-  const activeSession = useChatStore(s => s.getSession(copilotSessionId ?? ''))
-  const messages = activeSession?.messages ?? []
-  const isSending = copilotSessionId ? sendingSessionIds.includes(copilotSessionId) : false
-  const currentTypingStatus = copilotSessionId ? typingStatus[copilotSessionId] : null
-
-  // Page-specific quick actions
-  const pageContext = useMemo(() => getPageContext(pathname), [pathname])
-
-  // Ensure a session exists, creating one if needed (auto-resolves account)
-  const ensureSession = useCallback(async (): Promise<string | null> => {
-    const currentId = useChatStore.getState().copilotSessionId
-    if (currentId) return currentId
-    if (!connected) return null
-    return await createSession()
-  }, [connected, createSession])
-
-  // Handle send — auto-create session on first message
-  const handleSend = useCallback(async (text: string) => {
-    console.log('[copilot:bubble] handleSend called:', text?.slice(0, 50), { connected, copilotSessionId })
-    if (!text.trim()) return
-    const sessionId = await ensureSession()
-    console.log('[copilot:bubble] ensureSession returned:', sessionId)
-    if (!sessionId) return
-    console.log('[copilot:bubble] calling sendMessage with session:', sessionId)
-    sendMessage(sessionId, text)
-  }, [ensureSession, sendMessage, connected, copilotSessionId])
-
-  // Handle new chat (auto-resolves account)
-  const handleNewChat = useCallback(async () => {
-    if (!connected) return
-    await createSession()
-  }, [connected, createSession])
-
-  // Handle session select
-  const handleSessionSelect = useCallback((id: string) => {
-    setCopilotSessionId(id)
-  }, [setCopilotSessionId])
-
-  // Handle session delete
-  const handleSessionDelete = useCallback((id: string) => {
-    deleteSession(id)
-  }, [deleteSession])
-
-  // Handle question answers from ChatBox events
-  const handleQuestionAnswer = useCallback((requestId: string, answers: Record<string, string>) => {
-    // Send the full answers record as JSON so the backend can construct
-    // the correct updatedInput for Claude CLI's permission format.
-    const answerJson = JSON.stringify({ answers })
-    console.log('[copilot] handleQuestionAnswer:', requestId.slice(0, 8), 'answers:', answers)
-    respondPermission(requestId, 'approve', answerJson)
-
-    // Clear the active question tracker so new questions aren't treated as
-    // superseding this already-answered one.
-    clearActiveQuestionId()
-
-    // Update the QuestionEvent card to show answered state
-    const sid = copilotSessionId
-    if (sid) {
-      // Clear the "Waiting for answer" typing status
-      useChatStore.getState().setTypingStatus(sid, 'Processing...')
-
-      const session = useChatStore.getState().sessions.find(s => s.id === sid)
-      if (session) {
-        for (const msg of session.messages) {
-          const qEvent = msg.events?.find(e => (e as any).requestId === requestId)
-          if (qEvent) {
-            useChatStore.getState().updateEvent(sid, msg.id, qEvent.id, {
-              status: 'done',
-              answers,
-            } as any)
-            break
-          }
-        }
-      }
-    }
-  }, [respondPermission, copilotSessionId])
-
-  // Handle permission approve/deny from PermissionCard buttons
-  const handlePermissionDecision = useCallback((requestId: string, decision: 'approve' | 'deny') => {
-    console.log('[copilot] handlePermissionDecision:', requestId.slice(0, 8), decision)
-    respondPermission(requestId, decision)
-
-    // Update the PermissionEvent card to show the decision
-    const sid = copilotSessionId
-    if (sid) {
-      // Clear the "Waiting for approval" typing status
-      useChatStore.getState().setTypingStatus(sid, decision === 'approve' ? 'Processing...' : null)
-
-      const session = useChatStore.getState().sessions.find(s => s.id === sid)
-      if (session) {
-        for (const msg of session.messages) {
-          const permEvent = msg.events?.find(e => (e as any).requestId === requestId)
-          if (permEvent) {
-            useChatStore.getState().updateEvent(sid, msg.id, permEvent.id, {
-              status: 'done',
-              decision: decision === 'approve' ? 'approved' : 'denied',
-            } as any)
-            break
-          }
-        }
-      }
-    }
-  }, [respondPermission, copilotSessionId])
-
-  // Handle opening — auto-create session if none exists
-  const handleToggle = useCallback(async () => {
-    if (!copilotOpen) {
-      setCopilotOpen(true)
-      if (!copilotSessionId && sessions.length > 0) {
-        setCopilotSessionId(sessions[0].id)
-      } else if (!copilotSessionId && connected) {
-        await ensureSession()
-      }
-    } else {
-      setCopilotOpen(false)
-    }
-  }, [copilotOpen, copilotSessionId, sessions, connected, setCopilotOpen, setCopilotSessionId, ensureSession])
+  // Real user avatar — photo or initials
+  const userAvatar = useMemo(() => (
+    <div style={{
+      width: '100%', height: '100%',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'var(--color-bg-active, rgba(255,255,255,0.08))',
+      color: 'var(--brand-purple, #a900ff)',
+      fontSize: 13, fontWeight: 600,
+      overflow: 'hidden',
+    }}>
+      {userAvatarUrl ? (
+        <img src={userAvatarUrl} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        <span>{userName?.[0]?.toUpperCase() || 'U'}</span>
+      )}
+    </div>
+  ), [userName, userAvatarUrl])
 
   if (!mounted) return null
 
-  return createPortal(
+  // Fullscreen mode: rendered by layout.tsx via CopilotPanel — portal only shows bubble when closed
+  if (copilotMode === 'fullscreen' && copilotOpen) {
+    return null
+  }
+
+  // Build shared chat content
+  const chatContent = (
     <>
-      {/* Floating Chat Box */}
-      {copilotOpen && (
-        <div
-          ref={boxRef}
-          style={{
-            position: 'fixed',
-            left: boxPos.x,
-            top: boxPos.y,
-            width: copilotSize.width,
-            height: copilotSize.height,
-            minWidth: 340,
-            minHeight: 400,
-            maxWidth: 800,
-            maxHeight: 900,
-            zIndex: 41,
-            display: 'flex',
-            flexDirection: 'column',
-            background: 'var(--color-bg)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 16,
-            boxShadow: '0 8px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.04)',
-            overflow: 'hidden',
-            resize: 'both',
-          }}
-        >
-          {/* Header with integrated drag handle */}
-          <div
-            onMouseDown={onBoxDragStart}
-            style={{ flexShrink: 0, cursor: 'grab', userSelect: 'none' }}
-          >
-            {/* Drag indicator */}
-            <div style={{
-              display: 'flex', justifyContent: 'center', padding: '6px 0 2px',
-            }}>
-              <div style={{
-                width: 36, height: 4, borderRadius: 2,
-                background: 'var(--color-text-tertiary, rgba(255,255,255,0.15))',
-              }} />
-            </div>
-            {/* Header buttons — stop drag so clicks work */}
-            <div onMouseDown={e => e.stopPropagation()} style={{ cursor: 'default' }}>
-              <ChatHeader
-                title="Orchestra Copilot"
-                onClose={() => setCopilotOpen(false)}
-                sessions={chatSessions}
-                activeSessionId={copilotSessionId}
-                onSessionSelect={handleSessionSelect}
-                onSessionDelete={handleSessionDelete}
-                onNewChat={handleNewChat}
-              />
-            </div>
-          </div>
+      <ChatHeader
+        title="Orchestra Copilot"
+        onClose={() => setCopilotOpen(false)}
+        onExpand={handleExpand}
+        onCollapse={copilotMode !== 'bubble' ? handleCollapse : undefined}
+        dockMode={copilotMode}
+        sessions={chatSessions}
+        activeSessionId={copilotSessionId}
+        onSessionSelect={handleSessionSelect}
+        onSessionDelete={handleSessionDelete}
+        onSessionRename={handleSessionRename}
+        onNewChat={handleNewChat}
+      />
 
-          {/* Connection banner */}
-          {!connected && (
-            <div style={{
-              padding: '8px 16px',
-              background: 'rgba(245,158,11,0.08)',
-              borderBottom: '1px solid rgba(245,158,11,0.2)',
-              display: 'flex', alignItems: 'center', gap: 8,
-              fontSize: 12, color: '#f59e0b', flexShrink: 0,
-            }}>
-              <i className="bx bx-wifi-off" style={{ fontSize: 14 }} />
-              No tunnel connected — connect in Tunnels to chat
-            </div>
-          )}
-
-          {/* ChatBox */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <ChatBox
-              messages={messages}
-              onSend={handleSend}
-              typing={isSending}
-              typingStatus={currentTypingStatus ?? undefined}
-              sending={isSending}
-              disabled={!connected}
-              models={models}
-              selectedModelId={selectedModelId}
-              onModelChange={setSelectedModelId}
-              mode={chatMode}
-              onModeChange={setChatMode}
-              showThinking={showThinking}
-              onThinkingToggle={setShowThinking}
-              quickActions={pageContext.quickActions}
-              startupPrompts={STARTUP_PROMPTS}
-              loadingMessages={LOADING_MESSAGES}
-              activeSessionId={copilotSessionId}
-              onQuestionAnswer={handleQuestionAnswer}
-              onPermissionDecision={handlePermissionDecision}
-              placeholder={connected ? `Ask about ${pageContext.label}...` : 'Connect a tunnel to start chatting'}
-              className="copilot-panel-chatbox"
-            />
-          </div>
-
+      {!connected && (
+        <div style={{
+          padding: '8px 16px',
+          background: 'color-mix(in srgb, var(--color-warning, #f59e0b) 8%, transparent)',
+          borderBottom: '1px solid color-mix(in srgb, var(--color-warning, #f59e0b) 20%, transparent)',
+          display: 'flex', alignItems: 'center', gap: 8,
+          fontSize: 12, color: 'var(--color-warning, #f59e0b)', flexShrink: 0,
+        }}>
+          <i className="bx bx-wifi-off" style={{ fontSize: 14 }} />
+          No tunnel connected — connect in Tunnels to chat
         </div>
       )}
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <ChatBox
+          messages={messages}
+          onSend={handleSend}
+          onStop={handleStop}
+          typing={isSending}
+          typingStatus={currentTypingStatus ?? undefined}
+          sending={isSending}
+          disabled={!connected}
+          models={models}
+          selectedModelId={selectedModelId}
+          onModelChange={setSelectedModelId}
+          mode={chatMode}
+          onModeChange={setChatMode}
+          showThinking={showThinking}
+          onThinkingToggle={setShowThinking}
+          quickActions={quickActions}
+          startupPrompts={startupPrompts}
+          loadingMessages={LOADING_MESSAGES}
+          activeSessionId={copilotSessionId}
+          onQuestionAnswer={handleQuestionAnswer}
+          onPermissionDecision={handlePermissionDecision}
+          placeholder={connected ? `Ask about ${pageContext.label}...` : 'Connect a tunnel to start chatting'}
+          userName={userName}
+          assistantName="Claude"
+          userAvatar={userAvatar}
+          assistantAvatar={<ClaudeAvatar />}
+          className="copilot-panel-chatbox"
+        />
+      </div>
+    </>
+  )
+
+  // ── Mode-specific wrappers ─────────────────────────────────
+
+  const renderBubbleMode = () => (
+    <div
+      ref={boxRef}
+      style={{
+        position: 'fixed',
+        left: boxPos.x,
+        top: boxPos.y,
+        width: copilotSize.width,
+        height: copilotSize.height,
+        minWidth: 340,
+        minHeight: 400,
+        maxWidth: 800,
+        maxHeight: 900,
+        zIndex: 41,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--color-bg)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 16,
+        boxShadow: '0 8px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.04)',
+        overflow: 'hidden',
+        resize: 'both',
+      }}
+    >
+      {/* Drag handle */}
+      <div
+        onMouseDown={onBoxDragStart}
+        style={{ flexShrink: 0, cursor: 'grab', userSelect: 'none' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0 2px' }}>
+          <div style={{
+            width: 36, height: 4, borderRadius: 2,
+            background: 'var(--color-text-tertiary, rgba(255,255,255,0.15))',
+          }} />
+        </div>
+      </div>
+      {/* Header buttons — stop drag so clicks work */}
+      <div style={{ flexShrink: 0 }}>
+        <ChatHeader
+          title="Orchestra Copilot"
+          onClose={() => setCopilotOpen(false)}
+          onExpand={handleExpand}
+          dockMode={copilotMode}
+          sessions={chatSessions}
+          activeSessionId={copilotSessionId}
+          onSessionSelect={handleSessionSelect}
+          onSessionDelete={handleSessionDelete}
+          onSessionRename={handleSessionRename}
+          onNewChat={handleNewChat}
+        />
+      </div>
+
+      {!connected && (
+        <div style={{
+          padding: '8px 16px',
+          background: 'color-mix(in srgb, var(--color-warning, #f59e0b) 8%, transparent)',
+          borderBottom: '1px solid color-mix(in srgb, var(--color-warning, #f59e0b) 20%, transparent)',
+          display: 'flex', alignItems: 'center', gap: 8,
+          fontSize: 12, color: 'var(--color-warning, #f59e0b)', flexShrink: 0,
+        }}>
+          <i className="bx bx-wifi-off" style={{ fontSize: 14 }} />
+          No tunnel connected — connect in Tunnels to chat
+        </div>
+      )}
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <ChatBox
+          messages={messages}
+          onSend={handleSend}
+          onStop={handleStop}
+          typing={isSending}
+          typingStatus={currentTypingStatus ?? undefined}
+          sending={isSending}
+          disabled={!connected}
+          models={models}
+          selectedModelId={selectedModelId}
+          onModelChange={setSelectedModelId}
+          mode={chatMode}
+          onModeChange={setChatMode}
+          showThinking={showThinking}
+          onThinkingToggle={setShowThinking}
+          quickActions={quickActions}
+          startupPrompts={startupPrompts}
+          loadingMessages={LOADING_MESSAGES}
+          activeSessionId={copilotSessionId}
+          onQuestionAnswer={handleQuestionAnswer}
+          onPermissionDecision={handlePermissionDecision}
+          placeholder={connected ? `Ask about ${pageContext.label}...` : 'Connect a tunnel to start chatting'}
+          userName={userName}
+          assistantName="Claude"
+          userAvatar={userAvatar}
+          assistantAvatar={<ClaudeAvatar />}
+          className="copilot-panel-chatbox"
+        />
+      </div>
+    </div>
+  )
+
+  const renderSideoverMode = () => (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: isMobile ? '100%' : 420,
+        zIndex: 10000,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--color-bg)',
+        borderLeft: isMobile ? 'none' : '1px solid var(--color-border)',
+        boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
+        overflow: 'hidden',
+      }}
+    >
+      {chatContent}
+    </div>
+  )
+
+  const renderModalMode = () => (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {/* Backdrop */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(4px)',
+        }}
+        onClick={() => setCopilotOpen(false)}
+      />
+      {/* Modal box */}
+      <div
+        style={{
+          position: 'relative',
+          width: '90vw',
+          maxWidth: 720,
+          height: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--color-bg)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 16,
+          boxShadow: '0 16px 64px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.04)',
+          overflow: 'hidden',
+        }}
+      >
+        {chatContent}
+      </div>
+    </div>
+  )
+
+  return createPortal(
+    <>
+      {copilotOpen && copilotMode === 'bubble' && renderBubbleMode()}
+      {copilotOpen && copilotMode === 'sideover' && renderSideoverMode()}
+      {copilotOpen && copilotMode === 'modal' && renderModalMode()}
 
       {/* Floating Bubble Button — hidden when panel is open */}
       {!copilotOpen && (
         <BubbleButton
-          icon={<i className="bx bx-bot" style={{ fontSize: 22 }} />}
+          icon={<i className={`bx ${bubbleIcon}`} style={{ fontSize: 22 }} />}
           expanded={false}
           onToggle={handleToggle}
           tooltip="Orchestra Copilot"

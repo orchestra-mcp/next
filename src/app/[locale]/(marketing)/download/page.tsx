@@ -1,4 +1,20 @@
+import type { Metadata } from 'next'
 import DownloadClient from './DownloadClient'
+
+export const metadata: Metadata = {
+  title: 'Download',
+  description: 'Download Orchestra for your IDE. Works with Claude Code, Cursor, VS Code, Windsurf, Cline, Gemini, Zed, and more.',
+  openGraph: {
+    title: 'Download Orchestra',
+    description: 'Get Orchestra for your IDE. One install, 290+ tools.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Download Orchestra',
+    description: 'Get Orchestra for your IDE. One install, 290+ tools.',
+  },
+}
 
 async function getDownloadData() {
   try {

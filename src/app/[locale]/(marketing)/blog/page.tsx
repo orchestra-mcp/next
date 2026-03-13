@@ -1,4 +1,20 @@
+import type { Metadata } from 'next'
 import BlogClient from './BlogClient'
+
+export const metadata: Metadata = {
+  title: 'Blog',
+  description: 'Updates, releases, and articles from the Orchestra team. Engineering deep dives, tutorials, and product announcements.',
+  openGraph: {
+    title: 'Blog | Orchestra',
+    description: 'Updates, releases, and articles from the Orchestra team.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Blog | Orchestra',
+    description: 'Updates, releases, and articles from the Orchestra team.',
+  },
+}
 
 async function getBlogData() {
   try {

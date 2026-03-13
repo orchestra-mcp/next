@@ -39,13 +39,7 @@ export function SidebarItem({
         transition: 'background 0.12s ease',
       }}
     >
-      {/* Active indicator */}
-      {active && (
-        <span style={{
-          position: 'absolute', insetInlineStart: 0, top: 8, bottom: 8,
-          width: 3, borderRadius: '0 3px 3px 0', background: '#a900ff',
-        }} />
-      )}
+      {/* Active indicator removed — background change only */}
 
       {/* Icon area — 3 modes: dot, letter badge, or icon */}
       {dot ? (

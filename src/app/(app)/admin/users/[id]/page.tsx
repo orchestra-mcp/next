@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useRoleStore, ROLE_LABELS, ROLE_COLORS, type Role } from '@/store/roles'
 import { apiFetch } from '@/lib/api'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 interface UserDetail {
   id: number
@@ -21,6 +22,7 @@ interface UserDetail {
 
 interface Project { id: string; name: string; status: string; created_at: string }
 interface Note { id: string; title: string; created_at: string }
+interface AiSession { id: string; name: string; model: string; message_count: number; created_at: string }
 interface Team { id: string; name: string; plan: string; member_count: number; role: string }
 interface Issue { id: number; title: string; priority: string; status: string; created_at: string }
 
@@ -39,8 +41,9 @@ function fmtDate(s: string) {
   return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function initials(name: string) {
-  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+function initials(name?: string | null) {
+  if (!name) return '?'
+  return name.split(' ').map(w => w[0]).filter(Boolean).join('').slice(0, 2).toUpperCase()
 }
 
 function priorityStyle(p: string): React.CSSProperties {
@@ -91,35 +94,54 @@ export default function AdminUserDetailPage() {
   const [userDetail, setUserDetail] = useState<UserDetail | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [notes, setNotes] = useState<Note[]>([])
+  const [sessions, setSessions] = useState<AiSession[]>([])
   const [teams, setTeams] = useState<Team[]>([])
   const [issues, setIssues] = useState<Issue[]>([])
   const [tab, setTab] = useState<Tab>('overview')
   const [loading, setLoading] = useState(false)
   const [fetchedTabs, setFetchedTabs] = useState<Set<Tab>>(new Set())
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [modal, setModal] = useState<'password' | 'notify' | 'role' | 'teams' | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [pwValue, setPwValue] = useState('')
+  const [notifTitle, setNotifTitle] = useState('')
+  const [notifMsg, setNotifMsg] = useState('')
+  const [roleValue, setRoleValue] = useState('')
+  const [userMemberships, setUserMemberships] = useState<{ membership_id: string; team_id: string; team_name: string; team_plan: string; role: string }[]>([])
+  const [allTeamsList, setAllTeamsList] = useState<{ id: string; name: string; plan: string }[]>([])
+  const [addTeamId, setAddTeamId] = useState('')
+  const [addTeamRole, setAddTeamRole] = useState('member')
+  const [confirmDialog, setConfirmDialog] = useState<{ title: string; message: string; confirmLabel: string; variant: 'danger' | 'warning' | 'default'; onConfirm: () => void } | null>(null)
 
   useEffect(() => {
     if (!roleLoaded) return
     if (!can('canViewAdmin')) { router.replace('/dashboard'); return }
     setLoading(true)
-    apiFetch<UserDetail>(`/api/admin/users/${id}`)
-      .then(setUserDetail)
+    apiFetch<{ user: UserDetail; project_count: number; note_count: number; session_count: number; team_count: number }>(`/api/admin/users/${id}`)
+      .then(r => {
+        if (r && r.user) {
+          setUserDetail({ ...r.user, project_count: r.project_count ?? 0, note_count: r.note_count ?? 0, session_count: r.session_count ?? 0, team_count: r.team_count ?? 0, issue_count: 0 })
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [roleLoaded, id])
 
   useEffect(() => {
-    if (tab === 'overview' || tab === 'chats') return
+    if (tab === 'overview') return
     if (fetchedTabs.has(tab)) return
     setFetchedTabs(prev => new Set([...prev, tab]))
 
     if (tab === 'projects') {
-      apiFetch<Project[]>(`/api/admin/users/${id}/projects`).then(setProjects).catch(() => {})
+      apiFetch<{ projects: Project[] }>(`/api/admin/users/${id}/projects`).then(r => setProjects(Array.isArray(r?.projects) ? r.projects : [])).catch(() => {})
     } else if (tab === 'notes') {
-      apiFetch<Note[]>(`/api/admin/users/${id}/notes`).then(setNotes).catch(() => {})
+      apiFetch<{ notes: Note[] }>(`/api/admin/users/${id}/notes`).then(r => setNotes(Array.isArray(r?.notes) ? r.notes : [])).catch(() => {})
+    } else if (tab === 'chats') {
+      apiFetch<{ sessions: AiSession[] }>(`/api/admin/users/${id}/sessions`).then(r => setSessions(Array.isArray(r?.sessions) ? r.sessions : [])).catch(() => {})
     } else if (tab === 'teams') {
-      apiFetch<Team[]>(`/api/admin/users/${id}/teams`).then(setTeams).catch(() => {})
+      apiFetch<{ teams: Team[] }>(`/api/admin/users/${id}/teams`).then(r => setTeams(Array.isArray(r?.teams) ? r.teams : [])).catch(() => {})
     } else if (tab === 'issues') {
-      apiFetch<Issue[]>(`/api/admin/users/${id}/issues`).then(setIssues).catch(() => {})
+      apiFetch<{ issues: Issue[] }>(`/api/admin/users/${id}/issues`).then(r => setIssues(Array.isArray(r?.issues) ? r.issues : [])).catch(() => {})
     }
   }, [tab, id])
 
@@ -136,13 +158,99 @@ export default function AdminUserDetailPage() {
     { label: 'Issues', value: u.issue_count, icon: 'bx-bug' },
   ] : []
 
-  function ActionBtn({ icon, label, danger }: { icon: string; label: string; danger?: boolean }) {
-    return (
-      <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: `1px solid ${danger ? 'rgba(239,68,68,0.25)' : cardBorder}`, background: danger ? 'rgba(239,68,68,0.07)' : 'transparent', color: danger ? '#ef4444' : textMuted, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
-        <i className={`bx ${icon}`} style={{ fontSize: 14 }} />
-        {label}
-      </button>
-    )
+  const menuRef = { current: null as HTMLDivElement | null }
+
+  async function handleAction(action: string) {
+    if (!u) return
+    setMenuOpen(false)
+    if (action === 'password') { setPwValue(''); setModal('password'); return }
+    if (action === 'notify') { setNotifTitle(''); setNotifMsg(''); setModal('notify'); return }
+    if (action === 'role') { setRoleValue(u.role); setModal('role'); return }
+    if (action === 'teams') {
+      setAddTeamId(''); setAddTeamRole('member')
+      Promise.all([
+        apiFetch<{ memberships: typeof userMemberships }>(`/api/admin/users/${id}/memberships`).then(r => setUserMemberships(r?.memberships ?? [])).catch(() => setUserMemberships([])),
+        apiFetch<{ teams: { id: string; name: string; slug: string; plan: string }[] }>('/api/admin/teams').then(r => setAllTeamsList((r?.teams ?? []).map(t => ({ id: t.id, name: t.name, plan: t.plan })))).catch(() => setAllTeamsList([])),
+      ])
+      setModal('teams')
+      return
+    }
+    if (action === 'impersonate') {
+      setConfirmDialog({
+        title: 'Impersonate User',
+        message: `Impersonate ${u.name}? You will be logged in as this user.`,
+        confirmLabel: 'Impersonate',
+        variant: 'warning',
+        onConfirm: async () => {
+          setConfirmDialog(null)
+          setActionLoading(true)
+          try {
+            const r = await apiFetch<{ token: string; user: UserDetail }>(`/api/admin/users/${id}/impersonate`, { method: 'POST' })
+            if (r?.token) {
+              localStorage.setItem('token', r.token)
+              window.location.href = '/dashboard'
+            }
+          } catch { /* handled silently */ }
+          setActionLoading(false)
+        },
+      })
+      return
+    }
+    if (action === 'toggle_status') {
+      const endpoint = u.status === 'active' ? 'suspend' : 'unsuspend'
+      const label = u.status === 'active' ? 'block' : 'unblock'
+      setConfirmDialog({
+        title: `${label.charAt(0).toUpperCase() + label.slice(1)} User`,
+        message: `Are you sure you want to ${label} ${u.name}?`,
+        confirmLabel: label.charAt(0).toUpperCase() + label.slice(1),
+        variant: u.status === 'active' ? 'danger' : 'warning',
+        onConfirm: async () => {
+          setConfirmDialog(null)
+          setActionLoading(true)
+          try {
+            await apiFetch(`/api/admin/users/${id}/${endpoint}`, { method: 'PATCH' })
+            setUserDetail({ ...u, status: u.status === 'active' ? 'suspended' : 'active' })
+          } catch { /* handled silently */ }
+          setActionLoading(false)
+        },
+      })
+    }
+  }
+
+  const [modalError, setModalError] = useState<string | null>(null)
+
+  async function submitPassword() {
+    if (!pwValue.trim() || pwValue.length < 8) { setModalError('Password must be at least 8 characters'); return }
+    setModalError(null)
+    setActionLoading(true)
+    try {
+      await apiFetch(`/api/admin/users/${id}/password`, { method: 'POST', body: JSON.stringify({ password: pwValue }) })
+      setModal(null)
+    } catch { setModalError('Failed to update password') }
+    setActionLoading(false)
+  }
+
+  async function submitNotify() {
+    if (!notifTitle.trim() || !notifMsg.trim()) { setModalError('Title and message are required'); return }
+    setModalError(null)
+    setActionLoading(true)
+    try {
+      await apiFetch(`/api/admin/users/${id}/notify`, { method: 'POST', body: JSON.stringify({ title: notifTitle, message: notifMsg, type: 'info' }) })
+      setModal(null)
+    } catch { setModalError('Failed to send notification') }
+    setActionLoading(false)
+  }
+
+  async function submitRole() {
+    if (!roleValue) return
+    setModalError(null)
+    setActionLoading(true)
+    try {
+      await apiFetch(`/api/admin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role: roleValue }) })
+      setUserDetail(prev => prev ? { ...prev, role: roleValue } : prev)
+      setModal(null)
+    } catch { setModalError('Failed to update role') }
+    setActionLoading(false)
   }
 
   const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: textDim, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '10px 16px', textAlign: 'start' }
@@ -161,7 +269,7 @@ export default function AdminUserDetailPage() {
     return <div style={{ padding: '40px 0', textAlign: 'center', fontSize: 13, color: textDim }}>Loading…</div>
   }
 
-  const tabFetching = (t: Tab) => !fetchedTabs.has(t) && t !== 'overview' && t !== 'chats'
+  const tabFetching = (t: Tab) => !fetchedTabs.has(t) && t !== 'overview'
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto', background: pageBg, minHeight: '100vh' }}>
@@ -177,7 +285,7 @@ export default function AdminUserDetailPage() {
         <>
           {/* Header card */}
           <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 14, padding: 24, marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
               <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,229,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#00e5ff', flexShrink: 0 }}>
                 {initials(u.name)}
               </div>
@@ -187,20 +295,44 @@ export default function AdminUserDetailPage() {
                   <span style={{ ...badgeSt, background: roleColors.bg, color: roleColors.color, border: `1px solid ${roleColors.border}` }}>{roleLabel}</span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
                     <span style={{ width: 7, height: 7, borderRadius: '50%', background: u.status === 'active' ? '#22c55e' : '#ef4444', display: 'inline-block' }} />
-                    <span style={{ color: u.status === 'active' ? '#22c55e' : '#ef4444' }}>{u.status.charAt(0).toUpperCase() + u.status.slice(1)}</span>
+                    <span style={{ color: u.status === 'active' ? '#22c55e' : '#ef4444' }}>{(u.status || 'unknown').charAt(0).toUpperCase() + (u.status || 'unknown').slice(1)}</span>
                   </span>
                 </div>
                 <div style={{ fontSize: 13, color: textMuted, marginBottom: 6 }}>{u.email}</div>
                 <div style={{ fontSize: 11, color: textDim }}>Joined {fmtDate(u.created_at)}</div>
               </div>
-            </div>
 
-            {/* Action buttons */}
-            <div style={{ display: 'flex', gap: 8, marginTop: 20, flexWrap: 'wrap' }}>
-              <ActionBtn icon="bx-lock-alt" label="Change Password" />
-              <ActionBtn icon="bx-bell" label="Send Notification" />
-              <ActionBtn icon="bx-user-check" label="Impersonate" />
-              <ActionBtn icon={u.status === 'active' ? 'bx-block' : 'bx-check-circle'} label={u.status === 'active' ? 'Block' : 'Unblock'} danger={u.status === 'active'} />
+              {/* Actions dropdown */}
+              <div style={{ position: 'relative', flexShrink: 0 }} ref={el => { menuRef.current = el }}>
+                <button onClick={() => setMenuOpen(v => !v)} disabled={actionLoading} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+                  <i className="bx bx-dots-vertical-rounded" style={{ fontSize: 16 }} />
+                  Actions
+                  <i className="bx bx-chevron-down" style={{ fontSize: 14 }} />
+                </button>
+                {menuOpen && (
+                  <>
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setMenuOpen(false)} />
+                    <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 6, minWidth: 200, background: 'var(--color-bg)', border: `1px solid ${cardBorder}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.3)', zIndex: 50, overflow: 'hidden', padding: 4 }}>
+                      {[
+                        { key: 'password', icon: 'bx-lock-alt', label: 'Change Password' },
+                        { key: 'notify', icon: 'bx-bell', label: 'Send Notification' },
+                        { key: 'role', icon: 'bx-shield', label: 'Change Role' },
+                        { key: 'teams', icon: 'bx-group', label: 'Manage Teams' },
+                        { key: 'impersonate', icon: 'bx-user-check', label: 'Impersonate' },
+                      ].map(a => (
+                        <button key={a.key} onClick={() => handleAction(a.key)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', border: 'none', borderRadius: 6, background: 'transparent', color: textPrimary, fontSize: 13, cursor: 'pointer', textAlign: 'start' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-alt)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                          <i className={`bx ${a.icon}`} style={{ fontSize: 15, color: textMuted }} /> {a.label}
+                        </button>
+                      ))}
+                      <div style={{ height: 1, background: cardBorder, margin: '4px 0' }} />
+                      <button onClick={() => handleAction('toggle_status')} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', border: 'none', borderRadius: 6, background: 'transparent', color: u.status === 'active' ? '#ef4444' : '#22c55e', fontSize: 13, cursor: 'pointer', textAlign: 'start' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-alt)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <i className={`bx ${u.status === 'active' ? 'bx-block' : 'bx-check-circle'}`} style={{ fontSize: 15 }} />
+                        {u.status === 'active' ? 'Block User' : 'Unblock User'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Stats */}
@@ -297,7 +429,30 @@ export default function AdminUserDetailPage() {
 
             {/* Chats */}
             {tab === 'chats' && (
-              <EmptyState icon="bx-chat" label="Chat history coming soon" />
+              tabFetching('chats') ? <TabLoading /> : sessions.length === 0 ? <EmptyState icon="bx-chat" label="No chat sessions found" /> : (
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${cardBorder}` }}>
+                      <th style={thStyle}>Name</th>
+                      <th style={thStyle}>Model</th>
+                      <th style={thStyle}>Messages</th>
+                      <th style={thStyle}>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sessions.map((s, i) => (
+                      <tr key={s.id} style={{ borderBottom: i < sessions.length - 1 ? `1px solid var(--color-bg-alt)` : 'none', background: i % 2 === 1 ? rowAlt : 'transparent' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = rowHover)}
+                        onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 1 ? rowAlt : 'transparent')}>
+                        <td style={{ ...tdStyle, fontWeight: 500 }}>{s.name || 'Untitled'}</td>
+                        <td style={tdStyle}><span style={{ ...badgeSt, background: 'rgba(0,229,255,0.1)', color: '#00e5ff', border: '1px solid rgba(0,229,255,0.2)' }}>{s.model || 'unknown'}</span></td>
+                        <td style={{ ...tdStyle, color: textMuted }}>{s.message_count ?? 0}</td>
+                        <td style={{ ...tdStyle, color: textMuted }}>{fmtDate(s.created_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )
             )}
 
             {/* Teams */}
@@ -360,6 +515,157 @@ export default function AdminUserDetailPage() {
           </div>
         </>
       )}
+
+      {/* Modals */}
+      {modal && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100 }} onClick={() => { if (!actionLoading) { setModal(null); setModalError(null) } }} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'var(--color-bg)', border: `1px solid ${cardBorder}`, borderRadius: 14, padding: 24, width: modal === 'teams' ? 520 : 400, maxWidth: '90vw', zIndex: 101, boxShadow: '0 16px 48px rgba(0,0,0,0.4)' }}>
+
+            {modalError && (
+              <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 8, fontSize: 12, background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+                {modalError}
+              </div>
+            )}
+
+            {modal === 'password' && (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700, color: textPrimary, marginBottom: 16 }}>Change Password</div>
+                <label style={{ fontSize: 12, color: textMuted, display: 'block', marginBottom: 6 }}>New Password</label>
+                <input type="password" value={pwValue} onChange={e => setPwValue(e.target.value)} placeholder="Min 8 characters" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'var(--color-bg-alt)', color: textPrimary, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+                  <button onClick={() => setModal(null)} disabled={actionLoading} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={submitPassword} disabled={actionLoading} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#00e5ff', color: '#000', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: actionLoading ? 0.5 : 1 }}>{actionLoading ? 'Saving...' : 'Update Password'}</button>
+                </div>
+              </>
+            )}
+
+            {modal === 'notify' && (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700, color: textPrimary, marginBottom: 16 }}>Send Notification</div>
+                <label style={{ fontSize: 12, color: textMuted, display: 'block', marginBottom: 6 }}>Title</label>
+                <input value={notifTitle} onChange={e => setNotifTitle(e.target.value)} placeholder="Notification title" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'var(--color-bg-alt)', color: textPrimary, fontSize: 13, outline: 'none', marginBottom: 12, boxSizing: 'border-box' }} />
+                <label style={{ fontSize: 12, color: textMuted, display: 'block', marginBottom: 6 }}>Message</label>
+                <textarea value={notifMsg} onChange={e => setNotifMsg(e.target.value)} placeholder="Notification message" rows={3} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'var(--color-bg-alt)', color: textPrimary, fontSize: 13, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+                  <button onClick={() => setModal(null)} disabled={actionLoading} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={submitNotify} disabled={actionLoading} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#00e5ff', color: '#000', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: actionLoading ? 0.5 : 1 }}>{actionLoading ? 'Sending...' : 'Send'}</button>
+                </div>
+              </>
+            )}
+
+            {modal === 'role' && (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700, color: textPrimary, marginBottom: 16 }}>Change Role</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {(['admin', 'team_owner', 'team_manager', 'user'] as const).map(r => (
+                    <label key={r} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, border: `1px solid ${roleValue === r ? '#00e5ff' : cardBorder}`, background: roleValue === r ? 'rgba(0,229,255,0.07)' : 'transparent', cursor: 'pointer' }}>
+                      <input type="radio" name="role" checked={roleValue === r} onChange={() => setRoleValue(r)} style={{ accentColor: '#00e5ff' }} />
+                      <span style={{ fontSize: 13, color: textPrimary, fontWeight: roleValue === r ? 600 : 400 }}>{ROLE_LABELS[r] || r}</span>
+                    </label>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+                  <button onClick={() => setModal(null)} disabled={actionLoading} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={submitRole} disabled={actionLoading} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#00e5ff', color: '#000', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: actionLoading ? 0.5 : 1 }}>{actionLoading ? 'Saving...' : 'Update Role'}</button>
+                </div>
+              </>
+            )}
+
+            {modal === 'teams' && (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700, color: textPrimary, marginBottom: 4 }}>Manage Teams</div>
+                <div style={{ fontSize: 13, color: textMuted, marginBottom: 16 }}>Add or remove {u?.name || 'this user'} from teams</div>
+
+                {/* Current memberships */}
+                {userMemberships.length > 0 ? (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: textDim, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Current Teams</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {userMemberships.map(m => (
+                        <div key={m.team_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'var(--color-bg-alt)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{m.team_name}</span>
+                            <span style={{ ...badgeSt, ...planStyle(m.team_plan) }}>{m.team_plan}</span>
+                            <span style={{ fontSize: 11, color: textMuted }}>({m.role})</span>
+                          </div>
+                          <button onClick={() => {
+                            setConfirmDialog({
+                              title: 'Remove from Team',
+                              message: `Remove from "${m.team_name}"?`,
+                              confirmLabel: 'Remove',
+                              variant: 'danger',
+                              onConfirm: async () => {
+                                setConfirmDialog(null)
+                                try {
+                                  await apiFetch(`/api/admin/users/${id}/memberships/${m.team_id}`, { method: 'DELETE' })
+                                  setUserMemberships(prev => prev.filter(x => x.team_id !== m.team_id))
+                                  setUserDetail(prev => prev ? { ...prev, team_count: Math.max(0, prev.team_count - 1) } : prev)
+                                } catch { /* handled silently */ }
+                              },
+                            })
+                          }} style={{ width: 26, height: 26, borderRadius: 6, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Remove from team">
+                            <i className="bx bx-x" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '16px 0', textAlign: 'center', fontSize: 13, color: textDim, marginBottom: 16 }}>Not a member of any team</div>
+                )}
+
+                {/* Add to team */}
+                <div style={{ fontSize: 12, fontWeight: 600, color: textDim, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Add to Team</div>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                  <select value={addTeamId} onChange={e => setAddTeamId(e.target.value)} style={{ flex: 2, padding: '8px 12px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'var(--color-bg-alt)', color: textPrimary, fontSize: 13, outline: 'none' }}>
+                    <option value="">Select a team...</option>
+                    {allTeamsList.filter(t => !userMemberships.some(m => m.team_id === t.id)).map(t => (
+                      <option key={t.id} value={t.id}>{t.name} ({t.plan})</option>
+                    ))}
+                  </select>
+                  <select value={addTeamRole} onChange={e => setAddTeamRole(e.target.value)} style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'var(--color-bg-alt)', color: textPrimary, fontSize: 13, outline: 'none' }}>
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                    <option value="owner">Owner</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <button onClick={() => setModal(null)} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Close</button>
+                  <button onClick={async () => {
+                    if (!addTeamId) { setModalError('Select a team'); return }
+                    setModalError(null)
+                    setActionLoading(true)
+                    try {
+                      await apiFetch(`/api/admin/teams/${addTeamId}/members`, { method: 'POST', body: JSON.stringify({ user_id: Number(id), role: addTeamRole }) })
+                      const team = allTeamsList.find(t => t.id === addTeamId)
+                      setUserMemberships(prev => [...prev, { membership_id: '', team_id: addTeamId, team_name: team?.name || '', team_plan: team?.plan || 'free', role: addTeamRole }])
+                      setUserDetail(prev => prev ? { ...prev, team_count: prev.team_count + 1 } : prev)
+                      setAddTeamId('')
+                    } catch (e: any) {
+                      setModalError(e?.message || 'Failed to add to team')
+                    }
+                    setActionLoading(false)
+                  }} disabled={actionLoading || !addTeamId} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#00e5ff', color: '#000', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: actionLoading || !addTeamId ? 0.4 : 1 }}>
+                    {actionLoading ? 'Adding...' : 'Add to Team'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
+
+      <ConfirmDialog
+        open={!!confirmDialog}
+        title={confirmDialog?.title}
+        message={confirmDialog?.message ?? ''}
+        confirmLabel={confirmDialog?.confirmLabel}
+        variant={confirmDialog?.variant}
+        onConfirm={() => confirmDialog?.onConfirm()}
+        onCancel={() => setConfirmDialog(null)}
+      />
     </div>
   )
 }

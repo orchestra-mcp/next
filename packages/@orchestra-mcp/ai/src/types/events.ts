@@ -52,6 +52,7 @@ export type CardCategory =
 export interface BashEvent extends BaseEvent {
   type: 'bash';
   command: string;
+  description?: string;
   output?: string;
   exitCode?: number;
   cwd?: string;
@@ -67,7 +68,10 @@ export interface GrepMatch {
 export interface GrepEvent extends BaseEvent {
   type: 'grep';
   pattern: string;
+  filePattern?: string;
+  path?: string;
   matches: GrepMatch[];
+  resultText?: string;
   totalMatches?: number;
 }
 
@@ -94,6 +98,7 @@ export interface McpEvent extends BaseEvent {
   serverName?: string;
   arguments?: Record<string, unknown>;
   result?: string;
+  resultText?: string;
 }
 
 export interface OrchestraEvent extends BaseEvent {
@@ -110,6 +115,7 @@ export interface EditEvent extends BaseEvent {
   type: 'edit';
   filePath: string;
   language?: string;
+  description?: string;
   original: string;
   modified: string;
 }
@@ -133,6 +139,7 @@ export interface ReadEvent extends BaseEvent {
 export interface GlobEvent extends BaseEvent {
   type: 'glob';
   pattern: string;
+  path?: string;
   matches?: string[];
   totalMatches?: number;
 }

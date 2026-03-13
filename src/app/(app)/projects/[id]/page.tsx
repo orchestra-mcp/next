@@ -1,9 +1,11 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useMCP } from '@/hooks/useMCP'
 import { use } from 'react'
 import Link from 'next/link'
 import { useSidebarMetaStore } from '@/store/sidebar-meta'
+import { useRoleStore } from '@/store/roles'
 
 interface Feature {
   id: string
@@ -54,6 +56,44 @@ const planStatusColors: Record<string, string> = {
 /** Default accent when no sidebar color is set. */
 const DEFAULT_ACCENT = '#a900ff'
 
+// ── Tooltip wrapper for stacked avatars ──
+function AvatarTooltip({ label, children }: { label: string; children: React.ReactNode }) {
+  const [show, setShow] = useState(false)
+  const [pos, setPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const ref = useRef<HTMLDivElement>(null)
+
+  return (
+    <div
+      ref={ref}
+      onMouseEnter={() => {
+        if (ref.current) {
+          const r = ref.current.getBoundingClientRect()
+          setPos({ x: r.left + r.width / 2, y: r.top - 4 })
+        }
+        setShow(true)
+      }}
+      onMouseLeave={() => setShow(false)}
+      style={{ display: 'inline-flex', position: 'relative' }}
+    >
+      {children}
+      {show && createPortal(
+        <div style={{
+          position: 'fixed', left: pos.x, top: pos.y, transform: 'translate(-50%, -100%)',
+          zIndex: 10010, pointerEvents: 'none',
+          padding: '4px 8px', borderRadius: 6,
+          background: 'var(--color-bg-contrast)', border: '1px solid var(--color-border)',
+          boxShadow: 'var(--color-shadow-sm)',
+          fontSize: 11, fontWeight: 600, color: 'var(--color-fg)',
+          whiteSpace: 'nowrap',
+        }}>
+          {label}
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
 function StatusBadge({ status }: { status: string }) {
   const color = statusColors[status] ?? 'rgba(120,120,120,0.5)'
   return (
@@ -101,10 +141,21 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   // Subscribe to all sidebar-meta items so any change triggers re-render
   const sidebarItems = useSidebarMetaStore(s => s.items)
+  const metaStore = useSidebarMetaStore()
   const projectMeta = sidebarItems[`projects:${id}`]
   const accent = projectMeta?.color || DEFAULT_ACCENT
   const icon = projectMeta?.icon || 'bx-folder'
   const customName = projectMeta?.customName
+
+  // Teams & members
+  const { teams: allTeams, members: allMembers } = useRoleStore()
+  const teamIds = metaStore.getTeamIds('projects', id)
+  const assigneeIds = metaStore.getAssigneeIds('projects', id)
+  const projectTeams = allTeams.filter(t => teamIds.includes(t.id))
+  const projectMembers = allMembers.filter(m => assigneeIds.includes(String(m.id)))
+
+  // Project date
+  const [projectDate, setProjectDate] = useState<string>('')
 
   const fetchProjectData = useCallback(async () => {
     if (connStatus !== 'connected') return
@@ -129,6 +180,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         if (nameMatch) setProjectName(nameMatch[1].trim())
         const descMatch = statusText.match(/\*\*Description:\*\*\s*(.+)/i)
         if (descMatch) setProjectDesc(descMatch[1].trim())
+        const dateMatch = statusText.match(/\*\*Created:\*\*\s*(.+)/i) || statusText.match(/created[_\s]?at[:\s]*(\S+)/i)
+        if (dateMatch) setProjectDate(dateMatch[1].trim())
       } catch { /* fallback to id */ }
 
       setLoading(false)
@@ -215,10 +268,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       </Link>
 
       {/* ═══════════════════════ Project Header ═══════════════════════ */}
-      <div style={{ marginBottom: 28, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: '24px 28px', position: 'relative', overflow: 'hidden' }}>
-        {/* Subtle accent gradient bar at top */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${accent}, ${accent}44)` }} />
-
+      <div style={{ marginBottom: 28, background: cardBg, borderRadius: 16, padding: '24px 28px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
           {/* Icon */}
           <div style={{ width: 52, height: 52, borderRadius: 14, background: `${accent}12`, border: `1.5px solid ${accent}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -244,6 +294,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   <i className="bx bx-map" /> {plans.length} plan{plans.length !== 1 ? 's' : ''}
                 </span>
               )}
+              {projectDate && (
+                <span style={{ fontSize: 12, color: statsColor, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <i className="bx bx-calendar" /> {new Date(projectDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                </span>
+              )}
               <span style={{ fontSize: 11, color: textDim, fontFamily: 'monospace' }}>{id}</span>
             </div>
 
@@ -257,6 +312,64 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <div style={{ height: 5, borderRadius: 3, background: 'var(--color-bg-active)', overflow: 'hidden' }}>
                   <div style={{ height: '100%', borderRadius: 3, background: progress === 100 ? '#22c55e' : `linear-gradient(90deg, ${accent}, ${accent}88)`, width: `${progress}%`, transition: 'width 0.3s ease' }} />
                 </div>
+              </div>
+            )}
+
+            {/* Teams & Members stacked avatars */}
+            {(projectTeams.length > 0 || projectMembers.length > 0) && (
+              <div style={{ display: 'flex', gap: 16, marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+                {projectTeams.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 10, color: textDim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Teams</span>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {projectTeams.map((tm, idx) => (
+                        <AvatarTooltip key={tm.id} label={tm.name}>
+                          <div style={{
+                            width: 28, height: 28, borderRadius: '50%',
+                            background: tm.avatar_url ? 'transparent' : `${accent}22`,
+                            border: '2px solid var(--color-bg-alt)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            overflow: 'hidden', flexShrink: 0, cursor: 'default',
+                            marginInlineStart: idx > 0 ? -8 : 0,
+                            zIndex: projectTeams.length - idx,
+                          }}>
+                            {tm.avatar_url ? (
+                              <img src={tm.avatar_url} alt={tm.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <span style={{ fontSize: 11, fontWeight: 700, color: accent }}>{tm.name.charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                        </AvatarTooltip>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {projectMembers.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 10, color: textDim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Members</span>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {projectMembers.map((m, idx) => (
+                        <AvatarTooltip key={m.id} label={m.name}>
+                          <div style={{
+                            width: 28, height: 28, borderRadius: '50%',
+                            background: m.avatar_url ? 'transparent' : 'rgba(0,229,255,0.13)',
+                            border: '2px solid var(--color-bg-alt)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            overflow: 'hidden', flexShrink: 0, cursor: 'default',
+                            marginInlineStart: idx > 0 ? -8 : 0,
+                            zIndex: projectMembers.length - idx,
+                          }}>
+                            {m.avatar_url ? (
+                              <img src={m.avatar_url} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#00e5ff' }}>{m.name.charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                        </AvatarTooltip>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -301,7 +414,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 padding: '5px 12px', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: 'none',
                 background: activeStatus === s ? filterActiveBg : filterInactiveBg,
                 color: activeStatus === s ? filterActiveColor : filterInactiveColor,
-                borderInlineStart: activeStatus === s ? '2px solid #a900ff' : '2px solid transparent',
+                /* no left border */
               }}
             >
               {s === 'all' ? 'All' : s.replace(/-/g, ' ')}

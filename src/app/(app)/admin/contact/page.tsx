@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useRoleStore } from '@/store/roles'
 import { useAdminStore, type AdminContact } from '@/store/admin'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 export default function AdminContactPage() {
   const router = useRouter()
@@ -11,6 +12,7 @@ export default function AdminContactPage() {
   const { contact, loading, error, fetchContact, deleteContact, clearError } = useAdminStore()
 
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null)
 
   useEffect(() => {
     if (!roleLoaded) return
@@ -41,14 +43,19 @@ export default function AdminContactPage() {
     return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  async function handleDelete(msg: AdminContact) {
-    if (!window.confirm(`Delete message from ${msg.name}?`)) return
-    try {
-      await deleteContact(msg.id)
-      if (expandedId === msg.id) setExpandedId(null)
-    } catch {
-      // error shown via store
-    }
+  function handleDelete(msg: AdminContact) {
+    setConfirmDialog({
+      message: `Delete message from ${msg.name}?`,
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          await deleteContact(msg.id)
+          if (expandedId === msg.id) setExpandedId(null)
+        } catch {
+          // error shown via store
+        }
+      },
+    })
   }
 
   function toggleExpand(id: number) {
@@ -156,6 +163,16 @@ export default function AdminContactPage() {
           )
         })}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDialog}
+        title="Delete Message"
+        message={confirmDialog?.message ?? ''}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => confirmDialog?.onConfirm()}
+        onCancel={() => setConfirmDialog(null)}
+      />
     </div>
   )
 }

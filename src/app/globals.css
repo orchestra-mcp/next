@@ -509,8 +509,13 @@ a { color: inherit; text-decoration: none; }
   .mkt-solution-card { padding: 24px !important; }
   /* Marketing 3-col grids: stack */
   .mkt-grid-3 { grid-template-columns: 1fr !important; }
+  /* Marketing 4-col grids: stack */
+  .mkt-grid-4 { grid-template-columns: 1fr !important; }
   /* Marketing 2-col grids: stack */
   .mkt-grid-2 { grid-template-columns: 1fr !important; }
+  /* Marketing filter bar: wrap */
+  .mkt-filter-bar { flex-direction: column !important; align-items: stretch !important; }
+  .mkt-filter-bar > div[style*="width: 1px"] { display: none !important; }
   /* Marketing CTA buttons: stack */
   .mkt-cta-row { flex-direction: column !important; align-items: stretch !important; }
   .mkt-cta-row a { text-align: center !important; justify-content: center !important; }
@@ -528,6 +533,8 @@ a { color: inherit; text-decoration: none; }
   .grid-sidebar { grid-template-columns: 1fr !important; }
   /* Marketing 3-col grids: 2-col on tablet */
   .mkt-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+  /* Marketing 4-col grids: 2-col on tablet */
+  .mkt-grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
 }
 
 /* ─── RTL / Arabic Support ────────────────────────────────────────── */

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { SidebarItem } from './sidebar-item'
@@ -10,18 +10,20 @@ import { useRoleStore } from '@/store/roles'
 import { useSidebarMetaStore } from '@/store/sidebar-meta'
 
 // ── Sidebar data types ───────────────────────────────────────
-export interface SidebarProject { id: string; name: string; description?: string }
-export interface SidebarNote { id: string; title: string; pinned: boolean; tags: string[]; icon?: string; color?: string }
-export interface SidebarPlan { id: string; title: string; status: string; featureCount: number; project_id?: string }
+export interface SidebarProject { id: string; name: string; description?: string; team_id?: string; owner_id?: number }
+export interface SidebarNote { id: string; title: string; pinned: boolean; tags: string[]; icon?: string; color?: string; team_id?: string }
+export interface SidebarPlan { id: string; title: string; status: string; featureCount: number; project_id?: string; team_id?: string }
 export interface SidebarSession {
   id: string
   name: string
   account: string
   status: string
   messages: number
+  team_id?: string
 }
-export interface SidebarDocFile { name: string; path: string; folder: string; pinned?: boolean; icon?: string; color?: string }
+export interface SidebarDocFile { name: string; path: string; folder: string; pinned?: boolean; icon?: string; color?: string; team_id?: string }
 export interface SidebarDevPlugin { key: string; label: string; icon: string; color: string; toolCount: number }
+export interface SidebarRepo { id: string; name: string; repo_owner: string; repo_name: string; language: string; status: string; branch: string; is_private: boolean; description: string; team_id?: string }
 
 // ── Skeleton shimmer line for loading states ──────────────────
 function SkeletonLine({ width }: { width: string }) {
@@ -121,30 +123,163 @@ function DeleteConfirmDialog({
   )
 }
 
+// ── Team option for context submenu ──────────────────────────
+interface CtxTeamOption { id: string; name: string }
+
+// ── Assign Member Modal (search by name/email) ─────────────
+function AssignMemberModal({
+  members, onAssign, onClose,
+}: {
+  members: { id: number; name: string; email: string; avatar_url?: string | null }[]
+  onAssign: (memberId: number) => void
+  onClose: () => void
+}) {
+  const t = useTranslations('sidebar')
+  const [search, setSearch] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { inputRef.current?.focus() }, [])
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const q = search.toLowerCase()
+  const filtered = members.filter(m =>
+    m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
+  )
+
+  return createPortal(
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 10002,
+        background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'var(--color-bg-contrast)', border: '1px solid var(--color-border)',
+          borderRadius: 12, width: 340, maxHeight: 420, display: 'flex', flexDirection: 'column',
+          boxShadow: 'var(--color-shadow-lg)', overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid var(--color-border)' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)', marginBottom: 8 }}>
+            {t('assignMember')}
+          </div>
+          <div style={{ position: 'relative' }}>
+            <i className="bx bx-search" style={{
+              position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+              fontSize: 14, color: 'var(--color-fg-dim)',
+            }} />
+            <input
+              ref={inputRef}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={t('searchMemberPlaceholder')}
+              style={{
+                width: '100%', padding: '7px 10px 7px 32px', fontSize: 12,
+                background: 'var(--color-bg-active)', border: '1px solid var(--color-border)',
+                borderRadius: 8, color: 'var(--color-fg)', outline: 'none',
+              }}
+            />
+          </div>
+        </div>
+        {/* List */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
+          {/* Unassign option */}
+          <button
+            onClick={() => { onAssign(0); onClose() }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+              padding: '8px 16px', background: 'transparent', border: 'none',
+              cursor: 'pointer', fontSize: 12, color: 'var(--color-fg-dim)', textAlign: 'start',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-active)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <i className="bx bx-x-circle" style={{ fontSize: 16, opacity: 0.5 }} />
+            {t('unassigned')}
+          </button>
+          {filtered.length === 0 && search && (
+            <div style={{ padding: '16px', textAlign: 'center', fontSize: 12, color: 'var(--color-fg-dim)' }}>
+              {t('noMembersFound')}
+            </div>
+          )}
+          {filtered.map(m => (
+            <button
+              key={m.id}
+              onClick={() => { onAssign(m.id); onClose() }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                padding: '8px 16px', background: 'transparent', border: 'none',
+                cursor: 'pointer', fontSize: 12, color: 'var(--color-fg-muted)', textAlign: 'start',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-active)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {m.avatar_url ? (
+                <img src={m.avatar_url} alt="" style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0 }} />
+              ) : (
+                <div style={{
+                  width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                  background: 'var(--color-bg-active)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 600, color: 'var(--color-fg-dim)',
+                }}>
+                  {m.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 500, color: 'var(--color-fg)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--color-fg-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.email}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 // ── Context menu (right-click) ───────────────────────────────
 function SidebarContextMenu({
-  x, y, section, isPinned,
-  onClose, onPin, onDelete, onRename, onSetColor, onSetIcon,
+  x, y, section, isPinned, bulkCount,
+  onClose, onPin, onDelete, onRename, onSetColor, onSetIcon, onSelect,
+  teams, onMoveToTeam, onOpenAssignModal,
 }: {
   x: number; y: number
-  section: string; isPinned?: boolean
+  section: string; isPinned?: boolean; bulkCount?: number
   onClose: () => void
   onPin?: () => void
   onDelete: () => void
   onRename?: () => void
   onSetColor?: (color: string) => void
   onSetIcon?: (icon: string) => void
+  onSelect?: () => void
+  teams?: CtxTeamOption[]
+  onMoveToTeam?: (teamId: string) => void
+  onOpenAssignModal?: () => void
 }) {
   const t = useTranslations('sidebar')
   const menuRef = useRef<HTMLDivElement>(null)
   const [colorSub, setColorSub] = useState(false)
   const [iconSub, setIconSub] = useState(false)
+  const [teamSub, setTeamSub] = useState(false)
 
-  const crudSections = ['projects', 'notes', 'plans', 'tunnels', 'chat', 'wiki']
+  const crudSections = ['projects', 'notes', 'plans', 'tunnels', 'chat', 'wiki', 'repos']
+  const isBulk = (bulkCount ?? 0) > 0
   const hasPinAction = crudSections.includes(section)
-  const hasRenameAction = crudSections.includes(section)
-  const hasColorAction = crudSections.includes(section)
-  const hasIconAction = crudSections.includes(section)
+  const hasRenameAction = !isBulk && crudSections.includes(section)
+  const hasColorAction = !isBulk && crudSections.includes(section)
+  const hasIconAction = !isBulk && crudSections.includes(section)
+  const hasSelectAction = !isBulk && crudSections.includes(section)
+  const hasTeamAction = (teams?.length ?? 0) > 0 && onMoveToTeam
+  const hasMemberAction = !!onOpenAssignModal
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -175,6 +310,23 @@ function SidebarContextMenu({
       padding: '4px 0', minWidth: 170,
       backdropFilter: 'blur(12px)',
     }}>
+      {/* Bulk header */}
+      {isBulk && (
+        <div style={{ padding: '4px 12px 6px', fontSize: 11, fontWeight: 600, color: 'var(--color-fg-dim)' }}>
+          {t('selected', { count: bulkCount ?? 0 })}
+        </div>
+      )}
+      {hasSelectAction && onSelect && (
+        <button
+          style={itemStyle}
+          onClick={() => { onSelect(); onClose() }}
+          onMouseEnter={e => (e.currentTarget.style.background = ctxHoverBg)}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          <i className="bx bx-check-square" style={{ fontSize: 14, width: 16, textAlign: 'center' }} />
+          {t('selectMode')}
+        </button>
+      )}
       {hasPinAction && onPin && (
         <button
           style={itemStyle}
@@ -183,7 +335,7 @@ function SidebarContextMenu({
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
           <i className={`bx ${isPinned ? 'bx-pin' : 'bxs-pin'}`} style={{ fontSize: 14, width: 16, textAlign: 'center' }} />
-          {isPinned ? t('unpin') : t('pin')}
+          {isBulk ? t('bulkPin') : (isPinned ? t('unpin') : t('pin'))}
         </button>
       )}
       {hasRenameAction && onRename && (
@@ -201,7 +353,7 @@ function SidebarContextMenu({
         <div style={{ position: 'relative' }}>
           <button
             style={itemStyle}
-            onClick={() => { setColorSub(v => !v); setIconSub(false) }}
+            onClick={() => { setColorSub(v => !v); setIconSub(false); setTeamSub(false) }}
             onMouseEnter={e => (e.currentTarget.style.background = ctxHoverBg)}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
@@ -239,7 +391,7 @@ function SidebarContextMenu({
         <div style={{ position: 'relative' }}>
           <button
             style={itemStyle}
-            onClick={() => { setIconSub(v => !v); setColorSub(false) }}
+            onClick={() => { setIconSub(v => !v); setColorSub(false); setTeamSub(false) }}
             onMouseEnter={e => (e.currentTarget.style.background = ctxHoverBg)}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
@@ -270,6 +422,63 @@ function SidebarContextMenu({
           )}
         </div>
       )}
+      {/* Team submenu */}
+      {hasTeamAction && (
+        <div style={{ position: 'relative' }}>
+          <button
+            style={itemStyle}
+            onClick={() => { setTeamSub(v => !v); setColorSub(false); setIconSub(false) }}
+            onMouseEnter={e => (e.currentTarget.style.background = ctxHoverBg)}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <i className="bx bx-group" style={{ fontSize: 14, width: 16, textAlign: 'center' }} />
+            {t('moveToTeam')}
+            <i className="bx bx-chevron-right" style={{ fontSize: 12, marginInlineStart: 'auto' }} />
+          </button>
+          {teamSub && (
+            <div style={{
+              position: 'absolute', top: 0, left: '100%', marginLeft: 4,
+              background: dropBg, border: `1px solid ${dropBorder}`, borderRadius: 8,
+              padding: '4px 0', minWidth: 150, maxHeight: 240, overflowY: 'auto',
+              boxShadow: 'var(--color-shadow-md)',
+            }}>
+              <button
+                style={{ ...itemStyle, gap: 8 }}
+                onClick={() => { onMoveToTeam!(''); onClose() }}
+                onMouseEnter={e => (e.currentTarget.style.background = ctxHoverBg)}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              >
+                <i className="bx bx-user" style={{ fontSize: 14, width: 16, textAlign: 'center', opacity: 0.5 }} />
+                {t('personal')}
+              </button>
+              {teams!.map(tm => (
+                <button
+                  key={tm.id}
+                  style={{ ...itemStyle, gap: 8 }}
+                  onClick={() => { onMoveToTeam!(tm.id); onClose() }}
+                  onMouseEnter={e => (e.currentTarget.style.background = ctxHoverBg)}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <i className="bx bx-group" style={{ fontSize: 14, width: 16, textAlign: 'center' }} />
+                  {tm.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* Assign member — opens a search modal */}
+      {hasMemberAction && (
+        <button
+          style={itemStyle}
+          onClick={() => { onOpenAssignModal!(); onClose() }}
+          onMouseEnter={e => (e.currentTarget.style.background = ctxHoverBg)}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          <i className="bx bx-user-plus" style={{ fontSize: 14, width: 16, textAlign: 'center' }} />
+          {t('assignMember')}
+        </button>
+      )}
       <div style={{ height: 1, background: dropBorder, margin: '4px 0' }} />
       <button
         style={{ ...itemStyle, color: '#ef4444' }}
@@ -278,7 +487,7 @@ function SidebarContextMenu({
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
         <i className="bx bx-trash" style={{ fontSize: 14, width: 16, textAlign: 'center' }} />
-        {t('delete')}
+        {isBulk ? t('bulkDelete') : t('delete')}
       </button>
     </div>,
     document.body
@@ -338,14 +547,16 @@ function PlusContextMenu({
 
 // ── Sidebar CRUD list panel ──────────────────────────────────
 export function SidebarListPanel({
-  section, activePath, textPrimary, textMuted, textDim, borderColor, navActiveBg, navInactiveColor,
-  sidebarProjects, sidebarNotes, sidebarPlans, sessions, sidebarDocs, sidebarDevPlugins, sidebarLoading,
+  section, activePath, activeTeamId, textPrimary, textMuted, textDim, borderColor, navActiveBg, navInactiveColor,
+  sidebarProjects, sidebarNotes, sidebarPlans, sessions, sidebarDocs, sidebarDevPlugins, sidebarRepos, githubConnected, sidebarLoading,
   sidebarSearch, setSidebarSearch,
-  onPinItem, onDeleteItem, onRenameItem, onColorItem, onIconItem, onCreateItem,
+  onPinItem, onDeleteItem, onRenameItem, onColorItem, onIconItem, onCreateItem, onMoveToTeam, onAssignMember,
 }: {
-  section: 'projects' | 'notes' | 'plans' | 'tunnels' | 'chat' | 'wiki' | 'devtools' | 'settings' | 'team'
+  section: 'projects' | 'notes' | 'plans' | 'tunnels' | 'chat' | 'wiki' | 'devtools' | 'repos' | 'settings' | 'team'
   /** Effective pathname for active item highlighting (may differ from browser pathname when restoring last section) */
   activePath: string
+  /** Active team ID — when set, sidebar items are filtered to this team. Null/undefined = personal (show all). */
+  activeTeamId?: string | null
   textPrimary: string
   textMuted: string
   textDim: string
@@ -358,6 +569,8 @@ export function SidebarListPanel({
   sessions: SidebarSession[]
   sidebarDocs: SidebarDocFile[]
   sidebarDevPlugins: SidebarDevPlugin[]
+  sidebarRepos: SidebarRepo[]
+  githubConnected?: boolean | null
   sidebarLoading: boolean
   sidebarSearch: string
   setSidebarSearch: (v: string) => void
@@ -367,13 +580,23 @@ export function SidebarListPanel({
   onColorItem?: (section: string, id: string, color: string) => void
   onIconItem?: (section: string, id: string, icon: string) => void
   onCreateItem?: (section: string, kind: string, data: Record<string, string>) => void
+  onMoveToTeam?: (section: string, ids: string[], teamId: string) => Promise<void>
+  onAssignMember?: (section: string, ids: string[], memberId: number) => Promise<void>
 }) {
   const router = useRouter()
+  const currentPathname = usePathname()
   const { tunnels, connectionStatus: tunnelConnectionStatus } = useTunnelStore()
-  const { can } = useRoleStore()
+  const { can, teams: roleTeams, members: roleMembers } = useRoleStore()
   const sidebarMeta = useSidebarMetaStore()
   const t = useTranslations('sidebar')
   const hoverBg = 'var(--color-bg-active)'
+
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3000)
+  }, [])
 
   // Infinite scroll state
   const [visibleCount, setVisibleCount] = useState(20)
@@ -405,7 +628,7 @@ export function SidebarListPanel({
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   // Context menu state
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string; name: string; isPinned?: boolean } | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string; name: string; isPinned?: boolean; bulkCount?: number } | null>(null)
 
   // Plus context menu state
   const [plusMenuRect, setPlusMenuRect] = useState<DOMRect | null>(null)
@@ -433,6 +656,9 @@ export function SidebarListPanel({
   // Selection mode state
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  // Assign member modal state
+  const [assignModalTarget, setAssignModalTarget] = useState<string[] | null>(null)
 
   // Long-press state
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -649,8 +875,13 @@ export function SidebarListPanel({
   const handleContextMenu = useCallback((e: React.MouseEvent, id: string, name: string, isPinned?: boolean) => {
     if (section === 'settings' || section === 'team') return
     e.preventDefault()
-    setContextMenu({ x: e.clientX, y: e.clientY, id, name, isPinned })
-  }, [section])
+    // If items are selected, show bulk context menu
+    if (selectionMode && selectedIds.size > 0) {
+      setContextMenu({ x: e.clientX, y: e.clientY, id: '__bulk__', name: '', isPinned: undefined, bulkCount: selectedIds.size })
+    } else {
+      setContextMenu({ x: e.clientX, y: e.clientY, id, name, isPinned, bulkCount: undefined })
+    }
+  }, [section, selectionMode, selectedIds])
 
   const handleRenameSubmit = useCallback((id: string) => {
     if (renameValue.trim() && renameValue.trim() !== '') {
@@ -702,9 +933,9 @@ export function SidebarListPanel({
     team: '/team',
   }
 
-  // Detect project scope from active path
-  const isInProjectScope = activePath.startsWith('/projects/') && activePath !== '/projects'
-  const projectSlug = isInProjectScope ? activePath.split('/')[2] : null
+  // Detect project scope from actual URL (not activePath, which may be a restored last-visited path for highlighting)
+  const isInProjectScope = currentPathname.startsWith('/projects/') && currentPathname !== '/projects'
+  const projectSlug = isInProjectScope ? currentPathname.split('/')[2] : null
 
   const plusMenuSections: Record<string, Array<{ label: string; icon?: string; action: () => void }>> = {
     projects: isInProjectScope && projectSlug
@@ -739,35 +970,63 @@ export function SidebarListPanel({
     }
   }
 
-  // Filter items by search
-  const filteredProjects = sidebarProjects.filter(p =>
-    p.name.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
-    p.id.toLowerCase().includes(sidebarSearch.toLowerCase())
-  )
-  const filteredNotes = sidebarNotes.filter(n =>
-    n.title.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
-    n.tags.some(tag => tag.toLowerCase().includes(sidebarSearch.toLowerCase()))
-  )
-  const filteredPlans = sidebarPlans.filter(p =>
-    p.title.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
-    p.id.toLowerCase().includes(sidebarSearch.toLowerCase())
-  )
-  const filteredTunnels = tunnels.filter(tun =>
-    tun.name.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
-    tun.os.toLowerCase().includes(sidebarSearch.toLowerCase())
-  )
-  const filteredSessions = sessions.filter(s =>
-    s.name.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
-    s.id.toLowerCase().includes(sidebarSearch.toLowerCase())
-  )
-  const filteredDocs = sidebarDocs.filter(d =>
-    d.name.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
-    d.folder.toLowerCase().includes(sidebarSearch.toLowerCase())
-  )
-  const filteredDevPlugins = sidebarDevPlugins.filter(p =>
-    p.label.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
-    p.key.toLowerCase().includes(sidebarSearch.toLowerCase())
-  )
+  // Team scope filter: when a team is active, show items belonging to that team + unscoped items.
+  // When no team (personal), show everything. Supports multi-team (team_ids[]).
+  const teamMatch = (sec: string, id: string, itemTeamId?: string) => {
+    if (!activeTeamId) return true            // no team filter: show all
+    // Check multi-team array first (new format), fall back to legacy single team_id
+    const metaTeamIds = sidebarMeta.getTeamIds(sec, id)
+    if (metaTeamIds.length > 0) return metaTeamIds.includes(activeTeamId)
+    // Fall back to prop-level team_id for items not yet migrated
+    if (!itemTeamId) return true              // item not scoped: show everywhere
+    return itemTeamId === activeTeamId
+  }
+
+  // Filter items by team scope + search
+  const search = sidebarSearch.toLowerCase()
+  const filteredProjects = sidebarProjects
+    .filter(p => teamMatch('projects', p.id, p.team_id))
+    .filter(p => p.name.toLowerCase().includes(search) || p.id.toLowerCase().includes(search))
+  const filteredNotes = sidebarNotes
+    .filter(n => teamMatch('notes', n.id, n.team_id))
+    .filter(n => n.title.toLowerCase().includes(search) || n.tags.some(tag => tag.toLowerCase().includes(search)))
+  const filteredPlans = sidebarPlans
+    .filter(p => teamMatch('plans', p.id, p.team_id))
+    .filter(p => p.title.toLowerCase().includes(search) || p.id.toLowerCase().includes(search))
+  const filteredTunnels = tunnels
+    .filter(tun => teamMatch('tunnels', tun.id, tun.team_id))
+    .filter(tun => tun.name.toLowerCase().includes(search) || tun.os.toLowerCase().includes(search))
+  const filteredSessions = sessions
+    .filter(s => teamMatch('chat', s.id, s.team_id))
+    .filter(s => s.name.toLowerCase().includes(search) || s.id.toLowerCase().includes(search))
+  const filteredDocs = sidebarDocs
+    .filter(d => teamMatch('wiki', d.path, d.team_id))
+    .filter(d => d.name.toLowerCase().includes(search) || d.folder.toLowerCase().includes(search))
+  const filteredDevPlugins = sidebarDevPlugins
+    .filter(p => p.label.toLowerCase().includes(search) || p.key.toLowerCase().includes(search))
+  const filteredRepos = sidebarRepos
+    .filter(r => teamMatch('repos', r.id, r.team_id))
+    .filter(r => r.name.toLowerCase().includes(search) || r.repo_owner.toLowerCase().includes(search) || r.language.toLowerCase().includes(search))
+
+  // Repo status color helper
+  const repoStatusColor = (status: string) => {
+    switch (status) {
+      case 'ready': return '#22c55e'
+      case 'cloning': case 'syncing': return '#00e5ff'
+      case 'error': return '#ef4444'
+      default: return '#f59e0b'
+    }
+  }
+
+  // Language color helper
+  const langColor = (lang: string) => {
+    const colors: Record<string, string> = {
+      TypeScript: '#3178c6', JavaScript: '#f1e05a', Go: '#00add8', Rust: '#dea584',
+      Python: '#3572a5', Ruby: '#701516', Java: '#b07219', Swift: '#f05138',
+      'C#': '#178600', Kotlin: '#a97bff', PHP: '#4f5d95', Shell: '#89e051',
+    }
+    return colors[lang] || '#888'
+  }
 
   // Plan status color helper
   const planStatusColor = (status: string) => {
@@ -838,13 +1097,50 @@ export function SidebarListPanel({
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+      {/* Toast notification */}
+      {toast && createPortal(
+        <div style={{
+          position: 'fixed', top: 16, right: 16, zIndex: 10003,
+          padding: '10px 16px', borderRadius: 10,
+          background: toast.type === 'success' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
+          border: `1px solid ${toast.type === 'success' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+          display: 'flex', alignItems: 'center', gap: 8,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          animation: 'slideIn 0.2s ease-out',
+        }}>
+          <i className={`bx ${toast.type === 'success' ? 'bx-check-circle' : 'bx-x-circle'}`}
+            style={{ fontSize: 16, color: toast.type === 'success' ? '#22c55e' : '#ef4444' }} />
+          <span style={{ fontSize: 13, fontWeight: 500, color: toast.type === 'success' ? '#22c55e' : '#ef4444' }}>
+            {toast.message}
+          </span>
+        </div>,
+        document.body
+      )}
+
       {/* Delete confirmation dialog */}
       {deleteTarget && (
         <DeleteConfirmDialog
           itemName={deleteTarget.name}
           onCancel={() => setDeleteTarget(null)}
           onConfirm={handleDeleteConfirm}
+        />
+      )}
+
+      {/* Assign member modal */}
+      {assignModalTarget && (
+        <AssignMemberModal
+          members={roleMembers.filter(m => m.status === 'active')}
+          onAssign={async (memberId) => {
+            try {
+              await onAssignMember?.(section, assignModalTarget, memberId)
+              const member = roleMembers.find(m => m.id === memberId)
+              showToast(memberId ? t('memberAssigned', { name: member?.name ?? '' }) : t('memberUnassigned'))
+            } catch {
+              showToast(t('actionFailed'), 'error')
+            }
+          }}
+          onClose={() => setAssignModalTarget(null)}
         />
       )}
 
@@ -855,12 +1151,28 @@ export function SidebarListPanel({
           y={contextMenu.y}
           section={section}
           isPinned={contextMenu.isPinned}
+          bulkCount={contextMenu.bulkCount}
           onClose={() => setContextMenu(null)}
-          onPin={() => onPinItem?.(section, contextMenu.id)}
-          onDelete={() => setDeleteTarget({ id: contextMenu.id, name: contextMenu.name })}
-          onRename={() => { setRenamingId(contextMenu.id); setRenameValue(contextMenu.name) }}
-          onSetColor={(color) => onColorItem?.(section, contextMenu.id, color)}
-          onSetIcon={(icon) => onIconItem?.(section, contextMenu.id, icon)}
+          onPin={contextMenu.id === '__bulk__' ? handleBulkPin : () => onPinItem?.(section, contextMenu.id)}
+          onDelete={contextMenu.id === '__bulk__' ? () => setBulkDeleteConfirm(true) : () => setDeleteTarget({ id: contextMenu.id, name: contextMenu.name })}
+          onRename={contextMenu.id === '__bulk__' ? undefined : () => { setRenamingId(contextMenu.id); setRenameValue(contextMenu.name) }}
+          onSetColor={contextMenu.id === '__bulk__' ? undefined : (color) => onColorItem?.(section, contextMenu.id, color)}
+          onSetIcon={contextMenu.id === '__bulk__' ? undefined : (icon) => onIconItem?.(section, contextMenu.id, icon)}
+          onSelect={contextMenu.id !== '__bulk__' ? () => { setSelectionMode(true); toggleSelection(contextMenu.id) } : undefined}
+          teams={roleTeams.map(t => ({ id: t.id, name: t.name }))}
+          onMoveToTeam={async (teamId) => {
+            const ids = contextMenu.id === '__bulk__' ? Array.from(selectedIds) : [contextMenu.id]
+            try {
+              await onMoveToTeam?.(section, ids, teamId)
+              const team = roleTeams.find(tm => tm.id === teamId)
+              showToast(teamId ? t('movedToTeam', { name: team?.name ?? '' }) : t('movedToPersonal'))
+            } catch {
+              showToast(t('actionFailed'), 'error')
+            }
+          }}
+          onOpenAssignModal={() => {
+            setAssignModalTarget(contextMenu.id === '__bulk__' ? Array.from(selectedIds) : [contextMenu.id])
+          }}
         />
       )}
 
@@ -1555,6 +1867,56 @@ export function SidebarListPanel({
               )
             })
           )
+        ) : section === 'repos' ? (
+          githubConnected === false ? (
+            <div style={{ padding: '28px 16px', textAlign: 'center' }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 14, margin: '0 auto 14px',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <i className="bx bxl-github" style={{ fontSize: 24, color: textMuted }} />
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>Connect GitHub</div>
+              <div style={{ fontSize: 12, color: textMuted, lineHeight: 1.5, marginBottom: 16 }}>
+                Link your GitHub account to add and manage repositories.
+              </div>
+              <Link
+                href="/settings?tab=social"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  background: 'linear-gradient(135deg, #00e5ff, #a900ff)',
+                  color: '#fff', textDecoration: 'none',
+                }}
+              >
+                <i className="bx bx-link" style={{ fontSize: 14 }} />
+                Connect Account
+              </Link>
+            </div>
+          ) : filteredRepos.length === 0 ? (
+            <div style={{ padding: '20px 10px', textAlign: 'center', fontSize: 12, color: textMuted }}>
+              {sidebarSearch ? t('noResults') : t('noItems')}
+            </div>
+          ) : (
+            filteredRepos.map(r => {
+              const active = activePath === `/repos/${r.id}` || activePath.startsWith(`/repos/${r.id}/`)
+              return (
+                <SidebarItem
+                  key={r.id}
+                  id={r.id}
+                  href={`/repos/${r.id}`}
+                  label={r.name}
+                  description={[r.language, r.branch].filter(Boolean).join(' · ')}
+                  icon={r.is_private ? 'bx-lock-alt' : 'bx-git-repo-forked'}
+                  iconColor={r.language ? langColor(r.language) : '#00e5ff'}
+                  iconBg={r.language ? `${langColor(r.language)}15` : 'rgba(0,229,255,0.08)'}
+                  active={active}
+                  dot={repoStatusColor(r.status)}
+                />
+              )
+            })
+          )
         ) : section === 'settings' ? (
           <>
             <nav style={{ padding: '4px 8px', display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1726,40 +2088,18 @@ export function SidebarListPanel({
         )}
       </div>
 
-      {/* Bulk action floating toolbar */}
+      {/* Selection mode indicator — right-click for bulk actions */}
       {selectionMode && selectedIds.size > 0 && (
         <div style={{
-          padding: '8px 10px', borderTop: `1px solid ${borderColor}`,
+          padding: '6px 10px', borderTop: `1px solid ${borderColor}`,
           background: 'var(--color-accent-active)',
           display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
         }}>
+          <i className="bx bx-check-square" style={{ fontSize: 13, color: '#a900ff' }} />
           <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-fg-muted)', flex: 1 }}>
             {t('selected', { count: selectedIds.size })}
           </span>
-          <button
-            onClick={handleBulkPin}
-            title={t('bulkPin')}
-            style={{
-              padding: '4px 8px', borderRadius: 5, fontSize: 11, fontWeight: 500, cursor: 'pointer',
-              background: 'rgba(0,229,255,0.1)', color: '#00e5ff', border: '1px solid rgba(0,229,255,0.2)',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}
-          >
-            <i className="bx bxs-pin" style={{ fontSize: 12 }} />
-            {t('bulkPin')}
-          </button>
-          <button
-            onClick={() => setBulkDeleteConfirm(true)}
-            title={t('bulkDelete')}
-            style={{
-              padding: '4px 8px', borderRadius: 5, fontSize: 11, fontWeight: 500, cursor: 'pointer',
-              background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}
-          >
-            <i className="bx bx-trash" style={{ fontSize: 12 }} />
-            {t('bulkDelete')}
-          </button>
+          <span style={{ fontSize: 10, color: 'var(--color-fg-dim)' }}>{t('rightClickActions')}</span>
           <button
             onClick={exitSelectionMode}
             title={t('deselectAll')}

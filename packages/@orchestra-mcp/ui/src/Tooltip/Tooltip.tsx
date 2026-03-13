@@ -47,6 +47,7 @@ export const Tooltip = ({
       className="tooltip-wrapper"
       onMouseEnter={show}
       onMouseLeave={hide}
+      onPointerDown={hide}
       onFocus={show}
       onBlur={hide}
     >

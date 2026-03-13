@@ -47,6 +47,25 @@ export interface CopilotSize {
   height: number
 }
 
+export type CopilotDockMode = 'bubble' | 'sideover' | 'modal' | 'fullscreen'
+
+export interface StartupPromptPref {
+  id: string
+  title: string
+  description?: string
+  prompt: string
+  color?: string
+  icon?: string
+}
+
+export interface QuickActionPref {
+  id: string
+  label: string
+  prompt: string
+  color?: string
+  icon?: string
+}
+
 interface ChatState {
   sessions: ChatSessionData[]
   copilotOpen: boolean
@@ -54,6 +73,7 @@ interface ChatState {
   copilotPosition: CopilotPosition | null
   copilotBubblePosition: CopilotPosition | null
   copilotSize: CopilotSize
+  copilotMode: CopilotDockMode
   accounts: Account[]
   accountsLoaded: boolean
   sendingSessionIds: string[]
@@ -62,6 +82,9 @@ interface ChatState {
   chatMode: ChatMode
   showThinking: boolean
   showNewChat: boolean
+  userStartupPrompts: StartupPromptPref[]
+  userQuickActions: QuickActionPref[]
+  chatIconStyle: 'bot' | 'chat' | 'sparkle'
 }
 
 interface ChatActions {
@@ -91,6 +114,11 @@ interface ChatActions {
   setCopilotPosition: (pos: CopilotPosition | null) => void
   setCopilotBubblePosition: (pos: CopilotPosition | null) => void
   setCopilotSize: (size: CopilotSize) => void
+  setCopilotMode: (mode: CopilotDockMode) => void
+  renameSession: (id: string, title: string) => void
+  setUserStartupPrompts: (prompts: StartupPromptPref[]) => void
+  setUserQuickActions: (actions: QuickActionPref[]) => void
+  setChatIconStyle: (style: 'bot' | 'chat' | 'sparkle') => void
   setSessionMeta: (sessionId: string, meta: SessionMeta) => void
   getSession: (id: string) => ChatSessionData | undefined
 }
@@ -107,6 +135,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
       copilotPosition: null,
       copilotBubblePosition: null,
       copilotSize: { width: 420, height: 520 },
+      copilotMode: 'bubble' as CopilotDockMode,
       accounts: [],
       accountsLoaded: false,
       sendingSessionIds: [],
@@ -115,6 +144,9 @@ export const useChatStore = create<ChatState & ChatActions>()(
       chatMode: 'auto' as ChatMode,
       showThinking: false,
       showNewChat: false,
+      userStartupPrompts: [],
+      userQuickActions: [],
+      chatIconStyle: 'bot' as const,
 
       // Session CRUD
       setSessions: (sessions) => set({ sessions }),
@@ -171,11 +203,13 @@ export const useChatStore = create<ChatState & ChatActions>()(
             s.id === sessionId
               ? {
                   ...s,
-                  messages: s.messages.map((m) =>
-                    m.id === msgId
-                      ? { ...m, events: [...(m.events ?? []), event] }
-                      : m,
-                  ),
+                  messages: s.messages.map((m) => {
+                    if (m.id !== msgId) return m
+                    // Deduplicate: skip if an event with the same id already exists
+                    const existing = m.events ?? []
+                    if (event.id && existing.some((e) => e.id === event.id)) return m
+                    return { ...m, events: [...existing, event] }
+                  }),
                 }
               : s,
           ),
@@ -272,10 +306,24 @@ export const useChatStore = create<ChatState & ChatActions>()(
       setShowThinking: (enabled) => set({ showThinking: enabled }),
       setShowNewChat: (show) => set({ showNewChat: show }),
 
-      // Copilot position & size
+      // Copilot position, size & dock mode
       setCopilotPosition: (pos) => set({ copilotPosition: pos }),
       setCopilotBubblePosition: (pos) => set({ copilotBubblePosition: pos }),
       setCopilotSize: (size) => set({ copilotSize: size }),
+      setCopilotMode: (mode) => set({ copilotMode: mode }),
+
+      // Session rename
+      renameSession: (id, title) =>
+        set((state) => ({
+          sessions: state.sessions.map((s) =>
+            s.id === id ? { ...s, title, updatedAt: new Date().toISOString() } : s,
+          ),
+        })),
+
+      // User preferences
+      setUserStartupPrompts: (prompts) => set({ userStartupPrompts: prompts }),
+      setUserQuickActions: (actions) => set({ userQuickActions: actions }),
+      setChatIconStyle: (style) => set({ chatIconStyle: style }),
 
       // Session metadata (usage stats from last turn)
       setSessionMeta: (sessionId, meta) =>
@@ -296,9 +344,13 @@ export const useChatStore = create<ChatState & ChatActions>()(
         copilotPosition: state.copilotPosition,
         copilotBubblePosition: state.copilotBubblePosition,
         copilotSize: state.copilotSize,
+        copilotMode: state.copilotMode,
         selectedModelId: state.selectedModelId,
         chatMode: state.chatMode,
         showThinking: state.showThinking,
+        userStartupPrompts: state.userStartupPrompts,
+        userQuickActions: state.userQuickActions,
+        chatIconStyle: state.chatIconStyle,
       }),
     },
   ),
