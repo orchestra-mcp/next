@@ -133,7 +133,7 @@ export default function SponsorsPage() {
           Our Sponsors
         </h1>
         <p style={{ fontSize: 17, color: textMuted, maxWidth: 520, margin: '0 auto' }}>
-          Thanks to the companies and individuals who support Orchestra's development.
+          Thanks to the companies and individuals who support Orchestra&apos;s development.
         </p>
       </div>
 

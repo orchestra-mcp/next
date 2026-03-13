@@ -1862,7 +1862,7 @@ function CopilotSettingsTab({ textPrimary, textDim, cardBorder, cardDivider, lab
       {/* Startup Prompts */}
       <SettingsCard title="Startup Prompts" desc="Customize the prompt cards shown when starting a new chat">
         <PromptCardEditor
-          value={userStartupPrompts as PromptCard[]}
+          value={userStartupPrompts as unknown as PromptCard[]}
           onChange={(cards) => setUserStartupPrompts(cards.map(c => ({
             id: c.id,
             title: c.title || '',
@@ -1892,7 +1892,7 @@ function CopilotSettingsTab({ textPrimary, textDim, cardBorder, cardDivider, lab
       {/* Quick Actions */}
       <SettingsCard title="Quick Actions" desc="Customize the action chips shown above the chat input">
         <PromptCardEditor
-          value={userQuickActions as PromptCard[]}
+          value={userQuickActions as unknown as PromptCard[]}
           onChange={(cards) => setUserQuickActions(cards.map(c => ({
             id: c.id,
             label: c.label || '',

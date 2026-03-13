@@ -227,7 +227,7 @@ export default function AdminNotificationsPage() {
                 </span>
               ) : (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <i className="bx bx-user" style={{ fontSize: 13 }} /> {t('userTarget', { id: n.target_user_id })}
+                  <i className="bx bx-user" style={{ fontSize: 13 }} /> {t('userTarget', { id: n.target_user_id ?? 0 })}
                 </span>
               )}
             </div>
