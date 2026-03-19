@@ -2,6 +2,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { apiFetch } from '@/lib/api'
+import { connectPowerSync, disconnectPowerSync } from '@/lib/powersync'
 
 function base64urlToBuffer(b64: string): ArrayBuffer {
   const s = b64.replace(/-/g, '+').replace(/_/g, '/')
@@ -22,8 +23,12 @@ function bufferToBase64url(buf: ArrayBuffer): string {
 export interface User {
   id: number
   name: string
+  username?: string
   email: string
+  bio?: string
   avatar_url?: string | null
+  cover_url?: string | null
+  is_public?: boolean
   two_factor_enabled?: boolean
   settings?: Record<string, unknown> | null
 }
@@ -71,6 +76,21 @@ interface AuthActions {
   exitImpersonation: () => void
 }
 
+/** Extract a human-readable message from any error shape */
+function extractErrorMessage(e: unknown): string {
+  if (!e) return 'Unknown error'
+  // Standard Error
+  let msg = (e as any).message ?? String(e)
+  // If the message looks like raw JSON, parse it
+  if (typeof msg === 'string' && msg.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(msg)
+      msg = parsed.message || parsed.error || msg
+    } catch {}
+  }
+  return msg
+}
+
 export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
     (set, get) => ({
@@ -98,9 +118,10 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           localStorage.setItem('orchestra_token', res.token)
           document.cookie = `orchestra_token=${res.token};path=/;max-age=86400;SameSite=Lax`
           set({ token: res.token, user: res.user, loading: false })
+          connectPowerSync().catch(() => {})
         } catch (e) {
           if ((e as any).requires2fa) throw e
-          set({ error: (e as Error).message, loading: false })
+          set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
@@ -117,13 +138,15 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           localStorage.setItem('orchestra_is_new_user', '1')
           document.cookie = `orchestra_token=${res.token};path=/;max-age=86400;SameSite=Lax`
           set({ token: res.token, user: res.user, loading: false })
+          connectPowerSync().catch(() => {})
         } catch (e) {
-          set({ error: (e as Error).message, loading: false })
+          set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
 
       logout: () => {
+        disconnectPowerSync().catch(() => {})
         localStorage.removeItem('orchestra_token')
         document.cookie = 'orchestra_token=;path=/;max-age=0'
         sessionStorage.removeItem('orchestra_2fa_token')
@@ -165,6 +188,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         try {
           const user = await apiFetch<User>('/api/auth/me')
           set({ user })
+          // Connect PowerSync for cross-device sync.
+          connectPowerSync().catch(() => {})
         } catch {
           get().logout()
         }
@@ -182,7 +207,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           })
           set({ loading: false })
         } catch (e) {
-          set({ error: (e as Error).message, loading: false })
+          set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
@@ -206,7 +231,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           }
           return { token: res.reset_token ?? res.token }
         } catch (e) {
-          set({ error: (e as Error).message, loading: false })
+          set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
@@ -221,7 +246,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           })
           set({ loading: false })
         } catch (e) {
-          set({ error: (e as Error).message, loading: false })
+          set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
@@ -236,7 +261,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           })
           set({ loading: false })
         } catch (e) {
-          set({ error: (e as Error).message, loading: false })
+          set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
@@ -248,7 +273,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           set({ loading: false })
           return res
         } catch (e) {
-          set({ error: (e as Error).message, loading: false })
+          set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
@@ -262,7 +287,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           })
           set({ loading: false, user: get().user ? { ...get().user!, two_factor_enabled: true } : null })
         } catch (e) {
-          set({ error: (e as Error).message, loading: false })
+          set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
@@ -276,7 +301,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           })
           set({ loading: false, user: get().user ? { ...get().user!, two_factor_enabled: false } : null })
         } catch (e) {
-          set({ error: (e as Error).message, loading: false })
+          set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
@@ -294,13 +319,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           sessionStorage.removeItem('orchestra_2fa_email')
           set({ token: res.token, user: res.user, loading: false })
         } catch (e) {
-          set({ error: (e as Error).message, loading: false })
+          set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
 
       beginPasskeyRegistration: async () => {
-        const res = await apiFetch<{ publicKey: PublicKeyCredentialCreationOptions }>('/api/auth/passkey/register/begin', { method: 'POST' })
+        const res = await apiFetch<{ publicKey: PublicKeyCredentialCreationOptions }>('/api/auth/passkey/register/begin', { method: 'POST', body: JSON.stringify({}) })
         // Decode base64url fields for the Web Credentials API
         const opts = res.publicKey
         opts.challenge = base64urlToBuffer(opts.challenge as unknown as string)
@@ -321,12 +346,12 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           method: 'POST',
           body: JSON.stringify({
             id: cred.id,
-            raw_id: bufferToBase64url(cred.rawId),
+            rawId: bufferToBase64url(cred.rawId),
             type: cred.type,
             name: name || undefined,
             response: {
-              attestation_object: bufferToBase64url(attestation.attestationObject),
-              client_data_json: bufferToBase64url(attestation.clientDataJSON),
+              attestationObject: bufferToBase64url(attestation.attestationObject),
+              clientDataJSON: bufferToBase64url(attestation.clientDataJSON),
               transports: attestation.getTransports?.() ?? [],
             },
           }),
@@ -338,9 +363,14 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         try {
           // Step 1: Get challenge from server
           const beginRes = await apiFetch<{
-            publicKey: { challenge: string; rpId: string; timeout: number; userVerification: string; allowCredentials?: Array<{ id: string; type: string; transports?: string[] }> }
-            session_id: string
-          }>('/api/auth/passkey/authenticate/begin', { method: 'POST', skipAuth: true })
+            publicKey?: { challenge: string; rpId: string; timeout: number; userVerification: string; allowCredentials?: Array<{ id: string; type: string; transports?: string[] }> }
+            session_id?: string
+            error?: string
+          }>('/api/auth/passkey/authenticate/begin', { method: 'POST', body: JSON.stringify({}), skipAuth: true })
+
+          if (!beginRes.publicKey) {
+            throw new Error(beginRes.error || 'Server returned invalid passkey challenge. Check that passkeys are configured.')
+          }
 
           const opts: PublicKeyCredentialRequestOptions = {
             challenge: base64urlToBuffer(beginRes.publicKey.challenge),
@@ -367,14 +397,14 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             method: 'POST',
             body: JSON.stringify({
               id: credential.id,
-              raw_id: bufferToBase64url(credential.rawId),
+              rawId: bufferToBase64url(credential.rawId),
               type: credential.type,
               session_id: beginRes.session_id,
               response: {
-                authenticator_data: bufferToBase64url(assertion.authenticatorData),
-                client_data_json: bufferToBase64url(assertion.clientDataJSON),
+                authenticatorData: bufferToBase64url(assertion.authenticatorData),
+                clientDataJSON: bufferToBase64url(assertion.clientDataJSON),
                 signature: bufferToBase64url(assertion.signature),
-                user_handle: assertion.userHandle ? bufferToBase64url(assertion.userHandle) : undefined,
+                userHandle: assertion.userHandle ? bufferToBase64url(assertion.userHandle) : undefined,
               },
             }),
             skipAuth: true,
@@ -384,7 +414,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           document.cookie = `orchestra_token=${res.token};path=/;max-age=86400;SameSite=Lax`
           set({ token: res.token, user: res.user, loading: false })
         } catch (e) {
-          set({ error: (e as Error).message, loading: false })
+          set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },

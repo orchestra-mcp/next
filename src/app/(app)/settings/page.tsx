@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { useSettingsStore } from '@/store/settings'
 import { useRoleStore } from '@/store/roles'
@@ -9,7 +9,7 @@ import { useThemeStore } from '@/store/theme'
 import { ThemePicker } from '@orchestra-mcp/theme'
 import { SettingGroupShell } from '@orchestra-mcp/settings'
 import type { SettingGroupType } from '@orchestra-mcp/settings'
-import '../../../../packages/@orchestra-mcp/settings/src/SettingsForm/SettingsForm.css'
+import '@orchestra-mcp/settings/SettingsForm.css'
 import { useAdminStore } from '@/store/admin'
 import { ContentLocaleTabs } from '@/components/ui/content-locale-tabs'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -17,12 +17,11 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { apiFetch, isDevSeed } from '@/lib/api'
 import { useTranslations } from 'next-intl'
 import { usePreferencesStore } from '@/store/preferences'
-import { useChatStore } from '@/store/chat'
-import type { CopilotDockMode } from '@/store/chat'
-import { PromptCardEditor } from '@orchestra-mcp/ai/PromptCardEditor'
-import type { PromptCard } from '@orchestra-mcp/ai/PromptCardEditor'
+import MarkdownEditor from '@/components/ui/markdown-editor'
 import { locales } from '@/i18n/config'
 import type { Locale } from '@/i18n/config'
+import { SearchableSelect } from '@/components/ui/searchable-select'
+import { Switch } from '@orchestra-mcp/ui'
 
 function md5(str: string): string {
   function safeAdd(x: number, y: number) { const lsw = (x & 0xffff) + (y & 0xffff); return ((((x >> 16) + (y >> 16) + (lsw >> 16)) << 16) | (lsw & 0xffff)) >>> 0 }
@@ -67,10 +66,11 @@ function gravatarUrl(email: string, size = 40) {
 type Tab =
   | 'profile' | 'password' | 'appearance'
   | '2fa' | 'passkeys' | 'social' | 'integrations' | 'sessions' | 'apitokens'
-  | 'push' | 'copilot'
+  | 'push'
   | 'admin-general' | 'admin-features' | 'admin-homepage' | 'admin-agents'
   | 'admin-contact' | 'admin-pricing' | 'admin-download' | 'admin-integrations'
-  | 'admin-email' | 'admin-seo' | 'admin-discord' | 'admin-slack' | 'admin-github' | 'admin-social'
+  | 'admin-email' | 'admin-seo' | 'admin-discord' | 'admin-slack' | 'admin-github' | 'admin-social' | 'admin-prompts' | 'admin-notifications'
+  | 'admin-pages' | 'admin-posts'
 
 const TIMEZONES = [
   'UTC',
@@ -439,6 +439,423 @@ const DEFAULT_SOCIAL_PLATFORMS: SocialPlatformDef[] = [
   { value: 'website', label: 'Website', icon: 'bx-globe', placeholder: 'https://...' },
 ]
 
+// ── Smart Prompts Admin ─────────────────────────────────────────────────────
+
+interface SmartPromptDef {
+  key: string
+  label: string
+  description: string
+  prompt: string
+}
+
+function AdminCmsTab({ kind, inputSt, labelSt, saveBtnSt, textDim, textMuted, textPrimary, cardBorder, cardDivider, isDark }: {
+  kind: 'pages' | 'posts'
+  inputSt: React.CSSProperties; labelSt: React.CSSProperties; saveBtnSt: React.CSSProperties
+  textDim: string; textMuted: string; textPrimary: string; cardBorder: string; cardDivider: string; isDark: boolean
+}) {
+  const store = useAdminStore()
+  const items = kind === 'pages' ? store.pages : store.posts
+  const fetchItems = kind === 'pages' ? store.fetchPages : store.fetchPosts
+  const isPost = kind === 'posts'
+
+  const [editing, setEditing] = useState<number | null>(null)
+  const [title, setTitle] = useState('')
+  const [slug, setSlug] = useState('')
+  const [content, setContent] = useState('')
+  const [excerpt, setExcerpt] = useState('')
+  const [status, setStatus] = useState<'draft' | 'published'>('draft')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => { fetchItems() }, [fetchItems])
+
+  function startNew() {
+    setEditing(0)
+    setTitle(''); setSlug(''); setContent(''); setExcerpt(''); setStatus('draft')
+  }
+
+  function startEdit(item: any) {
+    setEditing(item.id)
+    setTitle(item.title); setSlug(item.slug); setContent(item.content); setStatus(item.status)
+    if (isPost) setExcerpt(item.excerpt || '')
+  }
+
+  function cancelEdit() {
+    setEditing(null)
+    setTitle(''); setSlug(''); setContent(''); setExcerpt(''); setStatus('draft')
+  }
+
+  async function handleSave() {
+    if (!title.trim() || !content.trim()) return
+    setSaving(true)
+    try {
+      const data: any = { title, slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), content, status }
+      if (isPost) data.excerpt = excerpt
+      if (editing === 0) {
+        kind === 'pages' ? await store.createPage(data) : await store.createPost(data)
+      } else if (editing) {
+        kind === 'pages' ? await store.updatePage(editing, data) : await store.updatePost(editing, data)
+      }
+      setSaved(true); setTimeout(() => setSaved(false), 2000)
+      cancelEdit()
+      fetchItems()
+    } catch {} finally { setSaving(false) }
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm(`Delete this ${kind === 'pages' ? 'page' : 'post'}?`)) return
+    try {
+      kind === 'pages' ? await store.deletePage(id) : await store.deletePost(id)
+      fetchItems()
+    } catch {}
+  }
+
+  const isEditing = editing !== null
+
+  return (
+    <>
+      <SettingsCard title={kind === 'pages' ? 'CMS Pages' : 'Blog Posts'} desc={kind === 'pages' ? 'Manage static pages (About, Terms, etc.)' : 'Manage blog posts'}>
+        {!isEditing && (
+          <>
+            <button onClick={startNew} style={{ ...saveBtnSt, marginBottom: 16 }}>
+              <i className={`bx ${kind === 'pages' ? 'bx-file-blank' : 'bx-edit'}`} style={{ marginRight: 6 }} />
+              New {kind === 'pages' ? 'Page' : 'Post'}
+            </button>
+            {items.length === 0 && !store.loading && (
+              <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                <i className={`bx ${kind === 'pages' ? 'bx-file' : 'bx-news'}`} style={{ fontSize: 28, color: textDim, display: 'block', marginBottom: 8 }} />
+                <div style={{ fontSize: 13, color: textMuted }}>No {kind} yet</div>
+              </div>
+            )}
+            {items.map((item: any) => (
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: `1px solid ${cardDivider}` }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{item.title}</div>
+                  <div style={{ fontSize: 11, color: textDim }}>/{item.slug} &middot; {item.status}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => startEdit(item)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: textMuted, fontSize: 16 }} title="Edit">
+                    <i className="bx bx-pencil" />
+                  </button>
+                  <button onClick={() => handleDelete(item.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: textMuted, fontSize: 16 }} title="Delete">
+                    <i className="bx bx-trash" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+        {isEditing && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label style={labelSt}>Title</label>
+              <input style={inputSt} value={title} onChange={e => setTitle(e.target.value)} placeholder="Page title..." />
+            </div>
+            <div>
+              <label style={labelSt}>Slug</label>
+              <input style={inputSt} value={slug} onChange={e => setSlug(e.target.value)} placeholder="auto-generated-from-title" />
+            </div>
+            {isPost && (
+              <div>
+                <label style={labelSt}>Excerpt</label>
+                <textarea style={{ ...inputSt, height: 60, resize: 'vertical' }} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder="Brief summary..." />
+              </div>
+            )}
+            <div>
+              <label style={labelSt}>Content</label>
+              <MarkdownEditor value={content} onChange={setContent} height={320} isDark={isDark} placeholder="Write your content... Markdown supported." />
+            </div>
+            <div>
+              <label style={labelSt}>Status</label>
+              <select style={{ ...inputSt, cursor: 'pointer' }} value={status} onChange={e => setStatus(e.target.value as 'draft' | 'published')}>
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+              <button onClick={handleSave} disabled={saving || !title.trim() || !content.trim()} style={{ ...saveBtnSt, opacity: saving || !title.trim() || !content.trim() ? 0.6 : 1 }}>
+                {saving ? 'Saving...' : editing === 0 ? 'Create' : 'Save Changes'}
+              </button>
+              <button onClick={cancelEdit} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>
+                Cancel
+              </button>
+              {saved && <span style={{ fontSize: 12, color: '#22c55e' }}><i className="bx bx-check-circle" /> Saved</span>}
+            </div>
+          </div>
+        )}
+      </SettingsCard>
+    </>
+  )
+}
+
+function AdminNotificationsTab({ inputSt, labelSt, saveBtnSt, textDim, textMuted, textPrimary, cardBorder, cardDivider }: {
+  inputSt: React.CSSProperties; labelSt: React.CSSProperties; saveBtnSt: React.CSSProperties
+  textDim: string; textMuted: string; textPrimary: string; cardBorder: string; cardDivider: string
+}) {
+  const { notifications, notificationsHasMore, notificationsLoading, fetchNotificationsSent, fetchMoreNotifications, sendNotification } = useAdminStore()
+  const t = useTranslations('settings')
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  // Send form state
+  const [title, setTitle] = useState('')
+  const [message, setMessage] = useState('')
+  const [type, setType] = useState('info')
+  const [target, setTarget] = useState<'all' | 'user'>('all')
+  const [userId, setUserId] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  useEffect(() => { fetchNotificationsSent() }, [])
+
+  // Infinite scroll
+  const loadMore = useCallback(() => {
+    if (notificationsLoading || !notificationsHasMore) return
+    fetchMoreNotifications()
+  }, [notificationsLoading, notificationsHasMore, fetchMoreNotifications])
+
+  useEffect(() => {
+    if (!sentinelRef.current || !notificationsHasMore) return
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore() },
+      { threshold: 0.1 },
+    )
+    observer.observe(sentinelRef.current)
+    return () => observer.disconnect()
+  }, [loadMore, notificationsHasMore])
+
+  async function handleSend() {
+    if (!message.trim()) return
+    if (target === 'user' && !userId.trim()) return
+    setSending(true)
+    try {
+      await sendNotification({ title: title.trim(), message: message.trim(), type, user_id: target === 'user' ? Number(userId) : undefined })
+      setTitle(''); setMessage(''); setUserId(''); setTarget('all'); setType('info')
+      setSent(true); setTimeout(() => setSent(false), 2500)
+    } catch {} finally { setSending(false) }
+  }
+
+  const typeColors: Record<string, string> = { info: '#3b82f6', success: '#22c55e', warning: '#f59e0b', error: '#ef4444' }
+  const typeOptions = [
+    { value: 'info', label: t('typeInfo') },
+    { value: 'success', label: t('typeSuccess') },
+    { value: 'warning', label: t('typeWarning') },
+    { value: 'error', label: t('typeError') },
+  ]
+
+  return (
+    <>
+      <SettingsCard title={t('notifications')} desc={t('notificationsDesc')}>
+        {/* ── Send Form ── */}
+        <div style={{ marginBottom: 8 }}>
+          <label style={labelSt}>{t('sendNotification')}</label>
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelSt}>{t('recipientsLabel')}</label>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <label style={{ fontSize: 13, color: textMuted, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
+              <input type="radio" checked={target === 'all'} onChange={() => setTarget('all')} /> {t('allUsers')}
+            </label>
+            <label style={{ fontSize: 13, color: textMuted, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
+              <input type="radio" checked={target === 'user'} onChange={() => setTarget('user')} /> {t('specificUser')}
+            </label>
+          </div>
+          {target === 'user' && (
+            <input style={{ ...inputSt, marginTop: 8 }} type="number" placeholder={t('userIdPlaceholder')} value={userId} onChange={e => setUserId(e.target.value)} />
+          )}
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <input style={inputSt} placeholder={t('notificationTitlePlaceholder')} value={title} onChange={e => setTitle(e.target.value)} />
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelSt}>{t('typeLabel')}</label>
+          <SearchableSelect
+            options={typeOptions}
+            value={type}
+            onChange={setType}
+            placeholder={t('typeLabel')}
+          />
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelSt}>{t('messageLabel')}</label>
+          <textarea style={{ ...inputSt, height: 80, resize: 'vertical' }} placeholder={t('messagePlaceholder')} value={message} onChange={e => setMessage(e.target.value)} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={handleSend} disabled={sending || !message.trim()} style={{ ...saveBtnSt, opacity: sending || !message.trim() ? 0.6 : 1 }}>
+            {sending ? t('sending') : t('sendNotificationBtn')}
+          </button>
+          {sent && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 5 }}><i className="bx bx-check-circle" /> {t('notificationSent')}</span>}
+        </div>
+      </SettingsCard>
+
+      {/* ── Sent History ── */}
+      <SettingsCard title={t('sentHistory')}>
+        {notifications.length === 0 && !notificationsLoading && (
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <i className="bx bx-bell" style={{ fontSize: 32, color: textDim, marginBottom: 8, display: 'block' }} />
+            <div style={{ fontSize: 14, fontWeight: 500, color: textMuted }}>{t('noNotificationsSent')}</div>
+            <div style={{ fontSize: 12, color: textDim, marginTop: 4 }}>{t('noNotificationsDesc')}</div>
+          </div>
+        )}
+        {notifications.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {/* Header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px', gap: 12, padding: '8px 0', borderBottom: `1px solid ${cardDivider}`, fontSize: 11, fontWeight: 600, color: textDim, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <span>{t('sendNotification')}</span>
+              <span>{t('typeColumn')}</span>
+              <span>{t('targetColumn')}</span>
+              <span>{t('sentColumn')}</span>
+            </div>
+            {notifications.map(n => (
+              <div key={n.id} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px', gap: 12, padding: '12px 0', borderBottom: `1px solid ${cardDivider}`, alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{n.title || '(no title)'}</div>
+                  <div style={{ fontSize: 12, color: textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 400 }}>{n.message}</div>
+                </div>
+                <span style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: typeColors[n.type] ?? textMuted,
+                  textTransform: 'capitalize',
+                }}>{n.type}</span>
+                <span style={{ fontSize: 12, color: textMuted }}>
+                  {n.target === 'all' ? t('allUsersTarget') : t('userTarget', { id: n.target_user_id ?? '?' })}
+                </span>
+                <span style={{ fontSize: 12, color: textDim }}>
+                  {new Date(n.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Sentinel for infinite scroll */}
+        {notificationsHasMore && (
+          <div ref={sentinelRef} style={{ padding: '16px 0', textAlign: 'center' }}>
+            {notificationsLoading && (
+              <span style={{ fontSize: 12, color: textDim }}>{t('loadingHistory')}</span>
+            )}
+          </div>
+        )}
+      </SettingsCard>
+    </>
+  )
+}
+
+function SmartPromptsAdmin({ inputSt, labelSt, saveBtnSt, textDim, textMuted, textPrimary, cardBorder }: {
+  adminSettings: Record<string, Record<string, unknown>>
+  setAdminSettings: React.Dispatch<React.SetStateAction<Record<string, Record<string, unknown>>>>
+  handleSaveAdminSetting: (key: string) => Promise<void>
+  adminSaving: boolean; adminSaved: boolean
+  inputSt: React.CSSProperties; labelSt: React.CSSProperties; saveBtnSt: React.CSSProperties
+  textDim: string; textMuted: string; textPrimary: string; cardBorder: string
+}) {
+  const { fetchSetting, updateSetting } = useAdminStore()
+  const { theme } = useThemeStore()
+  const isDark = theme === 'dark'
+  const [prompts, setPrompts] = useState<SmartPromptDef[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const [expanded, setExpanded] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    fetchSetting('smart_prompts').then(data => {
+      const list = data?.prompts
+      if (Array.isArray(list) && list.length > 0) {
+        setPrompts(list as SmartPromptDef[])
+      }
+      setLoaded(true)
+    }).catch(() => { setLoaded(true) })
+  }, [])
+
+  function addPrompt() {
+    setPrompts(prev => [...prev, { key: `new_prompt_${prev.length}`, label: 'New Prompt', description: '', prompt: '' }])
+    setExpanded(prompts.length)
+  }
+
+  function removePrompt(idx: number) {
+    setPrompts(prev => prev.filter((_, i) => i !== idx))
+    setExpanded(null)
+  }
+
+  function updatePrompt(idx: number, field: keyof SmartPromptDef, val: string) {
+    setPrompts(prev => prev.map((p, i) => i === idx ? { ...p, [field]: val } : p))
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updateSetting('smart_prompts', { prompts } as Record<string, unknown>)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {}
+    finally { setSaving(false) }
+  }
+
+  if (!loaded) return null
+
+  return (
+    <SettingsCard title="Smart Action Prompts" desc="Configure the system prompts used by the AI Smart Action when generating entities. Each entity type has a custom prompt controlling the AI output format.">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {prompts.map((p, idx) => (
+          <div key={idx} style={{ borderRadius: 10, border: `1px solid ${expanded === idx ? '#a900ff' : cardBorder}`, background: 'var(--color-bg-alt)', overflow: 'hidden' }}>
+            {/* Header */}
+            <div onClick={() => setExpanded(expanded === idx ? null : idx)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer' }}>
+              <i className={`bx ${expanded === idx ? 'bx-chevron-down' : 'bx-chevron-right'}`} style={{ fontSize: 18, color: textMuted }} />
+              <span style={{ padding: '2px 8px', borderRadius: 6, background: 'rgba(169,0,255,0.1)', fontSize: 11, fontWeight: 600, fontFamily: 'monospace', color: '#a900ff' }}>{p.key}</span>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: textPrimary }}>{p.label}</span>
+              <button onClick={(e) => { e.stopPropagation(); removePrompt(idx) }} type="button" title="Remove"
+                style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className="bx bx-trash" style={{ fontSize: 13 }} />
+              </button>
+            </div>
+            {/* Expanded content */}
+            {expanded === idx && (
+              <div style={{ padding: '0 14px 14px', borderTop: `1px solid ${cardBorder}` }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+                  <div>
+                    <label style={{ ...labelSt, fontSize: 11 }}>Key</label>
+                    <input style={{ ...inputSt, fontSize: 12 }} value={p.key} onChange={e => updatePrompt(idx, 'key', e.target.value)} placeholder="e.g. agent" />
+                  </div>
+                  <div>
+                    <label style={{ ...labelSt, fontSize: 11 }}>Label</label>
+                    <input style={{ ...inputSt, fontSize: 12 }} value={p.label} onChange={e => updatePrompt(idx, 'label', e.target.value)} placeholder="e.g. Agent" />
+                  </div>
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ ...labelSt, fontSize: 11 }}>Description</label>
+                  <input style={{ ...inputSt, fontSize: 12 }} value={p.description} onChange={e => updatePrompt(idx, 'description', e.target.value)} placeholder="What this prompt does..." />
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ ...labelSt, fontSize: 11 }}>System Prompt</label>
+                  <MarkdownEditor value={p.prompt} onChange={v => updatePrompt(idx, 'prompt', v)} height={200} isDark={isDark} placeholder="The system prompt sent to the AI..." />
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+        {prompts.length === 0 && (
+          <div style={{ padding: '24px 16px', textAlign: 'center', color: textDim, fontSize: 12, border: `1px dashed ${cardBorder}`, borderRadius: 9 }}>
+            No smart prompts configured. Click &quot;Add Prompt&quot; to get started.
+          </div>
+        )}
+      </div>
+      <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={addPrompt} type="button" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 12, cursor: 'pointer' }}>
+          <i className="bx bx-plus" style={{ fontSize: 15 }} /> Add Prompt
+        </button>
+      </div>
+      <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={handleSave} disabled={saving} style={saveBtnSt}>{saving ? 'Saving...' : 'Save Changes'}</button>
+        {saved && <span style={{ fontSize: 12, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><i className="bx bx-check-circle" /> Saved</span>}
+      </div>
+      <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: 'var(--color-bg)', fontSize: 11, color: textDim }}>
+        <strong style={{ color: textMuted }}>Keys:</strong> Use the entity type name as the key (e.g. <code style={{ padding: '1px 4px', borderRadius: 3, background: 'var(--color-bg-alt)', fontSize: 10 }}>agent</code>, <code style={{ padding: '1px 4px', borderRadius: 3, background: 'var(--color-bg-alt)', fontSize: 10 }}>skill</code>, <code style={{ padding: '1px 4px', borderRadius: 3, background: 'var(--color-bg-alt)', fontSize: 10 }}>workflow</code>, <code style={{ padding: '1px 4px', borderRadius: 3, background: 'var(--color-bg-alt)', fontSize: 10 }}>doc</code>, <code style={{ padding: '1px 4px', borderRadius: 3, background: 'var(--color-bg-alt)', fontSize: 10 }}>feature</code>, <code style={{ padding: '1px 4px', borderRadius: 3, background: 'var(--color-bg-alt)', fontSize: 10 }}>plan</code>, <code style={{ padding: '1px 4px', borderRadius: 3, background: 'var(--color-bg-alt)', fontSize: 10 }}>request</code>, <code style={{ padding: '1px 4px', borderRadius: 3, background: 'var(--color-bg-alt)', fontSize: 10 }}>person</code>).
+        The prompt must instruct the AI to output a raw JSON object.
+      </div>
+    </SettingsCard>
+  )
+}
+
 function PublicProfileSettings({ inputSt, labelSt, saveBtnSt, textDim, textMuted, cardBorder }: {
   inputSt: React.CSSProperties; labelSt: React.CSSProperties; saveBtnSt: React.CSSProperties
   textDim: string; textMuted: string; cardBorder: string
@@ -569,9 +986,7 @@ function PublicProfileSettings({ inputSt, labelSt, saveBtnSt, textDim, textMuted
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-fg)' }}>Enable Public Profile</div>
           <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>Make your profile visible on the community page</div>
         </div>
-        <button onClick={() => setPublicEnabled(!publicEnabled)} style={{ width: 44, height: 24, borderRadius: 100, border: 'none', cursor: 'pointer', background: publicEnabled ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : 'var(--color-border)', position: 'relative', flexShrink: 0 }}>
-          <span style={{ position: 'absolute', top: 3, left: publicEnabled ? 22 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
-        </button>
+        <Switch checked={publicEnabled} onChange={() => setPublicEnabled(!publicEnabled)} size="small" />
       </div>
       <div style={{ marginTop: 16, marginBottom: 16 }}>
         <label style={labelSt}>Handle</label>
@@ -671,6 +1086,47 @@ function PublicProfileSettings({ inputSt, labelSt, saveBtnSt, textDim, textMuted
   )
 }
 
+// ── Settings sidebar nav items ──────────────────────────────
+
+interface SidebarNavItem {
+  id: string
+  label: string
+  icon: string
+  tab: string
+  group?: string
+  adminOnly?: boolean
+}
+
+const SIDEBAR_NAV: SidebarNavItem[] = [
+  { id: 'profile', label: 'Profile', icon: 'bx-user', tab: 'profile' },
+  { id: 'password', label: 'Password', icon: 'bx-lock', tab: 'password' },
+  { id: 'appearance', label: 'Appearance', icon: 'bx-palette', tab: 'appearance' },
+  { id: '2fa', label: 'Two-Factor Auth', icon: 'bx-shield-alt-2', tab: '2fa', group: 'Security' },
+  { id: 'passkeys', label: 'Passkeys', icon: 'bx-fingerprint', tab: 'passkeys' },
+  { id: 'sessions', label: 'Sessions', icon: 'bx-devices', tab: 'sessions' },
+  { id: 'apitokens', label: 'API Tokens', icon: 'bx-key', tab: 'apitokens', group: 'Developer' },
+  { id: 'integrations', label: 'Integrations', icon: 'bx-plug', tab: 'integrations' },
+  { id: 'push', label: 'Notifications', icon: 'bx-bell', tab: 'push', group: 'Notifications' },
+  { id: 'admin-general', label: 'General', icon: 'bx-cog', tab: 'admin-general', group: 'Administration', adminOnly: true },
+  { id: 'admin-features', label: 'Features', icon: 'bx-toggle-left', tab: 'admin-features', adminOnly: true },
+  { id: 'admin-homepage', label: 'Homepage', icon: 'bx-home', tab: 'admin-homepage', adminOnly: true },
+  { id: 'admin-agents', label: 'AI Agents', icon: 'bx-bot', tab: 'admin-agents', adminOnly: true },
+  { id: 'admin-email', label: 'Email', icon: 'bx-envelope', tab: 'admin-email', adminOnly: true },
+  { id: 'admin-contact', label: 'Contact', icon: 'bx-message-square', tab: 'admin-contact', adminOnly: true },
+  { id: 'admin-pricing', label: 'Pricing', icon: 'bx-dollar', tab: 'admin-pricing', adminOnly: true },
+  { id: 'admin-download', label: 'Downloads', icon: 'bx-download', tab: 'admin-download', adminOnly: true },
+  { id: 'admin-integrations', label: 'Integrations', icon: 'bx-plug', tab: 'admin-integrations', adminOnly: true },
+  { id: 'admin-seo', label: 'SEO', icon: 'bx-search', tab: 'admin-seo', adminOnly: true },
+  { id: 'admin-discord', label: 'Discord', icon: 'bxl-discord', tab: 'admin-discord', adminOnly: true },
+  { id: 'admin-slack', label: 'Slack', icon: 'bxl-slack', tab: 'admin-slack', adminOnly: true },
+  { id: 'admin-github', label: 'GitHub', icon: 'bxl-github', tab: 'admin-github', adminOnly: true },
+  { id: 'admin-social', label: 'Social', icon: 'bx-share-alt', tab: 'admin-social', adminOnly: true },
+  { id: 'admin-prompts', label: 'Smart Prompts', icon: 'bx-bot', tab: 'admin-prompts', adminOnly: true },
+  { id: 'admin-notifications', label: 'Notifications', icon: 'bx-bell', tab: 'admin-notifications', adminOnly: true },
+  { id: 'admin-pages', label: 'Pages', icon: 'bx-file', tab: 'admin-pages', group: 'CMS', adminOnly: true },
+  { id: 'admin-posts', label: 'Blog Posts', icon: 'bx-news', tab: 'admin-posts', adminOnly: true },
+]
+
 export default function SettingsPage() {
   const { user, updateAvatarUrl, fetchMe } = useAuthStore()
   const { sessions, apiKeys, connectedAccounts, fetchSessions, revokeSession, fetchApiKeys, createApiKey, revokeApiKey, fetchConnectedAccounts, unlinkAccount } = useSettingsStore()
@@ -679,10 +1135,32 @@ export default function SettingsPage() {
   const { theme, set: setTheme, setColorTheme } = useThemeStore()
   const t = useTranslations('settings')
   const { preferences, updatePreference } = usePreferencesStore()
+  const router = useRouter()
   const isAdmin = can('canViewAdmin')
 
   const searchParams = useSearchParams()
   const tab = (searchParams.get('tab') as Tab) || 'profile'
+
+  // Redirect all users to profile settings (user settings now live on the profile page)
+  const profileHandle = user?.username || (user?.settings?.handle as string)
+  const shouldRedirect = !!profileHandle
+  useEffect(() => {
+    if (!profileHandle) return
+    if (tab.startsWith('admin-') && isAdmin) {
+      // Admin tabs stay here
+      return
+    }
+    router.replace(`/@${profileHandle}/settings${tab !== 'profile' ? `?tab=${tab}` : ''}`)
+  }, [profileHandle, isAdmin, tab, router])
+
+  // Show redirect message for non-admin tabs
+  if (shouldRedirect && !(tab.startsWith('admin-') && isAdmin)) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--color-fg-muted)', fontSize: 14 }}>
+        Redirecting to your profile settings...
+      </div>
+    )
+  }
 
   // Profile
   const [name, setName] = useState(user?.name ?? '')
@@ -721,6 +1199,29 @@ export default function SettingsPage() {
   const [pwConfirm, setPwConfirm] = useState('')
   const [pwSaving, setPwSaving] = useState(false)
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  // Delete Account
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+
+  async function handleDeleteAccount() {
+    if (!deletePassword) { setDeleteError('Password is required'); return }
+    setDeleteLoading(true)
+    setDeleteError('')
+    try {
+      await apiFetch('/api/auth/account', { method: 'DELETE', body: JSON.stringify({ password: deletePassword }) })
+      // Logout and redirect
+      localStorage.removeItem('orchestra_token')
+      document.cookie = 'orchestra_token=;path=/;max-age=0'
+      window.location.href = '/login?message=account_deletion_scheduled'
+    } catch (e: any) {
+      setDeleteError(e?.message || 'Failed to delete account')
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
 
   // API Tokens
   const [newKeyName, setNewKeyName] = useState('')
@@ -795,7 +1296,7 @@ export default function SettingsPage() {
   const [integrationSaved, setIntegrationSaved] = useState(false)
 
   // Map tab IDs to setting keys (where they differ)
-  const tabToSettingKey: Record<string, string> = { email: 'smtp', social: 'social_platforms' }
+  const tabToSettingKey: Record<string, string> = { email: 'smtp', social: 'social_platforms', prompts: 'smart_prompts' }
 
   // Translatable admin setting keys — these show locale tabs
   const TRANSLATABLE_SETTINGS = new Set(['general', 'homepage', 'agents', 'contact', 'pricing', 'seo'])
@@ -923,13 +1424,15 @@ export default function SettingsPage() {
     } catch {} finally { setAdminSaving(false) }
   }
 
-  function adminField(settingKey: string, field: string, label: string, type: 'text' | 'email' | 'url' | 'number' | 'textarea' = 'text') {
+  function adminField(settingKey: string, field: string, label: string, type: 'text' | 'email' | 'url' | 'number' | 'textarea' | 'markdown' = 'text') {
     const val = (adminSettings[settingKey]?.[field] as string) ?? ''
     const update = (v: string) => setAdminSettings(p => ({ ...p, [settingKey]: { ...p[settingKey], [field]: v } }))
     return (
       <div style={{ marginBottom: 14 }}>
         <label style={labelSt}>{label}</label>
-        {type === 'textarea'
+        {type === 'markdown'
+          ? <MarkdownEditor value={val} onChange={update} height={240} isDark={isDark} placeholder={`Enter ${label.toLowerCase()}...`} />
+          : type === 'textarea'
           ? <textarea style={{ ...inputSt, height: 80, resize: 'vertical' }} value={val} onChange={e => update(e.target.value)} />
           : <input style={inputSt} type={type} value={val} onChange={e => update(e.target.value)} />}
       </div>
@@ -945,9 +1448,7 @@ export default function SettingsPage() {
           <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{label}</div>
           {desc && <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>{desc}</div>}
         </div>
-        <button onClick={() => update(!val)} style={{ width: 44, height: 24, borderRadius: 100, border: 'none', cursor: 'pointer', background: val ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : 'var(--color-border)', position: 'relative', flexShrink: 0 }}>
-          <span style={{ position: 'absolute', top: 3, left: val ? 22 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
-        </button>
+        <Switch checked={val} onChange={() => update(!val)} size="small" />
       </div>
     )
   }
@@ -963,8 +1464,82 @@ export default function SettingsPage() {
     )
   }
 
+  const isDark = theme === 'dark'
+  const sidebarBg = isDark ? 'rgba(255,255,255,0.02)' : '#fff'
+  const sidebarBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
+  const sidebarGroupColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)'
+  const sidebarItemColor = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)'
+  const sidebarActiveColor = '#a900ff'
+  const sidebarActiveBg = isDark ? 'rgba(169,0,255,0.1)' : 'rgba(169,0,255,0.06)'
+  const sidebarHoverBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
+
+  const visibleNav = SIDEBAR_NAV.filter(item => !item.adminOnly || isAdmin)
+
   return (
-    <div className="settings-content page-wrapper" style={{ padding: '32px 48px' }}>
+    <div style={{ display: 'flex', maxWidth: 1100, margin: '0 auto', padding: '40px 32px', gap: 0, minHeight: 'calc(100vh - 200px)' }}>
+
+      {/* ── Sidebar ── */}
+      <aside style={{
+        width: 220, flexShrink: 0,
+        borderRight: `1px solid ${sidebarBorder}`,
+        paddingRight: 0,
+        position: 'sticky', top: 100, alignSelf: 'flex-start',
+      }}>
+        <div style={{
+          padding: '0 10px 8px',
+          fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+          textTransform: 'uppercase', color: sidebarGroupColor,
+        }}>
+          Settings
+        </div>
+        <nav style={{ padding: '0 6px' }}>
+          {visibleNav.map(item => {
+            const active = tab === item.tab
+            return (
+              <div key={item.id}>
+                {item.group && (
+                  <div style={{
+                    padding: '10px 10px 4px',
+                    fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                    textTransform: 'uppercase', color: sidebarGroupColor,
+                    borderTop: `1px solid ${sidebarBorder}`,
+                    marginTop: 6, marginBottom: 2,
+                  }}>
+                    {item.group}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => router.push(`/settings?tab=${item.tab}`)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 9,
+                    padding: '7px 10px', borderRadius: 7, border: 'none',
+                    background: active ? sidebarActiveBg : 'transparent',
+                    color: active ? sidebarActiveColor : sidebarItemColor,
+                    fontSize: 13, fontWeight: active ? 600 : 400,
+                    cursor: 'pointer', textAlign: 'left',
+                    transition: 'background 0.12s, color 0.12s',
+                    marginBottom: 1, fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = sidebarHoverBg }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <i className={`bx ${item.icon}`} style={{
+                    fontSize: 16, flexShrink: 0,
+                    color: active ? sidebarActiveColor : sidebarGroupColor,
+                  }} />
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.label}
+                  </span>
+                </button>
+              </div>
+            )
+          })}
+        </nav>
+      </aside>
+
+      {/* ── Content ── */}
+      <div className="settings-content" style={{ flex: 1, padding: '0 0 0 40px', minWidth: 0 }}>
 
         {/* ── Profile ── */}
         {tab === 'profile' && (
@@ -1009,9 +1584,13 @@ export default function SettingsPage() {
               <div className="grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
                 <div>
                   <label style={labelSt}>{t('genderLabel')} <span style={{ color: textDim, fontWeight: 400 }}>(optional)</span></label>
-                  <select style={selectSt} value={gender} onChange={e => setGender(e.target.value)}>
-                    {GENDERS.map(g => <option key={g} value={g}>{g || t('selectPlaceholder')}</option>)}
-                  </select>
+                  <SearchableSelect
+                    style={selectSt}
+                    value={gender}
+                    onChange={val => setGender(val)}
+                    placeholder={t('selectPlaceholder')}
+                    options={GENDERS.map(g => ({ value: g, label: g || t('selectPlaceholder') }))}
+                  />
                 </div>
                 <div>
                   <label style={labelSt}>{t('positionLabel')} <span style={{ color: textDim, fontWeight: 400 }}>(optional)</span></label>
@@ -1023,22 +1602,25 @@ export default function SettingsPage() {
               <div className="grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
                 <div>
                   <label style={labelSt}>{t('timezoneLabel')}</label>
-                  <select style={selectSt} value={timezone} onChange={e => setTimezone(e.target.value)}>
-                    {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
-                  </select>
+                  <SearchableSelect
+                    style={selectSt}
+                    value={timezone}
+                    onChange={val => setTimezone(val)}
+                    options={TIMEZONES.map(tz => ({ value: tz, label: tz }))}
+                  />
                   <div style={{ fontSize: 11, color: textDim, marginTop: 5 }}>{t('timezoneHint')}</div>
                 </div>
                 <div>
                   <label style={labelSt}>{t('language')}</label>
-                  <select
+                  <SearchableSelect
                     style={selectSt}
                     value={pendingLanguage}
-                    onChange={e => setPendingLanguage(e.target.value)}
-                  >
-                    {locales.map((loc: Locale) => (
-                      <option key={loc} value={loc}>{loc === 'en' ? 'English' : loc === 'ar' ? '\u0627\u0644\u0639\u0631\u0628\u064A\u0629' : loc}</option>
-                    ))}
-                  </select>
+                    onChange={val => setPendingLanguage(val)}
+                    options={locales.map((loc: Locale) => ({
+                      value: loc,
+                      label: loc === 'en' ? 'English' : loc === 'ar' ? '\u0627\u0644\u0639\u0631\u0628\u064A\u0629' : loc,
+                    }))}
+                  />
                 </div>
               </div>
 
@@ -1056,7 +1638,21 @@ export default function SettingsPage() {
               <div style={{ padding: 16, borderRadius: 10, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#ef4444', marginBottom: 4 }}>{t('deleteWarning')}</div>
                 <div style={{ fontSize: 12, color: textMuted, marginBottom: 14 }}>{t('deleteWarningDesc')}</div>
-                <button style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{t('deleteAccount')}</button>
+                {!deleteConfirmOpen ? (
+                  <button onClick={() => setDeleteConfirmOpen(true)} style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{t('deleteAccount')}</button>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ fontSize: 12, color: '#ef4444' }}>Enter your password to confirm deletion. Your account will be deactivated and permanently deleted after 7 days.</div>
+                    {deleteError && <div style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>{deleteError}</div>}
+                    <input type="password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder="Your password" style={{ ...inputSt, borderColor: 'rgba(239,68,68,0.3)' }} />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={handleDeleteAccount} disabled={deleteLoading} style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: deleteLoading ? 0.5 : 1 }}>
+                        {deleteLoading ? 'Deleting...' : 'Confirm Delete'}
+                      </button>
+                      <button onClick={() => { setDeleteConfirmOpen(false); setDeletePassword(''); setDeleteError('') }} style={{ padding: '7px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                    </div>
+                  </div>
+                )}
               </div>
             </SettingsCard>
           </>
@@ -1083,7 +1679,7 @@ export default function SettingsPage() {
             <SettingsCard title={t('appearanceTitle')} desc={t('appearanceDesc')}>
               <ThemePicker
                 onThemeChange={(themeId) => setColorTheme(themeId)}
-                showVariants={false}
+                showVariants
               />
             </SettingsCard>
           </>
@@ -1347,13 +1943,7 @@ export default function SettingsPage() {
                         : t('browserPushDesc')}
                   </div>
                 </div>
-                <button
-                  onClick={handleTogglePush}
-                  disabled={pushPermission === 'denied' || pushPermission === 'unsupported'}
-                  style={{ width: 44, height: 24, borderRadius: 100, border: 'none', cursor: pushPermission === 'denied' || pushPermission === 'unsupported' ? 'not-allowed' : 'pointer', background: pushEnabled ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : 'var(--color-border)', position: 'relative', opacity: pushPermission === 'denied' || pushPermission === 'unsupported' ? 0.5 : 1 }}
-                >
-                  <span style={{ position: 'absolute', top: 3, left: pushEnabled ? 22 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
-                </button>
+                <Switch checked={pushEnabled} onChange={handleTogglePush} disabled={pushPermission === 'denied' || pushPermission === 'unsupported'} size="small" />
               </div>
             </SettingsCard>
             <SettingsCard title={t('emailPreferences')} desc={t('emailPreferencesDesc')}>
@@ -1377,9 +1967,6 @@ export default function SettingsPage() {
             </SettingsCard>
           </>
         )}
-
-        {/* ── AI Copilot ── */}
-        {tab === 'copilot' && <CopilotSettingsTab textPrimary={textPrimary} textDim={textDim} cardBorder={cardBorder} cardDivider={cardDivider} labelSt={labelSt} saveBtnSt={saveBtnSt} SettingsCard={SettingsCard} />}
 
         {/* ── Admin: General ── */}
         {tab === 'admin-general' && isAdmin && (
@@ -1449,7 +2036,7 @@ export default function SettingsPage() {
           <SettingsCard title={t('adminHomepageTitle')} desc={t('adminHomepageDesc')}>
             <ContentLocaleTabs activeLocale={contentLocale} onChange={handleSettingsLocaleChange} />
             {adminField('homepage', 'hero_headline', t('homepageHeroHeadline'))}
-            {adminField('homepage', 'hero_subtext', t('homepageHeroSubtext'), 'textarea')}
+            {adminField('homepage', 'hero_subtext', t('homepageHeroSubtext'), 'markdown')}
             {adminField('homepage', 'cta_primary', t('homepageCtaPrimary'))}
             {adminField('homepage', 'cta_secondary', t('homepageCtaSecondary'))}
             {adminField('homepage', 'stats_tools', t('homepageStatsTools'))}
@@ -1465,7 +2052,7 @@ export default function SettingsPage() {
           <SettingsCard title={t('adminAgentsTitle')} desc={t('adminAgentsDesc')}>
             <ContentLocaleTabs activeLocale={contentLocale} onChange={handleSettingsLocaleChange} />
             {adminField('agents', 'headline', t('agentsHeadline'))}
-            {adminField('agents', 'subtext', t('agentsSubtext'), 'textarea')}
+            {adminField('agents', 'subtext', t('agentsSubtext'), 'markdown')}
             {adminField('agents', 'featured_ids', t('agentsFeaturedIds'))}
             <SaveRow settingKey="agents" />
           </SettingsCard>
@@ -1496,7 +2083,7 @@ export default function SettingsPage() {
                 {adminField('pricing', `${plan}_price`, t('pricingPrice'), 'text')}
                 {adminField('pricing', `${plan}_period`, t('pricingPeriod'))}
                 {adminField('pricing', `${plan}_cta`, t('pricingCta'))}
-                {adminField('pricing', `${plan}_features`, t('pricingFeatures'), 'textarea')}
+                {adminField('pricing', `${plan}_features`, t('pricingFeatures'), 'markdown')}
               </div>
             ))}
             <SaveRow settingKey="pricing" />
@@ -1532,9 +2119,7 @@ export default function SettingsPage() {
                 <SettingsCard key={provider.key} title={provider.label} desc={provider.desc}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: enabled ? 16 : 0 }}>
                     <span style={{ fontSize: 13, color: textMuted }}>{enabled ? 'Enabled' : 'Disabled'}</span>
-                    <button onClick={() => setAdminSettings(p => ({ ...p, integrations: { ...p.integrations, [`${provider.key}_enabled`]: !enabled } }))} style={{ width: 44, height: 24, borderRadius: 100, border: 'none', cursor: 'pointer', background: enabled ? 'linear-gradient(135deg, #00e5ff, #a900ff)' : 'var(--color-border)', position: 'relative', flexShrink: 0 }}>
-                      <span style={{ position: 'absolute', top: 3, left: enabled ? 22 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
-                    </button>
+                    <Switch checked={enabled} onChange={() => setAdminSettings(p => ({ ...p, integrations: { ...p.integrations, [`${provider.key}_enabled`]: !enabled } }))} size="small" />
                   </div>
                   {enabled && (
                     <div style={{ paddingTop: 16, borderTop: `1px solid ${cardDivider}` }}>
@@ -1611,6 +2196,13 @@ export default function SettingsPage() {
                       const res = await apiFetch<{ ok: boolean; sitemap: string }>('/api/admin/settings/generate-sitemap', { method: 'POST' })
                       if (res.sitemap) {
                         setAdminSettings(p => ({ ...p, seo: { ...p.seo, generated_sitemap: res.sitemap } }))
+                        // Also save to seo settings so /sitemap.xml route can serve it
+                        try {
+                          await apiFetch('/api/admin/settings', {
+                            method: 'PATCH',
+                            body: JSON.stringify({ key: 'seo', value: { ...adminSettings.seo, generated_sitemap: res.sitemap } }),
+                          })
+                        } catch {}
                       }
                     } catch {}
                   }}
@@ -1711,211 +2303,72 @@ export default function SettingsPage() {
           />
         )}
 
+        {/* ── Admin: Smart Prompts ── */}
+        {tab === 'admin-prompts' && isAdmin && (
+          <SmartPromptsAdmin
+            adminSettings={adminSettings}
+            setAdminSettings={setAdminSettings}
+            handleSaveAdminSetting={handleSaveAdminSetting}
+            adminSaving={adminSaving}
+            adminSaved={adminSaved}
+            inputSt={inputSt}
+            labelSt={labelSt}
+            saveBtnSt={saveBtnSt}
+            textDim={textDim}
+            textMuted={textMuted}
+            textPrimary={textPrimary}
+            cardBorder={cardBorder}
+          />
+        )}
+
+        {/* ── Admin: Notifications ── */}
+        {tab === 'admin-notifications' && isAdmin && (
+          <AdminNotificationsTab
+            inputSt={inputSt}
+            labelSt={labelSt}
+            saveBtnSt={saveBtnSt}
+            textDim={textDim}
+            textMuted={textMuted}
+            textPrimary={textPrimary}
+            cardBorder={cardBorder}
+            cardDivider={cardDivider}
+          />
+        )}
+
+        {/* ── Admin: CMS Pages ── */}
+        {tab === 'admin-pages' && isAdmin && (
+          <AdminCmsTab
+            kind="pages"
+            inputSt={inputSt}
+            labelSt={labelSt}
+            saveBtnSt={saveBtnSt}
+            textDim={textDim}
+            textMuted={textMuted}
+            textPrimary={textPrimary}
+            cardBorder={cardBorder}
+            cardDivider={cardDivider}
+            isDark={isDark}
+          />
+        )}
+
+        {/* ── Admin: Blog Posts ── */}
+        {tab === 'admin-posts' && isAdmin && (
+          <AdminCmsTab
+            kind="posts"
+            inputSt={inputSt}
+            labelSt={labelSt}
+            saveBtnSt={saveBtnSt}
+            textDim={textDim}
+            textMuted={textMuted}
+            textPrimary={textPrimary}
+            cardBorder={cardBorder}
+            cardDivider={cardDivider}
+            isDark={isDark}
+          />
+        )}
+
+      </div>
     </div>
   )
 }
 
-/* ── AI Copilot Settings Tab ─────────────────────────────── */
-
-const DOCK_MODES: { id: CopilotDockMode; label: string; desc: string; icon: string }[] = [
-  { id: 'bubble', label: 'Bubble', desc: 'Floating draggable window', icon: 'bx-chat' },
-  { id: 'sideover', label: 'Side Panel', desc: 'Docked to right edge', icon: 'bx-dock-right' },
-  { id: 'modal', label: 'Modal', desc: 'Centered overlay dialog', icon: 'bx-window' },
-  { id: 'fullscreen', label: 'Fullscreen', desc: 'Replaces main content area', icon: 'bx-fullscreen' },
-]
-
-const ICON_STYLES: { id: 'bot' | 'chat' | 'sparkle'; label: string; icon: string }[] = [
-  { id: 'bot', label: 'Robot', icon: 'bx-bot' },
-  { id: 'chat', label: 'Chat', icon: 'bx-chat' },
-  { id: 'sparkle', label: 'Sparkle', icon: 'bx-star' },
-]
-
-const CHAT_MODES_LIST: { id: 'auto' | 'plan' | 'manual'; label: string; desc: string }[] = [
-  { id: 'auto', label: 'Auto', desc: 'AI decides when to edit or plan' },
-  { id: 'plan', label: 'Plan', desc: 'AI asks before making changes' },
-  { id: 'manual', label: 'Manual', desc: 'Full manual control' },
-]
-
-function CopilotSettingsTab({ textPrimary, textDim, cardBorder, cardDivider, labelSt, saveBtnSt, SettingsCard }: {
-  textPrimary: string; textDim: string; cardBorder: string; cardDivider: string
-  labelSt: React.CSSProperties; saveBtnSt: React.CSSProperties
-  SettingsCard: React.ComponentType<{ title: string; desc?: string; children: React.ReactNode }>
-}) {
-  const copilotMode = useChatStore(s => s.copilotMode)
-  const setCopilotMode = useChatStore(s => s.setCopilotMode)
-  const chatIconStyle = useChatStore(s => s.chatIconStyle)
-  const setChatIconStyle = useChatStore(s => s.setChatIconStyle)
-  const selectedModelId = useChatStore(s => s.selectedModelId)
-  const setSelectedModelId = useChatStore(s => s.setSelectedModelId)
-  const chatMode = useChatStore(s => s.chatMode)
-  const setChatMode = useChatStore(s => s.setChatMode)
-  const accounts = useChatStore(s => s.accounts)
-  const userStartupPrompts = useChatStore(s => s.userStartupPrompts)
-  const setUserStartupPrompts = useChatStore(s => s.setUserStartupPrompts)
-  const userQuickActions = useChatStore(s => s.userQuickActions)
-  const setUserQuickActions = useChatStore(s => s.setUserQuickActions)
-
-  return (
-    <>
-      {/* Dock Mode */}
-      <SettingsCard title="Dock Mode" desc="Choose how the AI copilot window appears">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
-          {DOCK_MODES.map(m => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setCopilotMode(m.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
-                borderRadius: 10, cursor: 'pointer', textAlign: 'left',
-                border: copilotMode === m.id ? '2px solid var(--color-accent)' : `1px solid ${cardBorder}`,
-                background: copilotMode === m.id ? 'color-mix(in srgb, var(--color-accent) 8%, transparent)' : 'transparent',
-                color: textPrimary,
-              }}
-            >
-              <i className={`bx ${m.icon}`} style={{ fontSize: 20, color: copilotMode === m.id ? 'var(--color-accent)' : textDim, flexShrink: 0 }} />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{m.label}</div>
-                <div style={{ fontSize: 11, color: textDim, marginTop: 2 }}>{m.desc}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </SettingsCard>
-
-      {/* Chat Icon */}
-      <SettingsCard title="Chat Icon" desc="Choose the icon style for the copilot bubble button">
-        <div style={{ display: 'flex', gap: 10 }}>
-          {ICON_STYLES.map(s => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setChatIconStyle(s.id)}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                padding: '14px 20px', borderRadius: 10, cursor: 'pointer',
-                border: chatIconStyle === s.id ? '2px solid var(--color-accent)' : `1px solid ${cardBorder}`,
-                background: chatIconStyle === s.id ? 'color-mix(in srgb, var(--color-accent) 8%, transparent)' : 'transparent',
-                color: textPrimary, minWidth: 80,
-              }}
-            >
-              <i className={`bx ${s.icon}`} style={{ fontSize: 24, color: chatIconStyle === s.id ? 'var(--color-accent)' : textDim }} />
-              <span style={{ fontSize: 12, fontWeight: 500 }}>{s.label}</span>
-            </button>
-          ))}
-        </div>
-      </SettingsCard>
-
-      {/* Default Model */}
-      {accounts.length > 0 && (
-        <SettingsCard title="Default Model" desc="Select which AI model to use by default">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {accounts.map(acc => (
-              <label
-                key={acc.id}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
-                  borderRadius: 9, cursor: 'pointer',
-                  border: selectedModelId === acc.id ? '2px solid var(--color-accent)' : `1px solid ${cardBorder}`,
-                  background: selectedModelId === acc.id ? 'color-mix(in srgb, var(--color-accent) 8%, transparent)' : 'transparent',
-                }}
-              >
-                <input
-                  type="radio"
-                  name="copilot-model"
-                  checked={selectedModelId === acc.id}
-                  onChange={() => setSelectedModelId(acc.id)}
-                  style={{ accentColor: 'var(--color-accent)' }}
-                />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{acc.name}</div>
-                  {acc.model && <div style={{ fontSize: 11, color: textDim, marginTop: 1 }}>{acc.model}</div>}
-                </div>
-              </label>
-            ))}
-          </div>
-        </SettingsCard>
-      )}
-
-      {/* Default Chat Mode */}
-      <SettingsCard title="Default Chat Mode" desc="Control how the AI behaves when you send a message">
-        <div style={{ display: 'flex', gap: 10 }}>
-          {CHAT_MODES_LIST.map(m => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setChatMode(m.id)}
-              style={{
-                flex: 1, padding: '12px 14px', borderRadius: 10, cursor: 'pointer', textAlign: 'center',
-                border: chatMode === m.id ? '2px solid var(--color-accent)' : `1px solid ${cardBorder}`,
-                background: chatMode === m.id ? 'color-mix(in srgb, var(--color-accent) 8%, transparent)' : 'transparent',
-                color: textPrimary,
-              }}
-            >
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{m.label}</div>
-              <div style={{ fontSize: 11, color: textDim, marginTop: 4 }}>{m.desc}</div>
-            </button>
-          ))}
-        </div>
-      </SettingsCard>
-
-      {/* Startup Prompts */}
-      <SettingsCard title="Startup Prompts" desc="Customize the prompt cards shown when starting a new chat">
-        <PromptCardEditor
-          value={userStartupPrompts as unknown as PromptCard[]}
-          onChange={(cards) => setUserStartupPrompts(cards.map(c => ({
-            id: c.id,
-            title: c.title || '',
-            description: c.description,
-            prompt: c.prompt || '',
-            color: c.color,
-            icon: c.icon,
-          })))}
-          fields={[
-            { key: 'title', label: 'Title', placeholder: 'e.g. Project Status' },
-            { key: 'description', label: 'Description', placeholder: 'Short description' },
-            { key: 'prompt', label: 'Prompt', placeholder: 'The message to send', type: 'textarea' },
-          ]}
-          previewMode="prompts"
-        />
-        {userStartupPrompts.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setUserStartupPrompts([])}
-            style={{ marginTop: 12, padding: '6px 14px', borderRadius: 7, border: `1px solid ${cardBorder}`, background: 'transparent', color: textDim, fontSize: 12, cursor: 'pointer' }}
-          >
-            Reset to defaults
-          </button>
-        )}
-      </SettingsCard>
-
-      {/* Quick Actions */}
-      <SettingsCard title="Quick Actions" desc="Customize the action chips shown above the chat input">
-        <PromptCardEditor
-          value={userQuickActions as unknown as PromptCard[]}
-          onChange={(cards) => setUserQuickActions(cards.map(c => ({
-            id: c.id,
-            label: c.label || '',
-            prompt: c.prompt || '',
-            color: c.color,
-            icon: c.icon,
-          })))}
-          fields={[
-            { key: 'label', label: 'Label', placeholder: 'e.g. Run Tests' },
-            { key: 'prompt', label: 'Prompt', placeholder: 'The message to send', type: 'textarea' },
-          ]}
-          previewMode="actions"
-        />
-        {userQuickActions.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setUserQuickActions([])}
-            style={{ marginTop: 12, padding: '6px 14px', borderRadius: 7, border: `1px solid ${cardBorder}`, background: 'transparent', color: textDim, fontSize: 12, cursor: 'pointer' }}
-          >
-            Reset to defaults
-          </button>
-        )}
-      </SettingsCard>
-    </>
-  )
-}
