@@ -47,7 +47,7 @@ jobs:
           command_timeout: 600s
           script: |
             set -e
-            export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
+            export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin:$HOME/.local/share/pnpm
             /opt/orchestra/deploy.sh next
 
       - name: Verify deployment
