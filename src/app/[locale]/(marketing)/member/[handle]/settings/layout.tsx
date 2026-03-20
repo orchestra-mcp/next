@@ -22,6 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { slug: 'passkeys', label: 'Passkeys', icon: 'bx-fingerprint' },
   { slug: 'sessions', label: 'Sessions', icon: 'bx-devices' },
   { slug: 'api-keys', label: 'API Keys', icon: 'bx-key', group: 'Developer' },
+  { slug: 'mcp', label: 'MCP Access', icon: 'bx-bot' },
   { slug: 'integrations', label: 'Integrations', icon: 'bx-plug' },
   { slug: 'notifications', label: 'Notifications', icon: 'bx-bell', group: 'Notifications' },
   { slug: 'admin-general', label: 'General', icon: 'bx-cog', group: 'Administration', adminOnly: true },

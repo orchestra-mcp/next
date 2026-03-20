@@ -1150,7 +1150,26 @@ export default function SettingsPage() {
       // Admin tabs stay here
       return
     }
-    router.replace(`/@${profileHandle}/settings${tab !== 'profile' ? `?tab=${tab}` : ''}`)
+    // Map query param tabs to slug-based member settings paths
+    const slugMap: Record<string, string> = {
+      apitokens: 'api-keys',
+      mcp: 'mcp',
+      sessions: 'sessions',
+      passkeys: 'passkeys',
+      password: 'password',
+      appearance: 'appearance',
+      integrations: 'integrations',
+      push: 'notifications',
+      '2fa': 'security',
+    }
+    const slug = slugMap[tab]
+    if (slug) {
+      router.replace(`/@${profileHandle}/settings/${slug}`)
+    } else if (tab !== 'profile') {
+      router.replace(`/@${profileHandle}/settings?tab=${tab}`)
+    } else {
+      router.replace(`/@${profileHandle}/settings`)
+    }
   }, [profileHandle, isAdmin, tab, router])
 
   // Show redirect message for non-admin tabs
