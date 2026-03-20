@@ -107,9 +107,10 @@ export default function McpSettingsPage() {
   }
 
   const authToken = mcpToken || token || ''
+  const authedUrl = authToken ? `${MCP_URL}?token=${authToken}` : null
   const jsonAnon = `{\n  "mcpServers": {\n    "orchestra-cloud": {\n      "type": "sse",\n      "url": "${MCP_URL}"\n    }\n  }\n}`
   const jsonAuth = authToken
-    ? `{\n  "mcpServers": {\n    "orchestra-cloud": {\n      "type": "sse",\n      "url": "${MCP_URL}",\n      "headers": {\n        "Authorization": "Bearer ${authToken}"\n      }\n    }\n  }\n}`
+    ? `{\n  "mcpServers": {\n    "orchestra-cloud": {\n      "type": "sse",\n      "url": "${MCP_URL}?token=${authToken}"\n    }\n  }\n}`
     : null
 
   if (loading) {
@@ -154,16 +155,31 @@ export default function McpSettingsPage() {
         <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
           <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: 'rgba(0,229,255,0.15)', border: '1px solid rgba(0,229,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#00e5ff' }}>2</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)', marginBottom: 6 }}>Click "Add custom connector" and paste this URL</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-bg)', borderRadius: 8, padding: '9px 12px', border: '1px solid var(--color-border)' }}>
-              <code style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', color: 'var(--color-fg)' }}>{MCP_URL}</code>
-              <button
-                onClick={() => copy(MCP_URL, 'mcp-url')}
-                style={{ flexShrink: 0, padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: copied === 'mcp-url' ? 'rgba(0,229,255,0.12)' : 'var(--color-bg-alt)', color: copied === 'mcp-url' ? '#00e5ff' : 'var(--color-fg-muted)', border: '1px solid var(--color-border)', cursor: 'pointer' }}
-              >
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)', marginBottom: 6 }}>Click "Add custom connector" and paste your URL</div>
+
+            {/* Anonymous URL */}
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-fg-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Without account</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-bg)', borderRadius: 8, padding: '9px 12px', border: '1px solid var(--color-border)', marginBottom: 10 }}>
+              <code style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', color: 'var(--color-fg)', wordBreak: 'break-all' }}>{MCP_URL}</code>
+              <button onClick={() => copy(MCP_URL, 'mcp-url')} style={{ flexShrink: 0, padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: copied === 'mcp-url' ? 'rgba(0,229,255,0.12)' : 'var(--color-bg-alt)', color: copied === 'mcp-url' ? '#00e5ff' : 'var(--color-fg-muted)', border: '1px solid var(--color-border)', cursor: 'pointer' }}>
                 {copied === 'mcp-url' ? 'Copied!' : 'Copy'}
               </button>
             </div>
+
+            {/* Authenticated URL */}
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-fg-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>With your account (token in URL)</div>
+            {authedUrl ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,229,255,0.04)', borderRadius: 8, padding: '9px 12px', border: '1px solid rgba(0,229,255,0.2)' }}>
+                <code style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', color: 'var(--color-fg)', wordBreak: 'break-all' }}>{authedUrl}</code>
+                <button onClick={() => copy(authedUrl, 'auth-url')} style={{ flexShrink: 0, padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: copied === 'auth-url' ? 'rgba(0,229,255,0.12)' : 'var(--color-bg-alt)', color: copied === 'auth-url' ? '#00e5ff' : 'var(--color-fg-muted)', border: '1px solid rgba(0,229,255,0.2)', cursor: 'pointer' }}>
+                  {copied === 'auth-url' ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, color: 'var(--color-fg-dim)', fontStyle: 'italic', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
+                Log in to generate your personal token URL
+              </div>
+            )}
           </div>
         </div>
       </ProfileCard>
