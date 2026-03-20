@@ -47,8 +47,30 @@ jobs:
           command_timeout: 600s
           script: |
             set -e
-            export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin:$HOME/.local/share/pnpm
-            /opt/orchestra/deploy.sh next
+            export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin:$HOME/.local/share/pnpm:$HOME/.local/bin
+
+            cd /opt/orchestra/apps/next
+
+            echo "--- Pulling latest ---"
+            git fetch origin master
+            git reset --hard origin/master
+
+            echo "--- Installing pnpm ---"
+            command -v pnpm >/dev/null 2>&1 || npm install -g pnpm
+
+            echo "--- Installing dependencies ---"
+            pnpm install --no-frozen-lockfile
+
+            echo "--- Copying env ---"
+            [ -f /opt/orchestra/env/next.env ] && cp /opt/orchestra/env/next.env .env.local
+
+            echo "--- Building ---"
+            npx next build
+
+            echo "--- Restarting service ---"
+            sudo systemctl restart orchestra-next
+
+            echo "--- Deploy complete ---"
 
       - name: Verify deployment
         uses: appleboy/ssh-action@v1
