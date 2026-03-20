@@ -107,14 +107,14 @@ export default function McpSettingsPage() {
   }
 
   const authToken = mcpToken || token || ''
-  const deepLinkAnon = `claude://install-mcp?name=Orchestra&type=sse&url=${encodeURIComponent(MCP_URL)}`
+  const deepLinkAnon = `claude://install-mcp?name=orchestra-cloud&type=sse&url=${encodeURIComponent(MCP_URL)}`
   const deepLinkAuth = authToken
-    ? `claude://install-mcp?name=Orchestra&type=sse&url=${encodeURIComponent(MCP_URL)}&headers=${encodeURIComponent(`Authorization:Bearer ${authToken}`)}`
+    ? `claude://install-mcp?name=orchestra-cloud&type=sse&url=${encodeURIComponent(MCP_URL)}&headers=${encodeURIComponent(`Authorization:Bearer ${authToken}`)}`
     : null
 
-  const jsonAnon = `{\n  "mcpServers": {\n    "orchestra": {\n      "type": "sse",\n      "url": "${MCP_URL}"\n    }\n  }\n}`
+  const jsonAnon = `{\n  "mcpServers": {\n    "orchestra-cloud": {\n      "type": "sse",\n      "url": "${MCP_URL}"\n    }\n  }\n}`
   const jsonAuth = authToken
-    ? `{\n  "mcpServers": {\n    "orchestra": {\n      "type": "sse",\n      "url": "${MCP_URL}",\n      "headers": {\n        "Authorization": "Bearer ${authToken}"\n      }\n    }\n  }\n}`
+    ? `{\n  "mcpServers": {\n    "orchestra-cloud": {\n      "type": "sse",\n      "url": "${MCP_URL}",\n      "headers": {\n        "Authorization": "Bearer ${authToken}"\n      }\n    }\n  }\n}`
     : null
 
   if (loading) {

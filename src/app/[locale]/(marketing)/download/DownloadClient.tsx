@@ -166,7 +166,7 @@ export default function DownloadClient({ data }: { data: DownloadData }) {
             <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>Without account</div>
             <div style={{ fontSize: 12, color: textMuted, marginBottom: 14, lineHeight: 1.5 }}>Install tools, check status — no sign-in needed.</div>
             <a
-              href={`claude://install-mcp?name=Orchestra&type=sse&url=${encodeURIComponent('https://orchestra-mcp.dev/mcp')}`}
+              href={`claude://install-mcp?name=orchestra-cloud&type=sse&url=${encodeURIComponent('https://orchestra-mcp.dev/mcp')}`}
               style={{ display: 'block', padding: '10px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center', background: dlPrimaryBg, color: textPrimary, border: `1px solid ${dlPrimaryBorder}` }}
             >
               <i className="bx bx-plus" style={{ marginRight: 6 }} />
@@ -191,7 +191,7 @@ export default function DownloadClient({ data }: { data: DownloadData }) {
         <div style={{ fontSize: 12, color: textDim, marginBottom: 12 }}>Or add manually to your Claude Desktop config:</div>
         <div style={{ background: termBg, borderRadius: 10, padding: '14px 18px', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#f8f8f8', border: `1px solid ${termBorder}`, whiteSpace: 'pre' }}>{`{
   "mcpServers": {
-    "orchestra": {
+    "orchestra-cloud": {
       "type": "sse",
       "url": "https://orchestra-mcp.dev/mcp"
     }
