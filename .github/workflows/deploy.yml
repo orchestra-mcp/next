@@ -106,6 +106,18 @@ jobs:
 
             echo "--- Deploy complete ---"
 
+      - name: Purge Cloudflare cache
+        if: success()
+        env:
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          [ -z "$CF_ZONE_ID" ] || [ -z "$CF_API_TOKEN" ] && echo "No CF credentials, skipping purge" && exit 0
+          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"purge_everything":true}' | grep -q '"success":true' && echo "Cloudflare cache purged" || echo "CF purge failed (non-fatal)"
+
       - name: Notify Discord — Deploy succeeded
         if: success()
         env:
