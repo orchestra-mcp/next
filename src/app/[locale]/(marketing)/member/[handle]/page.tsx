@@ -1,11 +1,22 @@
 'use client'
-import { use, useState, useEffect } from 'react'
+
+import { use, useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { useThemeStore } from '@/store/theme'
 import { useFeatureFlagsStore } from '@/store/feature-flags'
 import { useCommunityStore } from '@/store/community'
 import { useAuthStore } from '@/store/auth'
-import { useAdminStore } from '@/store/admin'
+import { apiFetch } from '@/lib/api'
+import { useProfileTheme } from '@/components/profile/use-profile-theme'
+import ProfileCard from '@/components/profile/profile-card'
+import PostEmbed from '@/components/profile/post-embed'
+import { MarkdownRenderer } from '@orchestra-mcp/editor'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+
+function postSlug(post: { id: number; title?: string; slug?: string }): string {
+  if (post.slug) return post.slug
+  const base = (post.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 50)
+  return base ? `${post.id}-${base}` : `${post.id}`
+}
 
 interface PageProps {
   params: Promise<{ handle: string }>
@@ -15,56 +26,101 @@ export default function MemberProfilePage(props: PageProps) {
   const params = use(props.params)
   const handle = params.handle
 
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
+  const { colors } = useProfileTheme()
   const { isEnabled } = useFeatureFlagsStore()
   const { user } = useAuthStore()
   const {
-    profile, posts, loading, error,
-    fetchMemberProfile, fetchPosts, clearProfile, likePost, createPost,
+    profile, posts, loading, error, activity,
+    fetchPosts, likePost, createPost, updatePost, deletePost, fetchActivity,
   } = useCommunityStore()
 
-  const { fetchSetting } = useAdminStore()
-  const [platformDefs, setPlatformDefs] = useState<Record<string, { icon: string; label: string }>>({})
   const [postTitle, setPostTitle] = useState('')
   const [postContent, setPostContent] = useState('')
+  const [postIcon, setPostIcon] = useState('')
+  const [postMedia, setPostMedia] = useState<string[]>([])
+  const [composerOpen, setComposerOpen] = useState(false)
+  const [showIconPicker, setShowIconPicker] = useState(false)
+  const [mediaInput, setMediaInput] = useState('')
   const [publishing, setPublishing] = useState(false)
+  const [publishError, setPublishError] = useState<string | null>(null)
+  const [publishSuccess, setPublishSuccess] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editContent, setEditContent] = useState('')
+  const [editIcon, setEditIcon] = useState('')
+  const [editIconColor, setEditIconColor] = useState('')
+  const [editIconPickerOpen, setEditIconPickerOpen] = useState(false)
+  const [editPostType, setEditPostType] = useState<'post' | 'skill' | 'agent' | 'workflow'>('post')
+  const editContentRef = useRef<HTMLTextAreaElement>(null)
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [allPosts, setAllPosts] = useState<typeof posts>([])
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
+  const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set())
+  const [inlineComments, setInlineComments] = useState<Record<number, any[]>>({})
+  const [inlineCommentText, setInlineCommentText] = useState<Record<number, string>>({})
+  const [commentSubmitting, setCommentSubmitting] = useState<number | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [postIconColor, setPostIconColor] = useState('')
+  const [postType, setPostType] = useState<'post' | 'skill' | 'agent' | 'workflow'>('post')
+  const [publishToMarketplace, setPublishToMarketplace] = useState(false)
+  const [feedFilter, setFeedFilter] = useState<'all' | 'post' | 'skill' | 'agent' | 'workflow'>('all')
+  const [feedView, setFeedView] = useState<'posts' | 'activity'>('posts')
+  const contentRef = useRef<HTMLTextAreaElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
-  const isOwnProfile = user?.settings?.handle === handle
+  const isOwner = !!user && (
+    user.username === handle ||
+    (user.settings?.handle as string) === handle
+  )
+
+  // Initial fetch
+  useEffect(() => {
+    setPage(1)
+    setAllPosts([])
+    setHasMore(true)
+    fetchPosts(handle, 1)
+  }, [handle, fetchPosts])
+
+  // Accumulate posts when store updates
+  useEffect(() => {
+    if (!posts.length) return
+    if (page === 1) {
+      setAllPosts(posts)
+    } else {
+      setAllPosts(prev => {
+        const existingIds = new Set(prev.map(p => p.id))
+        const newPosts = posts.filter(p => !existingIds.has(p.id))
+        return [...prev, ...newPosts]
+      })
+    }
+    if (posts.length < 10) setHasMore(false)
+    setLoadingMore(false)
+  }, [posts, page])
+
+  // Infinite scroll observer
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore || loading) return
+    setLoadingMore(true)
+    const nextPage = page + 1
+    setPage(nextPage)
+    fetchPosts(handle, nextPage)
+  }, [loadingMore, hasMore, loading, page, handle, fetchPosts])
 
   useEffect(() => {
-    fetchMemberProfile(handle)
-    fetchPosts(handle)
-    return () => clearProfile()
-  }, [handle, fetchMemberProfile, fetchPosts, clearProfile])
+    if (!sentinelRef.current || !hasMore) return
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore() },
+      { threshold: 0.1 },
+    )
+    observer.observe(sentinelRef.current)
+    return () => observer.disconnect()
+  }, [loadMore, hasMore])
 
-  useEffect(() => {
-    fetchSetting('social_platforms').then(data => {
-      const list = data?.platforms
-      if (Array.isArray(list)) {
-        const map: Record<string, { icon: string; label: string }> = {}
-        for (const p of list) map[p.value] = { icon: p.icon, label: p.label }
-        setPlatformDefs(map)
-      }
-    }).catch(() => {})
-  }, [])
-
-  // Theme tokens
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)'
-  const textBody = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
-  const inputBg = isDark ? 'rgba(255,255,255,0.04)' : '#f9f9fb'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-
-  function getInitials(name: string): string {
-    return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-  }
-
-  function formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
+  // Posts render immediately — no animation needed (sidebar handles its own animations)
 
   function relativeTime(iso: string): string {
     const diff = Date.now() - new Date(iso).getTime()
@@ -74,47 +130,220 @@ export default function MemberProfilePage(props: PageProps) {
     if (hours < 24) return `${hours}h ago`
     const days = Math.floor(hours / 24)
     if (days < 30) return `${days}d ago`
-    return formatDate(iso)
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
   async function handlePublish(e: React.FormEvent) {
     e.preventDefault()
     if (!postTitle.trim() || !postContent.trim()) return
     setPublishing(true)
+    setPublishError(null)
+    setPublishSuccess(false)
     try {
-      await createPost({ title: postTitle, content: postContent })
-      setPostTitle('')
-      setPostContent('')
-      fetchPosts(handle)
-    } catch { /* store handles error */ }
+      const tags: string[] = []
+      if (postType !== 'post') tags.push(postType)
+      if (publishToMarketplace && postType !== 'post') tags.push('marketplace')
+      await createPost({
+        title: postTitle, content: postContent,
+        icon: postIcon || undefined, color: postIconColor || undefined,
+        media: postMedia.length > 0 ? JSON.stringify(postMedia) : undefined,
+        tags: tags.length > 0 ? tags : undefined,
+      })
+    } catch (err) {
+      setPublishError((err as Error).message || 'Failed to publish post')
+      setPublishing(false)
+      return
+    }
+    setPostTitle('')
+    setPostContent('')
+    setPostIcon('')
+    setPostIconColor('')
+    setPostMedia([])
+    setPostType('post')
+    setPublishToMarketplace(false)
+    setComposerOpen(false)
+    setPublishSuccess(true)
+    setTimeout(() => setPublishSuccess(false), 3000)
+    // Refresh first page to include new post
+    setPage(1)
+    setAllPosts([])
+    try { await fetchPosts(handle, 1) } catch { /* refresh failed but post was saved */ }
     setPublishing(false)
+  }
+
+  function insertFormat(prefix: string, suffix: string) {
+    const ta = contentRef.current
+    if (!ta) return
+    const start = ta.selectionStart
+    const end = ta.selectionEnd
+    const text = postContent
+    const selected = text.slice(start, end) || 'text'
+    const newText = text.slice(0, start) + prefix + selected + suffix + text.slice(end)
+    setPostContent(newText)
+    requestAnimationFrame(() => {
+      ta.focus()
+      const cursor = start + prefix.length + selected.length + suffix.length
+      ta.setSelectionRange(cursor, cursor)
+    })
+  }
+
+  function insertEditFormat(prefix: string, suffix: string) {
+    const ta = editContentRef.current
+    if (!ta) return
+    const start = ta.selectionStart
+    const end = ta.selectionEnd
+    const selected = editContent.slice(start, end) || 'text'
+    const newText = editContent.slice(0, start) + prefix + selected + suffix + editContent.slice(end)
+    setEditContent(newText)
+    requestAnimationFrame(() => {
+      ta.focus()
+      const cursor = start + prefix.length + selected.length + suffix.length
+      ta.setSelectionRange(cursor, cursor)
+    })
+  }
+
+  function startEdit(post: typeof posts[0]) {
+    setEditingId(post.id)
+    setEditTitle(post.title)
+    setEditContent(post.content)
+    setEditIcon(post.icon || '')
+    setEditIconColor(post.color || '')
+    setEditPostType((getPostTypeFromTags(post.tags || []) || 'post') as 'post' | 'skill' | 'agent' | 'workflow')
+    setEditIconPickerOpen(false)
+    setEditError(null)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditTitle('')
+    setEditContent('')
+    setEditIcon('')
+    setEditIconColor('')
+    setEditPostType('post')
+    setEditIconPickerOpen(false)
+    setEditError(null)
+  }
+
+  async function handleSaveEdit() {
+    if (!editingId || !editTitle.trim() || !editContent.trim()) return
+    setEditSaving(true)
+    setEditError(null)
+    try {
+      const editTags: string[] = []
+      if (editPostType !== 'post') editTags.push(editPostType)
+      await updatePost(editingId, { title: editTitle.trim(), content: editContent.trim(), icon: editIcon || undefined, color: editIconColor || undefined, tags: editTags })
+      setAllPosts(prev => prev.map(p => p.id === editingId ? { ...p, title: editTitle.trim(), content: editContent.trim(), icon: editIcon, color: editIconColor, tags: editTags } : p))
+      cancelEdit()
+    } catch (err) {
+      setEditError((err as Error).message || 'Failed to save edit')
+    }
+    setEditSaving(false)
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteConfirmId) return
+    setDeleteLoading(true)
+    try {
+      await deletePost(deleteConfirmId)
+      setAllPosts(prev => prev.filter(p => p.id !== deleteConfirmId))
+    } catch { /* error shown via store */ }
+    setDeleteLoading(false)
+    setDeleteConfirmId(null)
+  }
+
+  const POST_TYPE_STYLES: Record<string, { color: string; bg: string; label: string }> = {
+    skill: { color: '#00e5ff', bg: 'rgba(0,229,255,0.1)', label: 'Skill' },
+    agent: { color: '#a900ff', bg: 'rgba(169,0,255,0.1)', label: 'Agent' },
+    workflow: { color: '#22c55e', bg: 'rgba(34,197,94,0.1)', label: 'Workflow' },
+  }
+
+  function getPostTypeFromTags(tags: string[]): string | null {
+    if (tags.includes('workflow')) return 'workflow'
+    if (tags.includes('agent')) return 'agent'
+    if (tags.includes('skill')) return 'skill'
+    return null
+  }
+
+  function getPostTypeBorderStyle(post: typeof posts[0]): React.CSSProperties {
+    const type = getPostTypeFromTags(post.tags || [])
+    if (!type || !POST_TYPE_STYLES[type]) return {}
+    return { borderLeft: `3px solid ${POST_TYPE_STYLES[type].color}` }
+  }
+
+  function getPostTypeBadge(post: typeof posts[0]) {
+    const type = getPostTypeFromTags(post.tags || [])
+    if (!type || !POST_TYPE_STYLES[type]) return null
+    const s = POST_TYPE_STYLES[type]
+    return <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: s.bg, color: s.color, fontWeight: 600, marginLeft: 8 }}>{s.label}</span>
+  }
+
+  async function toggleComments(postId: number) {
+    const next = new Set(expandedComments)
+    if (next.has(postId)) {
+      next.delete(postId)
+    } else {
+      next.add(postId)
+      if (!inlineComments[postId]) {
+        try {
+          const res = await apiFetch<{ comments: any[] }>(`/api/public/community/posts/${postId}/comments`, { skipAuth: true })
+          setInlineComments(prev => ({ ...prev, [postId]: res.comments || [] }))
+        } catch {}
+      }
+    }
+    setExpandedComments(next)
+  }
+
+  async function submitInlineComment(postId: number) {
+    const text = inlineCommentText[postId]?.trim()
+    if (!text) return
+    setCommentSubmitting(postId)
+    try {
+      await addComment(postId, text)
+      setInlineCommentText(prev => ({ ...prev, [postId]: '' }))
+      const res = await apiFetch<{ comments: any[] }>(`/api/public/community/posts/${postId}/comments`, { skipAuth: true })
+      setInlineComments(prev => ({ ...prev, [postId]: res.comments || [] }))
+    } catch {}
+    setCommentSubmitting(null)
   }
 
   if (!isEnabled('community')) return null
 
-  // 404 state
   if (!loading && !profile && error) {
+    const isPrivate = error.toLowerCase().includes('private')
     return (
-      <div className="mkt-page" style={{ maxWidth: 640, margin: '0 auto', padding: '120px 32px', textAlign: 'center' }}>
-        <i className="bx bx-user-x" style={{ fontSize: 56, color: textMuted, display: 'block', marginBottom: 20 }} />
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: textPrimary, marginBottom: 10 }}>Profile not found</h1>
-        <p style={{ fontSize: 15, color: textMuted, marginBottom: 28 }}>The member @{handle} does not exist or their profile is private.</p>
-        <Link href="/community" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '10px 22px', borderRadius: 10, fontSize: 14, fontWeight: 600,
-          background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff',
-          textDecoration: 'none',
-        }}>
+      <div className="mx-auto max-w-[640px] px-8 pt-[120px] text-center">
+        <i
+          className={`bx ${isPrivate ? 'bx-lock-alt' : 'bx-user-x'} block mb-5 text-[56px]`}
+          style={{ color: colors.textMuted }}
+        />
+        <h1
+          className="text-[28px] font-bold mb-2.5 tracking-tight"
+          style={{ color: colors.textPrimary }}
+        >
+          {isPrivate ? 'Profile is private' : 'Profile not found'}
+        </h1>
+        <p className="text-[15px] mb-7" style={{ color: colors.textMuted }}>
+          {isPrivate
+            ? `@${handle} has chosen to keep their profile private.`
+            : `The member @${handle} does not exist.`
+          }
+        </p>
+        <Link
+          href="/community"
+          className="btn-gradient inline-flex items-center gap-1.5 px-6 py-2.5 rounded-[10px] text-sm font-semibold text-white no-underline transition-all"
+        >
           <i className="bx bx-left-arrow-alt" /> Back to Community
         </Link>
       </div>
     )
   }
 
-  // Loading state
   if (loading && !profile) {
     return (
-      <div className="mkt-page" style={{ maxWidth: 800, margin: '0 auto', padding: '120px 32px', textAlign: 'center', color: textMuted, fontSize: 15 }}>
+      <div
+        className="mx-auto max-w-[800px] px-8 pt-[120px] text-center text-[15px]"
+        style={{ color: colors.textMuted }}
+      >
         Loading profile...
       </div>
     )
@@ -122,307 +351,736 @@ export default function MemberProfilePage(props: PageProps) {
 
   if (!profile) return null
 
-  const socialLinks = (Array.isArray(profile.social_links) ? profile.social_links : [])
-    .filter(l => l.url)
-    .map(l => ({
-      key: l.platform,
-      icon: platformDefs[l.platform]?.icon || 'bx-link',
-      label: platformDefs[l.platform]?.label || l.platform,
-      url: l.url,
-    }))
+  const rawPosts = allPosts.length > 0 ? allPosts : posts
+  const displayPosts = feedFilter === 'all'
+    ? rawPosts
+    : rawPosts.filter(p => {
+        const tags = (p as any).tags as string[] | undefined
+        if (!tags) return feedFilter === 'post'
+        if (feedFilter === 'post') return !tags.some((t: string) => ['skill', 'agent', 'workflow'].includes(t))
+        return tags.includes(feedFilter)
+      })
+
+  // Counts for filter tabs.
+  const feedCounts = {
+    all: rawPosts.length,
+    post: rawPosts.filter(p => { const t = (p as any).tags as string[] | undefined; return !t || !t.some((x: string) => ['skill', 'agent', 'workflow'].includes(x)) }).length,
+    skill: rawPosts.filter(p => ((p as any).tags as string[] | undefined)?.includes('skill')).length,
+    agent: rawPosts.filter(p => ((p as any).tags as string[] | undefined)?.includes('agent')).length,
+    workflow: rawPosts.filter(p => ((p as any).tags as string[] | undefined)?.includes('workflow')).length,
+  }
 
   return (
-    <div className="mkt-page" style={{ maxWidth: 800, margin: '0 auto', padding: '0 32px 72px' }}>
-      {/* Cover image */}
-      <div style={{
-        width: '100%', height: 240, borderRadius: '0 0 20px 20px', overflow: 'hidden',
-        background: profile.cover_url
-          ? `url(${profile.cover_url}) center/cover no-repeat`
-          : 'linear-gradient(135deg, #00e5ff 0%, #a900ff 50%, #0f0f12 100%)',
-      }} />
-
-      {/* Avatar */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: -48 }}>
-        {profile.avatar_url ? (
-          <img
-            src={profile.avatar_url}
-            alt={profile.name}
-            style={{
-              width: 96, height: 96, borderRadius: '50%', objectFit: 'cover',
-              border: '4px solid',
-              borderColor: isDark ? '#0f0f12' : '#f5f5f7',
-              boxShadow: '0 0 0 3px rgba(0,229,255,0.3)',
-            }}
-          />
-        ) : (
-          <div style={{
-            width: 96, height: 96, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #00e5ff, #a900ff)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontSize: 32, fontWeight: 700,
-            border: '4px solid',
-            borderColor: isDark ? '#0f0f12' : '#f5f5f7',
-            boxShadow: '0 0 0 3px rgba(0,229,255,0.3)',
-          }}>
-            {getInitials(profile.name)}
-          </div>
-        )}
-      </div>
-
-      {/* Profile header */}
-      <div style={{ textAlign: 'center', marginTop: 16, marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: textPrimary, letterSpacing: '-0.03em', marginBottom: 4 }}>
-          {profile.name}
-        </h1>
-        <div style={{ fontSize: 15, color: textMuted, marginBottom: 10 }}>@{profile.handle}</div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
-          {profile.role === 'Core Member' ? (
-            <span style={{
-              display: 'inline-block', fontSize: 12, fontWeight: 600,
-              padding: '4px 12px', borderRadius: 100,
-              background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff',
-            }}>
-              {profile.role}
-            </span>
-          ) : (
-            <span style={{
-              display: 'inline-block', fontSize: 12, fontWeight: 600,
-              padding: '4px 12px', borderRadius: 100,
-              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)', color: textMuted,
-            }}>
-              {profile.role}
-            </span>
-          )}
-          {profile.location && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, color: textMuted }}>
-              <i className="bx bx-map" style={{ fontSize: 15 }} /> {profile.location}
-            </span>
-          )}
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, color: textMuted }}>
-            <i className="bx bx-calendar" style={{ fontSize: 15 }} /> Member since {formatDate(profile.joined_at)}
-          </span>
-        </div>
-      </div>
-
-      {/* Bio */}
-      {profile.bio && (
-        <p style={{ fontSize: 15, color: textBody, lineHeight: 1.7, textAlign: 'center', maxWidth: 560, margin: '0 auto 24px' }}>
-          {profile.bio}
-        </p>
-      )}
-
-      {/* Social links */}
-      {socialLinks.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 32 }}>
-          {socialLinks.map(link => (
-            <a
-              key={link.key}
-              href={link.url}
-              title={link.label}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                width: 40, height: 40, borderRadius: 10,
-                background: cardBg, border: `1px solid ${cardBorder}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: textMuted, fontSize: 20, textDecoration: 'none',
-                transition: 'border-color 0.2s, color 0.2s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#00e5ff'; (e.currentTarget as HTMLElement).style.color = '#00e5ff' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = cardBorder; (e.currentTarget as HTMLElement).style.color = textMuted }}
+    <div>
+      {/* ── Composer Card (own profile only) ── */}
+      {isOwner && (
+        <ProfileCard style={{ marginBottom: 12 }}>
+          {!composerOpen ? (
+            /* ── Collapsed: single-line prompt ── */
+            <button
+              type="button"
+              onClick={() => setComposerOpen(true)}
+              className="w-full flex items-center gap-3 px-5 py-3 bg-transparent border-none cursor-pointer text-left font-inherit"
             >
-              <i className={`bx ${link.icon}`} />
-            </a>
-          ))}
-        </div>
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url.startsWith('http') ? profile.avatar_url : `/uploads/${profile.avatar_url}`} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+              ) : (
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
+                  style={{ background: colors.accent, color: '#fff' }}
+                >
+                  {(profile?.name || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+              )}
+              <div
+                className="flex-1 px-3 py-2 rounded-full text-sm"
+                style={{ background: 'var(--color-bg-active, rgba(255,255,255,0.06))', color: colors.textMuted }}
+              >
+                What are you thinking about?
+              </div>
+              <div className="flex gap-1.5 shrink-0">
+                <i className="bx bx-image text-lg" style={{ color: colors.textMuted, opacity: 0.5 }} />
+                <i className="bx bx-video text-lg" style={{ color: colors.textMuted, opacity: 0.5 }} />
+                <i className="bx bx-link text-lg" style={{ color: colors.textMuted, opacity: 0.5 }} />
+              </div>
+            </button>
+          ) : (
+            /* ── Expanded: full composer ── */
+            <form onSubmit={handlePublish} className="flex flex-col gap-2.5 px-6 pb-5 pt-4">
+              {/* Post type selector */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                {(['post', 'skill', 'agent', 'workflow'] as const).map(type => (
+                  <button key={type} type="button" onClick={() => setPostType(type)} style={{
+                    padding: '4px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                    background: postType === type ? 'rgba(0,229,255,0.1)' : 'var(--color-bg-active)',
+                    border: `1px solid ${postType === type ? 'rgba(0,229,255,0.3)' : 'var(--color-border)'}`,
+                    color: postType === type ? '#00e5ff' : 'var(--color-fg-muted)',
+                    cursor: 'pointer', textTransform: 'capitalize',
+                  }}>{type}</button>
+                ))}
+              </div>
+
+
+              {/* Icon picker + Title on same row */}
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowIconPicker(!showIconPicker)}
+                    className="w-9 h-9 rounded-lg flex items-center justify-center border cursor-pointer transition-colors shrink-0"
+                    style={{
+                      background: postIconColor ? `${postIconColor}15` : ('var(--color-bg-active, rgba(255,255,255,0.06))'),
+                      borderColor: colors.cardBorder,
+                      color: postIconColor || colors.textMuted,
+                    }}
+                    title="Pick icon & color"
+                  >
+                    <i className={`bx ${postIcon || 'bx-notepad'} text-lg`} />
+                  </button>
+                  {showIconPicker && (
+                    <div className="absolute top-full left-0 mt-1 p-3 rounded-xl border shadow-xl z-20" style={{ background: 'var(--color-bg)', borderColor: colors.cardBorder, width: 240 }}>
+                      {/* Colors row */}
+                      <div className="flex gap-1.5 mb-3 pb-2.5" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
+                        {['#a900ff', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#14b8a6'].map(c => (
+                          <button
+                            key={c} type="button"
+                            onClick={() => setPostIconColor(postIconColor === c ? '' : c)}
+                            className="w-5 h-5 rounded-full border-2 cursor-pointer transition-transform hover:scale-110"
+                            style={{ background: c, borderColor: postIconColor === c ? ('var(--color-fg, #fff)') : 'transparent' }}
+                          />
+                        ))}
+                      </div>
+                      {/* Icons grid */}
+                      <div className="grid grid-cols-7 gap-1">
+                        {['bx-notepad', 'bx-star', 'bx-bulb', 'bx-code-alt', 'bx-bug', 'bx-rocket', 'bx-heart', 'bx-book', 'bx-music', 'bx-camera', 'bx-trophy', 'bx-paint-roll', 'bx-world', 'bx-coffee', 'bx-flag', 'bx-zap', 'bx-bell', 'bx-shield', 'bx-wrench', 'bx-terminal', 'bx-chip'].map(icon => (
+                          <button
+                            key={icon} type="button"
+                            onClick={() => { setPostIcon(icon === 'bx-notepad' ? '' : icon); setShowIconPicker(false) }}
+                            className="w-7 h-7 flex items-center justify-center rounded-md border-none cursor-pointer transition-colors"
+                            style={{
+                              background: (postIcon || 'bx-notepad') === icon ? ('var(--color-bg-active, rgba(255,255,255,0.1))') : 'transparent',
+                              color: postIconColor || colors.textPrimary,
+                            }}
+                          >
+                            <i className={`bx ${icon} text-base`} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  placeholder="Post title"
+                  value={postTitle}
+                  onChange={e => setPostTitle(e.target.value)}
+                  required
+                  autoFocus
+                  className="flex-1 min-w-0 px-3 py-2 rounded-lg border text-sm font-inherit outline-none transition-colors"
+                  style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                  onFocus={e => { e.currentTarget.style.borderColor = colors.inputFocusBorder }}
+                  onBlur={e => { e.currentTarget.style.borderColor = colors.inputBorder }}
+                />
+              </div>
+
+              {/* Toolbar + Textarea */}
+              <div className="rounded-lg border overflow-hidden" style={{ borderColor: colors.inputBorder }}>
+                {/* Formatting toolbar */}
+                <div className="flex items-center gap-0.5 px-2 py-1" style={{ background: 'var(--color-bg-alt, rgba(255,255,255,0.03))', borderBottom: `1px solid ${colors.cardBorder}` }}>
+                  {[
+                    { icon: 'bx-bold', title: 'Bold', pre: '**', suf: '**' },
+                    { icon: 'bx-italic', title: 'Italic', pre: '_', suf: '_' },
+                    { icon: 'bx-strikethrough', title: 'Strike', pre: '~~', suf: '~~' },
+                    { icon: 'bx-heading', title: 'Heading', pre: '## ', suf: '' },
+                    { icon: 'bx-link', title: 'Link', pre: '[', suf: '](url)' },
+                    { icon: 'bx-code', title: 'Code', pre: '`', suf: '`' },
+                    { icon: 'bx-list-ul', title: 'List', pre: '- ', suf: '' },
+                    { icon: 'bx-code-block', title: 'Code Block', pre: '```\n', suf: '\n```' },
+                    { icon: 'bx-quote-left', title: 'Quote', pre: '> ', suf: '' },
+                  ].map(a => (
+                    <button
+                      key={a.icon} type="button" title={a.title}
+                      onClick={() => insertFormat(a.pre, a.suf)}
+                      className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer transition-colors"
+                      style={{ color: 'var(--color-fg-muted, rgba(255,255,255,0.5))', fontSize: 15 }}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-fg-bright, rgba(255,255,255,0.85))'; e.currentTarget.style.background = 'var(--color-bg-active, rgba(255,255,255,0.06))' }}
+                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-fg-muted, rgba(255,255,255,0.5))'; e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <i className={`bx ${a.icon}`} />
+                    </button>
+                  ))}
+                  {/* Media attachment buttons */}
+                  <div style={{ width: 1, height: 16, background: 'var(--color-border)', margin: '0 2px' }} />
+                  {[
+                    { icon: 'bx-image', title: 'Add image URL', placeholder: 'Image URL (.jpg, .png, .gif, .webp)' },
+                    { icon: 'bxl-youtube', title: 'Add video URL', placeholder: 'YouTube, Vimeo, Twitch URL' },
+                    { icon: 'bx-link', title: 'Add link', placeholder: 'Any URL' },
+                  ].map(btn => (
+                    <button
+                      key={btn.icon} type="button" title={btn.title}
+                      onClick={() => {
+                        const url = prompt(btn.placeholder)
+                        if (url?.trim()) setPostMedia(prev => [...prev, url.trim()])
+                      }}
+                      className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer transition-colors"
+                      style={{ color: 'var(--color-fg-muted, rgba(255,255,255,0.5))', fontSize: 15 }}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-fg-bright, rgba(255,255,255,0.85))'; e.currentTarget.style.background = 'var(--color-bg-active, rgba(255,255,255,0.06))' }}
+                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-fg-muted, rgba(255,255,255,0.5))'; e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <i className={`bx ${btn.icon}`} />
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  ref={contentRef}
+                  placeholder="What's on your mind?"
+                  value={postContent}
+                  onChange={e => setPostContent(e.target.value)}
+                  rows={4}
+                  className="w-full px-3.5 py-3 border-none text-sm font-inherit outline-none resize-y"
+                  style={{ background: colors.inputBg, color: colors.textPrimary, minHeight: 90 }}
+                />
+              </div>
+
+
+              {/* Media inline input */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Paste image, video, or link URL..."
+                  value={mediaInput}
+                  onChange={e => setMediaInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && mediaInput.trim()) {
+                      e.preventDefault()
+                      setPostMedia(prev => [...prev, mediaInput.trim()])
+                      setMediaInput('')
+                    }
+                  }}
+                  className="flex-1 min-w-0 px-3 py-1.5 rounded-lg border text-xs font-inherit outline-none transition-colors"
+                  style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                />
+                <button
+                  type="button"
+                  disabled={!mediaInput.trim()}
+                  onClick={() => { if (mediaInput.trim()) { setPostMedia(prev => [...prev, mediaInput.trim()]); setMediaInput('') } }}
+                  className="px-3 py-1.5 rounded-lg border-none text-xs font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: 'var(--color-bg-active)', color: 'var(--color-fg-muted)' }}
+                >
+                  <i className="bx bx-plus" /> Add
+                </button>
+              </div>
+
+              {/* Media chips */}
+              {postMedia.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {postMedia.map((url, i) => {
+                    const isYt = /youtube\.com|youtu\.be/.test(url)
+                    const isImg = /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(url)
+                    return (
+                      <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs max-w-[300px]" style={{ background: 'var(--color-bg-active, rgba(255,255,255,0.05))', color: colors.textMuted }}>
+                        <i className={`bx ${isYt ? 'bxl-youtube' : isImg ? 'bx-image' : 'bx-link'} text-sm`} style={{ color: isYt ? '#ff0000' : colors.accent }} />
+                        <span className="truncate flex-1">{url}</span>
+                        <button type="button" onClick={() => setPostMedia(prev => prev.filter((_, j) => j !== i))} className="shrink-0 bg-transparent border-none cursor-pointer p-0" style={{ color: colors.textMuted }}>
+                          <i className="bx bx-x text-sm" />
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {publishError && (
+                <div className="text-[13px] px-3 py-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>{publishError}</div>
+              )}
+              {publishSuccess && (
+                <div className="text-[13px] px-3 py-2 rounded-lg" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>Post published!</div>
+              )}
+              {/* Marketplace toggle — only for skill/agent/workflow types */}
+              {postType !== 'post' && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 8, background: 'var(--color-bg-active)', border: '1px solid var(--color-border)' }}>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-fg)' }}>Publish to Marketplace</div>
+                    <div style={{ fontSize: 10, color: 'var(--color-fg-dim)' }}>Requires admin approval</div>
+                  </div>
+                  <button type="button" onClick={() => setPublishToMarketplace(!publishToMarketplace)} style={{
+                    width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s',
+                    background: publishToMarketplace ? '#00e5ff' : 'var(--color-border)',
+                  }}>
+                    <div style={{
+                      width: 16, height: 16, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, transition: 'left 0.2s',
+                      left: publishToMarketplace ? 18 : 2,
+                    }} />
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <button type="button" onClick={() => { setComposerOpen(false); setShowIconPicker(false) }} className="text-xs bg-transparent border-none cursor-pointer font-inherit" style={{ color: colors.textMuted }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={publishing} className="px-5 py-2 rounded-lg border-none text-[13px] font-semibold text-white font-inherit transition-opacity disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer" style={{ background: colors.accent }}>
+                  {publishing ? 'Publishing...' : 'Publish'}
+                </button>
+              </div>
+            </form>
+          )}
+        </ProfileCard>
       )}
 
-      {/* Stats row */}
-      <div className="profile-stats-grid" style={{
-        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 40,
-      }}>
-        <style>{`
-          @media (max-width: 600px) {
-            .profile-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          }
-        `}</style>
-        {[
-          { label: 'Posts', value: String(profile.stats.posts), icon: 'bx-edit' },
-          { label: 'Contributions', value: String(profile.stats.contributions), icon: 'bx-git-merge' },
-          { label: 'Completeness', value: `${profile.stats.profile_completeness}%`, icon: 'bx-user-check', bar: true },
-          { label: 'Last Active', value: profile.recent_posts.length > 0 ? relativeTime(profile.recent_posts[0].created_at) : 'N/A', icon: 'bx-time-five' },
-        ].map(stat => (
-          <div key={stat.label} style={{
-            padding: '20px 16px', borderRadius: 14,
-            background: cardBg, border: `1px solid ${cardBorder}`,
-            textAlign: 'center',
-          }}>
-            <i className={`bx ${stat.icon}`} style={{ fontSize: 22, color: '#00e5ff', display: 'block', marginBottom: 8 }} />
-            <div style={{ fontSize: 22, fontWeight: 700, color: textPrimary, marginBottom: 4 }}>
-              {stat.value}
-            </div>
-            <div style={{ fontSize: 12, color: textMuted }}>{stat.label}</div>
-            {stat.bar && (
-              <div style={{
-                marginTop: 8, height: 4, borderRadius: 2,
-                background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-                overflow: 'hidden',
-              }}>
-                <div style={{
-                  height: '100%', borderRadius: 2,
-                  width: `${profile.stats.profile_completeness}%`,
-                  background: 'linear-gradient(135deg, #00e5ff, #a900ff)',
-                }} />
-              </div>
-            )}
-          </div>
-        ))}
+      {/* ── View Toggle: Posts / Activity ── */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 12 }}>
+        <button type="button" onClick={() => setFeedView('posts')} style={{
+          padding: '7px 16px', borderRadius: '8px 0 0 8px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+          background: feedView === 'posts' ? 'var(--color-bg-active, rgba(0,229,255,0.06))' : 'transparent',
+          border: `1px solid ${feedView === 'posts' ? 'rgba(0,229,255,0.3)' : 'var(--color-border)'}`,
+          color: feedView === 'posts' ? '#00e5ff' : 'var(--color-fg-muted)',
+        }}>
+          <i className="bx bx-grid-alt mr-1.5" style={{ fontSize: 14, verticalAlign: '-1px' }} />Posts
+        </button>
+        <button type="button" onClick={() => { setFeedView('activity'); if (activity.length === 0 && handle) fetchActivity(handle) }} style={{
+          padding: '7px 16px', borderRadius: '0 8px 8px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+          background: feedView === 'activity' ? 'var(--color-bg-active, rgba(0,229,255,0.06))' : 'transparent',
+          border: `1px solid ${feedView === 'activity' ? 'rgba(0,229,255,0.3)' : 'var(--color-border)'}`,
+          borderLeft: 'none',
+          color: feedView === 'activity' ? '#00e5ff' : 'var(--color-fg-muted)',
+        }}>
+          <i className="bx bx-time-five mr-1.5" style={{ fontSize: 14, verticalAlign: '-1px' }} />Activity
+        </button>
       </div>
 
-      {/* Post composer (own profile only) */}
-      {isOwnProfile && (
-        <div style={{
-          padding: '24px', borderRadius: 16,
-          background: cardBg, border: `1px solid ${cardBorder}`,
-          marginBottom: 32,
-        }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: textPrimary, marginBottom: 16 }}>
-            Create a Post
-          </h3>
-          <form onSubmit={handlePublish} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <input
-              type="text"
-              placeholder="Post title"
-              value={postTitle}
-              onChange={e => setPostTitle(e.target.value)}
-              required
-              style={{
-                width: '100%', padding: '11px 14px', borderRadius: 10,
-                border: `1px solid ${inputBorder}`, background: inputBg,
-                color: textPrimary, fontSize: 14, outline: 'none',
-                boxSizing: 'border-box', fontFamily: 'inherit',
-              }}
-            />
-            <textarea
-              placeholder="What's on your mind?"
-              value={postContent}
-              onChange={e => setPostContent(e.target.value)}
-              required
-              rows={4}
-              style={{
-                width: '100%', padding: '11px 14px', borderRadius: 10,
-                border: `1px solid ${inputBorder}`, background: inputBg,
-                color: textPrimary, fontSize: 14, outline: 'none',
-                boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical',
-              }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                type="submit"
-                disabled={publishing}
-                style={{
-                  padding: '10px 24px', borderRadius: 10, border: 'none',
-                  fontSize: 14, fontWeight: 600, color: '#fff',
-                  background: 'linear-gradient(135deg, #00e5ff, #a900ff)',
-                  cursor: publishing ? 'not-allowed' : 'pointer',
-                  fontFamily: 'inherit', opacity: publishing ? 0.6 : 1,
-                }}
-              >
-                {publishing ? 'Publishing...' : 'Publish'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      {feedView === 'posts' && (
+      <>
+      {/* ── Post Type Filter Tabs ── */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+        {(['all', 'post', 'skill', 'agent', 'workflow'] as const).map(f => {
+          const count = feedCounts[f]
+          const labels: Record<string, string> = { all: 'All', post: 'Posts', skill: 'Skills', agent: 'Agents', workflow: 'Workflows' }
+          const typeColors: Record<string, string> = { all: '#00e5ff', post: '#00e5ff', skill: '#22c55e', agent: '#f59e0b', workflow: '#8b5cf6' }
+          const active = feedFilter === f
+          return (
+            <button key={f} type="button" onClick={() => setFeedFilter(f)} style={{
+              padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              background: active ? `${typeColors[f]}12` : 'transparent',
+              border: `1px solid ${active ? `${typeColors[f]}40` : 'var(--color-border, rgba(255,255,255,0.07))'}`,
+              color: active ? typeColors[f] : 'var(--color-fg-muted, rgba(255,255,255,0.45))',
+              display: 'flex', alignItems: 'center', gap: 5,
+            }}>
+              {labels[f]}
+              {count > 0 && <span style={{ fontSize: 10, opacity: 0.7 }}>({count})</span>}
+            </button>
+          )
+        })}
+      </div>
 
-      {/* Posts feed */}
-      <div>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: textPrimary, marginBottom: 20 }}>
-          Posts
-        </h2>
-
-        {posts.length === 0 ? (
-          <div style={{
-            textAlign: 'center', padding: '48px 20px', borderRadius: 16,
-            background: cardBg, border: `1px solid ${cardBorder}`,
-          }}>
-            <i className="bx bx-edit" style={{ fontSize: 40, color: textMuted, display: 'block', marginBottom: 12 }} />
-            <p style={{ fontSize: 15, color: textMuted }}>No posts yet</p>
+      {/* ── Post Cards ── */}
+      {displayPosts.length === 0 && !loading ? (
+        <ProfileCard style={{ marginBottom: 12 }}>
+          <div className="py-12 px-5 text-center">
+            <i
+              className="bx bx-edit block mb-2.5 text-4xl"
+              style={{ color: colors.textMuted }}
+            />
+            <p className="text-sm m-0" style={{ color: colors.textMuted }}>
+              No activity yet
+            </p>
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {posts.map(post => (
-              <div
-                key={post.id}
-                style={{
-                  padding: '24px', borderRadius: 16,
-                  background: cardBg, border: `1px solid ${cardBorder}`,
-                  transition: 'border-color 0.2s',
-                }}
-              >
-                <Link
-                  href={`/@${handle}/post/${post.id}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <h3 style={{ fontSize: 17, fontWeight: 700, color: textPrimary, marginBottom: 8 }}>
-                    {post.title}
-                  </h3>
-                  <p style={{
-                    fontSize: 14, color: textBody, lineHeight: 1.6, marginBottom: 12,
-                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}>
-                    {post.content}
-                  </p>
-                </Link>
-
-                {/* Tags */}
-                {post.tags && post.tags.length > 0 && (
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-                    {post.tags.map(tag => (
-                      <span key={tag} style={{
-                        fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 100,
-                        background: isDark ? 'rgba(0,229,255,0.08)' : 'rgba(169,0,255,0.06)',
-                        color: '#00e5ff',
-                        border: `1px solid ${isDark ? 'rgba(0,229,255,0.15)' : 'rgba(169,0,255,0.12)'}`,
-                      }}>
-                        {tag}
-                      </span>
+        </ProfileCard>
+      ) : (
+        displayPosts.filter(Boolean).map((post) => (
+          <ProfileCard key={post.id} className="profile-enter-post" style={{ marginBottom: 12, ...getPostTypeBorderStyle(post) }}>
+            <div style={{ padding: '20px 24px' }}>
+              {editingId === post.id ? (
+                /* ── Edit mode — matches create composer style ── */
+                <div className="flex flex-col gap-2.5">
+                  {/* Post type selector */}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {(['post', 'skill', 'agent', 'workflow'] as const).map(type => (
+                      <button key={type} type="button" onClick={() => setEditPostType(type)} style={{
+                        padding: '4px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                        background: editPostType === type ? (POST_TYPE_STYLES[type]?.bg || 'rgba(0,229,255,0.1)') : 'var(--color-bg-active)',
+                        border: `1px solid ${editPostType === type ? (POST_TYPE_STYLES[type]?.color || '#00e5ff') + '4d' : 'var(--color-border)'}`,
+                        color: editPostType === type ? (POST_TYPE_STYLES[type]?.color || '#00e5ff') : 'var(--color-fg-muted)',
+                        cursor: 'pointer', textTransform: 'capitalize',
+                      }}>{type}</button>
                     ))}
                   </div>
-                )}
+                  {/* Icon picker + Title on same row */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setEditIconPickerOpen(!editIconPickerOpen)}
+                        className="w-9 h-9 rounded-lg flex items-center justify-center border cursor-pointer transition-colors shrink-0"
+                        style={{
+                          background: editIconColor ? `${editIconColor}15` : ('var(--color-bg-active, rgba(255,255,255,0.06))'),
+                          borderColor: colors.cardBorder,
+                          color: editIconColor || colors.textMuted,
+                        }}
+                        title="Pick icon & color"
+                      >
+                        <i className={`bx ${editIcon || 'bx-notepad'} text-lg`} />
+                      </button>
+                      {editIconPickerOpen && (
+                        <div className="absolute top-full left-0 mt-1 p-3 rounded-xl border shadow-xl z-20" style={{ background: 'var(--color-bg)', borderColor: colors.cardBorder, width: 240 }}>
+                          <div className="flex gap-1.5 mb-3 pb-2.5" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
+                            {['#a900ff', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#14b8a6'].map(c => (
+                              <button key={c} type="button" onClick={() => setEditIconColor(editIconColor === c ? '' : c)} className="w-5 h-5 rounded-full border-2 cursor-pointer transition-transform hover:scale-110" style={{ background: c, borderColor: editIconColor === c ? ('var(--color-fg, #fff)') : 'transparent' }} />
+                            ))}
+                          </div>
+                          <div className="grid grid-cols-7 gap-1">
+                            {['bx-notepad', 'bx-star', 'bx-bulb', 'bx-code-alt', 'bx-bug', 'bx-rocket', 'bx-heart', 'bx-book', 'bx-music', 'bx-camera', 'bx-trophy', 'bx-paint-roll', 'bx-world', 'bx-coffee', 'bx-flag', 'bx-zap', 'bx-bell', 'bx-shield', 'bx-wrench', 'bx-terminal', 'bx-chip'].map(icon => (
+                              <button key={icon} type="button" onClick={() => { setEditIcon(icon === 'bx-notepad' ? '' : icon); setEditIconPickerOpen(false) }} className="w-7 h-7 flex items-center justify-center rounded-md border-none cursor-pointer transition-colors" style={{ background: (editIcon || 'bx-notepad') === icon ? ('var(--color-bg-active, rgba(255,255,255,0.1))') : 'transparent', color: editIconColor || colors.textPrimary }}>
+                                <i className={`bx ${icon} text-base`} />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={e => setEditTitle(e.target.value)}
+                      autoFocus
+                      className="flex-1 min-w-0 px-3 py-2 rounded-lg border text-sm font-inherit outline-none transition-colors"
+                      style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
+                      onFocus={e => { e.currentTarget.style.borderColor = colors.inputFocusBorder }}
+                      onBlur={e => { e.currentTarget.style.borderColor = colors.inputBorder }}
+                    />
+                  </div>
 
-                {/* Footer: date + engagement */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: textMuted }}>
-                  <span>{relativeTime(post.created_at)}</span>
-                  <button
-                    onClick={() => { if (user) likePost(post.id) }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      background: 'none', border: 'none', padding: 0,
-                      color: post.liked_by_me ? '#ff4d6a' : textMuted,
-                      fontSize: 13, cursor: user ? 'pointer' : 'default', fontFamily: 'inherit',
-                    }}
-                  >
-                    <i className={post.liked_by_me ? 'bx bxs-heart' : 'bx bx-heart'} style={{ fontSize: 16 }} />
-                    {post.likes_count}
-                  </button>
-                  <Link
-                    href={`/@${handle}/post/${post.id}`}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      color: textMuted, textDecoration: 'none', fontSize: 13,
-                    }}
-                  >
-                    <i className="bx bx-chat" style={{ fontSize: 16 }} />
-                    {post.comments_count}
-                  </Link>
+                  {/* Toolbar + Textarea */}
+                  <div className="rounded-lg border overflow-hidden" style={{ borderColor: colors.inputBorder }}>
+                    <div className="flex items-center gap-0.5 px-2 py-1" style={{ background: 'var(--color-bg-alt, rgba(255,255,255,0.03))', borderBottom: `1px solid ${colors.cardBorder}` }}>
+                      {[
+                        { icon: 'bx-bold', title: 'Bold', pre: '**', suf: '**' },
+                        { icon: 'bx-italic', title: 'Italic', pre: '_', suf: '_' },
+                        { icon: 'bx-strikethrough', title: 'Strike', pre: '~~', suf: '~~' },
+                        { icon: 'bx-heading', title: 'Heading', pre: '## ', suf: '' },
+                        { icon: 'bx-link', title: 'Link', pre: '[', suf: '](url)' },
+                        { icon: 'bx-code', title: 'Code', pre: '`', suf: '`' },
+                        { icon: 'bx-list-ul', title: 'List', pre: '- ', suf: '' },
+                        { icon: 'bx-code-block', title: 'Code Block', pre: '```\n', suf: '\n```' },
+                        { icon: 'bx-quote-left', title: 'Quote', pre: '> ', suf: '' },
+                      ].map(a => (
+                        <button
+                          key={a.icon} type="button" title={a.title}
+                          onClick={() => insertEditFormat(a.pre, a.suf)}
+                          className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer transition-colors"
+                          style={{ color: 'var(--color-fg-muted, rgba(255,255,255,0.5))', fontSize: 15 }}
+                          onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-fg-bright, rgba(255,255,255,0.85))'; e.currentTarget.style.background = 'var(--color-bg-active, rgba(255,255,255,0.06))' }}
+                          onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-fg-muted, rgba(255,255,255,0.5))'; e.currentTarget.style.background = 'transparent' }}
+                        >
+                          <i className={`bx ${a.icon}`} />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      ref={editContentRef}
+                      value={editContent}
+                      onChange={e => setEditContent(e.target.value)}
+                      rows={4}
+                      className="w-full px-3.5 py-3 border-none text-sm font-inherit outline-none resize-y"
+                      style={{ background: colors.inputBg, color: colors.textPrimary, minHeight: 90 }}
+                      placeholder="Edit your post..."
+                    />
+                  </div>
+
+                  {editError && (
+                    <div className="text-[13px] px-3 py-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>{editError}</div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <button type="button" onClick={cancelEdit} disabled={editSaving} className="text-xs bg-transparent border-none cursor-pointer font-inherit" style={{ color: colors.textMuted }}>
+                      Cancel
+                    </button>
+                    <button type="button" onClick={handleSaveEdit} disabled={editSaving || !editTitle.trim() || !editContent.trim()} className="px-5 py-2 rounded-lg border-none text-[13px] font-semibold text-white font-inherit transition-opacity disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer" style={{ background: colors.accent }}>
+                      {editSaving ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                /* ── View mode ── */
+                <div className="flex items-start gap-3.5">
+                  <div
+                    className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center mt-0.5"
+                    style={{
+                      background: `${(post.color || colors.accent)}12`,
+                    }}
+                  >
+                    <i
+                      className={`bx ${post.icon || 'bx-notepad'} text-base`}
+                      style={{ color: post.color || colors.accent }}
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        {post.title ? (
+                          <Link
+                            href={`/@${handle}/post/${postSlug(post)}`}
+                            className="no-underline text-inherit"
+                          >
+                            <h4
+                              className="text-[15px] font-bold leading-snug m-0 mb-1 inline"
+                              style={{ color: colors.textPrimary }}
+                            >
+                              {post.title}
+                            </h4>
+                            {getPostTypeBadge(post)}
+                          </Link>
+                        ) : (
+                          getPostTypeBadge(post)
+                        )}
+                      </div>
+                      {isOwner && (
+                        <button
+                          type="button"
+                          onClick={() => startEdit(post)}
+                          className="shrink-0 flex items-center justify-center w-7 h-7 rounded-md border-none bg-transparent cursor-pointer transition-colors hover:opacity-80"
+                          style={{ color: colors.textMuted }}
+                          title="Edit post"
+                        >
+                          <i className="bx bx-pencil text-sm" />
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      className="text-xs mb-2"
+                      style={{ color: colors.textMuted }}
+                    >
+                      {relativeTime(post.created_at)}
+                    </div>
+                    {/* Content with truncation for long posts */}
+                    {post.content.length > 500 ? (
+                      <div>
+                        <div style={{ maxHeight: 200, overflow: 'hidden', position: 'relative' }}>
+                          <MarkdownRenderer content={post.content.slice(0, 500) + '...'} />
+                          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 40, background: 'linear-gradient(transparent, var(--color-bg-alt, rgba(255,255,255,0.03)))' }} />
+                        </div>
+                        <Link
+                          href={`/@${handle}/post/${postSlug(post)}`}
+                          className="no-underline"
+                          style={{ fontSize: 13, fontWeight: 600, color: '#00e5ff', display: 'inline-block', marginTop: 4 }}
+                        >
+                          Show more
+                        </Link>
+                      </div>
+                    ) : (
+                      <MarkdownRenderer content={post.content} />
+                    )}
+
+                    {/* Media embeds */}
+                    {post.media && (() => {
+                      try {
+                        const items: string[] = JSON.parse(post.media)
+                        if (!Array.isArray(items) || items.length === 0) return null
+                        return (
+                          <div className="flex flex-col gap-2 mt-2">
+                            {items.map((url, mi) => (
+                              <PostEmbed key={mi} url={url} />
+                            ))}
+                          </div>
+                        )
+                      } catch { return null }
+                    })()}
+
+                    {/* Actions row */}
+                    <div className="flex items-center gap-4 mt-3">
+                      <button
+                        onClick={() => { if (user) likePost(post.id) }}
+                        className="flex items-center gap-1.5 bg-transparent border-none p-0 text-[13px] font-inherit transition-colors hover:opacity-80"
+                        style={{
+                          color: post.liked_by_me ? colors.danger : colors.textMuted,
+                          cursor: user ? 'pointer' : 'default',
+                        }}
+                      >
+                        <i className={`${post.liked_by_me ? 'bx bxs-heart' : 'bx bx-heart'} text-base`} />
+                        Like
+                      </button>
+                      <button
+                        onClick={() => toggleComments(post.id)}
+                        className="flex items-center gap-1.5 bg-transparent border-none p-0 text-[13px] font-inherit transition-colors hover:opacity-80"
+                        style={{ color: expandedComments.has(post.id) ? colors.accent : colors.textMuted, cursor: 'pointer' }}
+                      >
+                        <i className="bx bx-comment text-base" />
+                        {post.comments_count || 0}
+                      </button>
+                      {isOwner && (
+                        <button
+                          onClick={() => setDeleteConfirmId(post.id)}
+                          className="flex items-center gap-1.5 bg-transparent border-none p-0 text-[13px] font-inherit transition-colors hover:opacity-80"
+                          style={{ color: colors.textMuted, cursor: 'pointer' }}
+                        >
+                          <i className="bx bx-trash text-base" />
+                          Delete
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Inline comments section */}
+                    {expandedComments.has(post.id) && (
+                      <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${colors.cardBorder || 'var(--color-border)'}` }}>
+                        {(inlineComments[post.id] || []).slice(0, 3).map((c: any) => (
+                          <div key={c.id} className="flex gap-2 mb-2.5">
+                            {c.user_avatar ? (
+                              <img src={c.user_avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full shrink-0 mt-0.5 flex items-center justify-center text-[9px] font-bold" style={{ background: 'var(--color-bg-active)', color: colors.textMuted }}>
+                                {(c.user_name || '').slice(0, 2).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-semibold" style={{ color: colors.textPrimary }}>{c.user_name}</span>
+                              <span className="text-[10px] ml-1.5" style={{ color: colors.textMuted }}>{new Date(c.created_at).toLocaleDateString()}</span>
+                              <p className="text-xs m-0 mt-0.5 leading-relaxed" style={{ color: colors.textSecondary }}>{c.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {(inlineComments[post.id] || []).length > 3 && (
+                          <Link href={`/@${handle}/post/${postSlug(post)}`} className="text-[11px] no-underline" style={{ color: colors.accent }}>
+                            View all {post.comments_count} comments
+                          </Link>
+                        )}
+                        {user && (
+                          <div className="flex gap-2 mt-2">
+                            <input
+                              type="text"
+                              value={inlineCommentText[post.id] || ''}
+                              onChange={e => setInlineCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitInlineComment(post.id) } }}
+                              placeholder="Write a comment..."
+                              className="flex-1 px-3 py-1.5 rounded-full text-xs outline-none"
+                              style={{ background: 'var(--color-bg-active)', border: '1px solid var(--color-border)', color: colors.textPrimary }}
+                            />
+                            <button
+                              onClick={() => submitInlineComment(post.id)}
+                              disabled={commentSubmitting === post.id || !(inlineCommentText[post.id] || '').trim()}
+                              className="px-3 py-1.5 rounded-full text-xs font-semibold border-none cursor-pointer disabled:opacity-40"
+                              style={{ background: colors.accent, color: '#fff' }}
+                            >
+                              <i className="bx bx-send" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </ProfileCard>
+        ))
+      )}
+
+      {/* Infinite scroll sentinel */}
+      {hasMore && (
+        <div ref={sentinelRef} className="py-6 text-center">
+          <span className="text-xs" style={{ color: colors.textMuted }}>
+            {loadingMore ? 'Loading more...' : ''}
+          </span>
+        </div>
+      )}
+      </>
+      )}
+
+      {/* ── Activity Timeline ── */}
+      {feedView === 'activity' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {activity.length === 0 ? (
+            <ProfileCard style={{ marginBottom: 12 }}>
+              <div className="py-12 px-5 text-center">
+                <i className="bx bx-time-five block mb-2.5 text-4xl" style={{ color: colors.textMuted }} />
+                <p className="text-sm m-0" style={{ color: colors.textMuted }}>No activity yet</p>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </ProfileCard>
+          ) : (() => {
+            const ACTIVITY_ICONS: Record<string, { icon: string; color: string; label: string }> = {
+              post: { icon: 'bx-edit', color: '#00e5ff', label: 'Published a post' },
+              comment: { icon: 'bx-comment', color: '#a900ff', label: 'Left a comment' },
+              shared_note: { icon: 'bx-note', color: '#22c55e', label: 'Shared a note' },
+              shared_skill: { icon: 'bx-code-alt', color: '#00e5ff', label: 'Shared a skill' },
+              shared_agent: { icon: 'bx-bot', color: '#f59e0b', label: 'Shared an agent' },
+              shared_workflow: { icon: 'bx-git-merge', color: '#8b5cf6', label: 'Shared a workflow' },
+            }
+
+            // Group by date
+            const now = new Date()
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+            const yesterday = new Date(today.getTime() - 86400000)
+            const weekAgo = new Date(today.getTime() - 7 * 86400000)
+
+            function dateGroup(d: string): string {
+              const date = new Date(d)
+              if (date >= today) return 'Today'
+              if (date >= yesterday) return 'Yesterday'
+              if (date >= weekAgo) return 'This Week'
+              return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            }
+
+            const groups: Record<string, typeof activity> = {}
+            for (const item of activity) {
+              const g = dateGroup(item.created_at)
+              if (!groups[g]) groups[g] = []
+              groups[g].push(item)
+            }
+
+            return Object.entries(groups).map(([group, items]) => (
+              <div key={group} style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '8px 0', marginBottom: 4 }}>
+                  {group}
+                </div>
+                {items.map(item => {
+                  const meta = ACTIVITY_ICONS[item.type] || { icon: 'bx-radio-circle', color: colors.textMuted, label: item.type }
+                  const href = item.type === 'post' ? `/@${handle}/post/${item.id}` :
+                    item.type === 'comment' && item.parent_id ? `/@${handle}/post/${item.parent_id}` :
+                    item.slug ? `/@${handle}/shared/${item.entity_type}/${item.slug}` : undefined
+                  const Wrapper = href ? Link : 'div'
+                  return (
+                    <Wrapper key={`${item.type}-${item.id}`} {...(href ? { href } : {})} style={{
+                      display: 'flex', gap: 12, padding: '10px 12px', marginBottom: 2, borderRadius: 10,
+                      textDecoration: 'none', transition: 'background 0.15s', cursor: href ? 'pointer' : 'default',
+                      background: 'transparent',
+                    }}
+                    onMouseEnter={(e: any) => { e.currentTarget.style.background = 'var(--color-bg-active)' }}
+                    onMouseLeave={(e: any) => { e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <div style={{
+                        width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: `${meta.color}12`, color: meta.color,
+                      }}>
+                        <i className={`bx ${meta.icon}`} style={{ fontSize: 16 }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: colors.textPrimary }}>{meta.label}</div>
+                        {item.title && <div style={{ fontSize: 12, fontWeight: 500, color: colors.textSecondary, marginTop: 1 }}>{item.title}</div>}
+                        {item.excerpt && <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.excerpt.slice(0, 100)}</div>}
+                      </div>
+                      <div style={{ fontSize: 10, color: colors.textMuted, flexShrink: 0, marginTop: 2 }}>
+                        {new Date(item.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      </div>
+                    </Wrapper>
+                  )
+                })}
+              </div>
+            ))
+          })()}
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={deleteConfirmId !== null}
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        loading={deleteLoading}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   )
 }

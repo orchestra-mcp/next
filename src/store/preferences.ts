@@ -56,8 +56,7 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
           const res = await apiFetch<{ preferences: Partial<UserPreferences> }>('/api/settings/preferences')
           const merged = { ...DEFAULT_PREFERENCES, ...(res.preferences ?? {}) }
           set({ preferences: merged, loaded: true, loading: false })
-        } catch (e) {
-          if ((e as any).devSeed) { set({ loaded: true, loading: false }); return }
+        } catch {
           set({ loaded: true, loading: false })
         }
       },
@@ -80,7 +79,6 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
             body: JSON.stringify({ [key]: value }),
           })
         } catch (e) {
-          if ((e as any).devSeed) return
           // Revert on error — refetch
           get().fetchPreferences()
         }
@@ -94,7 +92,6 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
             body: JSON.stringify(partial),
           })
         } catch (e) {
-          if ((e as any).devSeed) return
           get().fetchPreferences()
         }
       },

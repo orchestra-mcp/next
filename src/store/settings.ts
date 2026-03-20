@@ -75,8 +75,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
       const res = await apiFetch<{ sessions: Session[] }>('/api/settings/sessions')
       set({ sessions: res.sessions, loading: false })
     } catch (e) {
-      if ((e as any).devSeed) { set({ loading: false }); return }
-      set({ error: (e as Error).message, loading: false })
+            set({ error: (e as Error).message, loading: false })
     }
   },
 
@@ -85,7 +84,6 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
       await apiFetch(`/api/settings/sessions/${id}`, { method: 'DELETE' })
       set(s => ({ sessions: s.sessions.filter(x => x.id !== id) }))
     } catch (e) {
-      if ((e as any).devSeed) return
       set({ error: (e as Error).message })
       throw e
     }
@@ -97,8 +95,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
       const res = await apiFetch<{ api_keys: ApiKey[] }>('/api/settings/api-keys')
       set({ apiKeys: (res.api_keys ?? []).filter(Boolean), loading: false })
     } catch (e) {
-      if ((e as any).devSeed) { set({ loading: false }); return }
-      set({ error: (e as Error).message, loading: false })
+            set({ error: (e as Error).message, loading: false })
     }
   },
 
@@ -112,7 +109,6 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
       set(s => ({ apiKeys: [created, ...s.apiKeys] }))
       return created
     } catch (e) {
-      if ((e as any).devSeed) throw e
       set({ error: (e as Error).message })
       throw e
     }
@@ -123,7 +119,6 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
       await apiFetch(`/api/settings/api-keys/${id}`, { method: 'DELETE' })
       set(s => ({ apiKeys: s.apiKeys.filter(k => k.id !== id) }))
     } catch (e) {
-      if ((e as any).devSeed) return
       set({ error: (e as Error).message })
       throw e
     }
@@ -135,8 +130,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
       const res = await apiFetch<{ accounts: ConnectedAccount[] }>('/api/settings/connected-accounts')
       set({ connectedAccounts: res.accounts, loading: false })
     } catch (e) {
-      if ((e as any).devSeed) { set({ loading: false }); return }
-      set({ error: (e as Error).message, loading: false })
+            set({ error: (e as Error).message, loading: false })
     }
   },
 
@@ -145,7 +139,6 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
       await apiFetch(`/api/settings/connected-accounts/${provider}`, { method: 'DELETE' })
       set(s => ({ connectedAccounts: s.connectedAccounts.filter(a => a.provider !== provider) }))
     } catch (e) {
-      if ((e as any).devSeed) return
       set({ error: (e as Error).message })
       throw e
     }
@@ -157,8 +150,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
       const res = await apiFetch<{ notifications: Notification[] }>('/api/notifications')
       set({ notifications: res.notifications, loading: false })
     } catch (e) {
-      if ((e as any).devSeed) { set({ loading: false }); return }
-      set({ error: (e as Error).message, loading: false })
+            set({ error: (e as Error).message, loading: false })
     }
   },
 
@@ -169,7 +161,6 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
         notifications: s.notifications.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n),
       }))
     } catch (e) {
-      if ((e as any).devSeed) return
       set({ error: (e as Error).message })
     }
   },

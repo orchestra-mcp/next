@@ -32,13 +32,14 @@ describe('DashboardGrid', () => {
     expect(screen.getByTestId('widget-c')).toBeInTheDocument()
   })
 
-  it('applies gridColumn span from widget colSpan', () => {
-    render(
+  it('generates CSS rules for colSpan via data-drag-id selectors', () => {
+    const { container } = render(
       <DashboardGrid widgets={[widgets[0]]} editMode={false} onReorder={vi.fn()}>
-        {(w) => <div data-testid={`widget-${w.id}`} style={{ gridColumn: `span ${w.colSpan}` }}>{w.type}</div>}
+        {(w) => <div data-testid={`widget-${w.id}`}>{w.type}</div>}
       </DashboardGrid>
     )
-    const el = screen.getByTestId('widget-a')
-    expect(el.style.gridColumn).toBe('span 12')
+    const style = container.querySelector('style')
+    expect(style?.textContent).toContain('data-drag-id="a"')
+    expect(style?.textContent).toContain('grid-column: span 12')
   })
 })

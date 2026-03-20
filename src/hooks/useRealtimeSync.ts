@@ -3,6 +3,9 @@ import { useCallback } from 'react'
 import { useWebSocket } from './useWebSocket'
 import type { WSEvent } from './useWebSocket'
 import { useSettingsStore } from '@/store/settings'
+import { useFeaturesStore } from '@/store/features'
+import { useProjectStore } from '@/store/projects'
+import { useSyncStore } from '@/store/sync'
 
 /**
  * Custom DOM event name used to broadcast sync events to individual pages.
@@ -43,6 +46,9 @@ export function useRealtimeSync(): { status: WSStatus } {
   const pushRealtimeNotification = useSettingsStore(s => s.pushRealtimeNotification)
 
   const handleEvent = useCallback((event: WSEvent) => {
+    // Push all events to the sync store for the activity feed
+    useSyncStore.getState().handleSyncEvent(event as any)
+
     // Handle realtime notification events
     if (event.type === 'notification' && event.entity_type === 'notification') {
       const title = (event as any).title ?? ''
@@ -68,6 +74,24 @@ export function useRealtimeSync(): { status: WSStatus } {
           icon: '/favicon.png',
         })
       }
+      return
+    }
+
+    // Handle feature update events
+    if (event.type === 'feature_update') {
+      useFeaturesStore.getState().handleRemoteUpdate(event.entity_id, (event as any).payload ?? {})
+      return
+    }
+
+    // Handle project update events
+    if (event.type === 'project_update') {
+      useProjectStore.getState().handleRemoteUpdate(event.entity_id, (event as any).payload ?? {})
+      return
+    }
+
+    // Handle tunnel activity events
+    if (event.type === 'tunnel_activity') {
+      useSyncStore.getState().handleSyncEvent(event as any)
       return
     }
 

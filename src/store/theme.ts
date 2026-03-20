@@ -52,6 +52,19 @@ function bridgeLegacyCssVars(themeId: string) {
   root.style.setProperty('--text-muted', c.fgMuted)
   root.style.setProperty('--border', c.border)
 
+  // New CSS vars used by all migrated components (profile, homepage, docs, marketplace)
+  // These override the globals.css :root defaults with the active theme's actual colors
+  root.style.setProperty('--color-bg', c.bg)
+  root.style.setProperty('--color-bg-alt', c.bgAlt)
+  root.style.setProperty('--color-bg-contrast', c.bgContrast)
+  root.style.setProperty('--color-bg-active', c.bgActive)
+  root.style.setProperty('--color-fg', c.fg)
+  root.style.setProperty('--color-fg-dim', c.fgDim)
+  root.style.setProperty('--color-fg-muted', c.fgMuted)
+  root.style.setProperty('--color-fg-bright', c.fgBright)
+  root.style.setProperty('--color-border', c.border)
+  root.style.setProperty('--color-accent', c.accent)
+
   // Set data-theme for existing CSS selectors ([data-theme="light"])
   root.setAttribute('data-theme', theme.isLight ? 'light' : 'dark')
 
@@ -94,6 +107,8 @@ export const useThemeStore = create<ThemeState>()(
         set({ colorTheme: themeId, theme: darkLight })
         applyColorTheme(themeId)
         bridgeLegacyCssVars(themeId)
+        // Sync to PowerSync for cross-device.
+        syncThemeToPowerSync(themeId)
       },
 
       setVariant: (variant) => {
@@ -129,4 +144,24 @@ export function initializeTheme() {
 // Re-export for backward compat — old code imports applyTheme
 export function applyTheme(theme: Theme) {
   useThemeStore.getState().set(theme)
+}
+
+/** Write theme_id to PowerSync user_settings for cross-device sync. */
+async function syncThemeToPowerSync(themeId: string) {
+  try {
+    // Check if key exists.
+    const { getPowerSyncDatabase } = await import('@/lib/powersync')
+    const db = getPowerSyncDatabase()
+    const existing = await db.getOptional('SELECT id FROM user_settings WHERE key = ?', ['theme_id'])
+    if (existing) {
+      await db.execute('UPDATE user_settings SET value = ?, updated_at = ? WHERE key = ?',
+        [themeId, new Date().toISOString(), 'theme_id'])
+    } else {
+      await db.execute(
+        'INSERT INTO user_settings (id, key, value, updated_at) VALUES (?, ?, ?, ?)',
+        [crypto.randomUUID(), 'theme_id', themeId, new Date().toISOString()])
+    }
+  } catch {
+    // PowerSync may not be connected yet.
+  }
 }

@@ -1,20 +1,13 @@
 'use client'
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { useThemeStore } from '@/store/theme'
 import { useTranslations } from 'next-intl'
-
-interface TerminalLine {
-  name: string
-  note: string
-  color: string
-}
 
 interface HeroData {
   hero_headline?: string
   hero_subtext?: string
   total_tools?: string
-  terminal_lines?: TerminalLine[]
+  terminal_lines?: Array<{ name: string; note: string; color: string }>
   stats?: Array<{ label: string; value: string }>
 }
 
@@ -26,30 +19,24 @@ const COLOR_MAP: Record<string, string> = {
   red:    '#f87171',
 }
 
-const DEFAULT_LINES: TerminalLine[] = [
-  { name: 'orchestrator',       note: 'listening :9100',   color: 'cyan' },
-  { name: 'storage.markdown',   note: '.projects/',         color: 'cyan' },
-  { name: 'tools.features',     note: '34 tools',           color: 'cyan' },
-  { name: 'engine.rag',         note: '22 tools  (Rust)',   color: 'cyan' },
-  { name: 'bridge.claude',      note: '5 tools + 1 stream', color: 'purple' },
-  { name: 'agent.orchestrator', note: '20 tools',           color: 'purple' },
-  { name: 'transport.quic-bridge', note: 'port 9200',       color: 'green' },
+const INIT_LINES = [
+  { text: '$ orchestra init', color: 'cyan' as const },
+  { text: 'Detecting project stack...', color: 'dim' as const },
+  { text: '  Go 1.22   ✓  detected', color: 'green' as const },
+  { text: '  React 18  ✓  detected', color: 'green' as const },
+  { text: '  Docker    ✓  detected', color: 'green' as const },
+  { text: '', color: 'dim' as const },
+  { text: 'Installing recommended packs...', color: 'dim' as const },
+  { text: '  + pack-go        4 skills, 2 agents', color: 'purple' as const },
+  { text: '  + pack-react     3 skills, 2 agents', color: 'purple' as const },
+  { text: '  + pack-docker    3 skills, 1 agent', color: 'purple' as const },
+  { text: '', color: 'dim' as const },
+  { text: '⚡ 300+ tools ready · MCP server on stdio', color: 'bright' as const },
 ]
 
 export function HeroSection({ data }: { data?: HeroData }) {
   const heroRef = useRef<HTMLDivElement>(null)
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
   const t = useTranslations()
-
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
-  const docsBtnBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const docsBtnBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'
-  const docsBtnColor = isDark ? '#f8f8f8' : '#0f0f12'
-
-  const totalTools = data?.total_tools ?? '290'
-  const terminalLines = data?.terminal_lines ?? DEFAULT_LINES
 
   useEffect(() => {
     import('animejs').then((mod) => {
@@ -61,9 +48,6 @@ export function HeroSection({ data }: { data?: HeroData }) {
       anime({ targets: '.hero-terminal', opacity: [0, 1], translateY: [32, 0], duration: 800, delay: 900, easing: 'easeOutCubic' })
     })
   }, [])
-
-  const titleLine1 = [t('hero.title1'), t('hero.title2'), t('hero.title3')]
-  const titleLine2 = [t('hero.title4'), t('hero.title5'), t('hero.title6')]
 
   return (
     <>
@@ -92,58 +76,60 @@ export function HeroSection({ data }: { data?: HeroData }) {
         {/* Badge */}
         <div className="hero-badge" style={{ opacity: 0, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 100, border: '1px solid rgba(0,229,255,0.25)', background: 'rgba(0,229,255,0.06)', marginBottom: 32, fontSize: 12, fontWeight: 500 }}>
           <span style={{ background: 'linear-gradient(90deg, #00e5ff, #a900ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            &#10022; {t('hero.badge', { totalTools })}
+            &#10022; 300+ MCP tools &middot; 9 IDEs &middot; 6 Platforms
           </span>
         </div>
 
         {/* Headline */}
-        <h1 className="hero-title" style={{ fontSize: 'clamp(40px, 7vw, 80px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.04em', marginBottom: 24, color: textPrimary }}>
-          {titleLine1.map(w => (
+        <h1 className="hero-title" style={{ fontSize: 'clamp(40px, 7vw, 80px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.04em', marginBottom: 24, color: 'var(--color-fg, #f8f8f8)' }}>
+          {['The', 'AI-Agentic'].map(w => (
             <span key={w} style={{ opacity: 0, display: 'inline-block', marginInlineEnd: '0.25em' }}>{w}</span>
           ))}
           <br />
-          {titleLine2.map(w => (
+          {['IDE', 'Framework'].map(w => (
             <span key={w} style={{ opacity: 0, display: 'inline-block', marginInlineEnd: '0.25em', background: 'linear-gradient(135deg, #00e5ff 0%, #a900ff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{w}</span>
           ))}
         </h1>
 
         {/* Subheading */}
-        <p className="hero-sub" style={{ opacity: 0, fontSize: 19, color: textMuted, lineHeight: 1.7, maxWidth: 600, margin: '0 auto 40px', fontWeight: 400 }}>
-          {data?.hero_subtext ?? t('hero.subtitle')}
+        <p className="hero-sub" style={{ opacity: 0, fontSize: 19, color: 'var(--color-fg-muted, rgba(255,255,255,0.5))', lineHeight: 1.7, maxWidth: 600, margin: '0 auto 40px', fontWeight: 400 }}>
+          {data?.hero_subtext ?? '300+ MCP tools. 9 IDEs. Every platform. One framework to build, test, deploy, and orchestrate AI-powered development.'}
         </p>
 
         {/* CTAs */}
         <div className="hero-ctas" style={{ opacity: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 64 }}>
           <Link href="/register" style={{ padding: '13px 32px', borderRadius: 10, fontSize: 15, fontWeight: 600, background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            {t('hero.getStartedFree')} <i className="bx bx-right-arrow-alt rtl-flip" style={{ fontSize: 18 }} />
+            Get Started <i className="bx bx-right-arrow-alt rtl-flip" style={{ fontSize: 18 }} />
           </Link>
-          <Link href="/docs" style={{ padding: '13px 28px', borderRadius: 10, fontSize: 15, fontWeight: 600, border: `1px solid ${docsBtnBorder}`, color: docsBtnColor, background: docsBtnBg, textDecoration: 'none', backdropFilter: 'blur(8px)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <i className="bx bx-book-open" /> {t('hero.readTheDocs')}
+          <Link href="/docs" style={{ padding: '13px 28px', borderRadius: 10, fontSize: 15, fontWeight: 600, border: '1px solid var(--color-border, rgba(255,255,255,0.1))', color: 'var(--color-fg, #f8f8f8)', background: 'var(--color-bg-alt, rgba(255,255,255,0.04))', textDecoration: 'none', backdropFilter: 'blur(8px)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <i className="bx bx-book-open" /> Read the Docs
           </Link>
         </div>
 
-        {/* Terminal */}
+        {/* Terminal — orchestra init demo */}
         <div className="hero-terminal hero-terminal-wrap" style={{ opacity: 0, maxWidth: 700, margin: '0 auto' }}>
           <div className="hero-terminal-inner" style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(22,18,28,0.97)', boxShadow: '0 30px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03) inset' }}>
             <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57' }} />
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e' }} />
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840' }} />
-              <span style={{ marginInlineStart: 8, fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'JetBrains Mono, monospace' }}>orchestra serve</span>
+              <span style={{ marginInlineStart: 8, fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'JetBrains Mono, monospace' }}>terminal</span>
             </div>
-            <div style={{ padding: '20px 24px', fontFamily: 'JetBrains Mono, Fira Code, monospace', fontSize: 13, lineHeight: 1.9, color: '#d0d0d0', textAlign: 'start' }}>
-              {terminalLines.map((line, i) => (
-                <div key={i} className="terminal-line">
-                  <span style={{ color: COLOR_MAP[line.color] ?? '#00e5ff' }}>&#10003; </span>
-                  <span style={{ color: 'rgba(255,255,255,0.5)' }}>{line.name.padEnd(24)}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.3)' }}>{line.note}</span>
-                </div>
-              ))}
-              <div style={{ marginTop: 12 }} className="terminal-line">
-                <span style={{ color: '#00e5ff' }}>&#9889; </span>
-                <span style={{ fontWeight: 600, color: '#f8f8f8' }}>{t('hero.toolsReady', { totalTools })}</span>
-                <span style={{ color: 'rgba(255,255,255,0.3)' }}> &middot; {t('hero.terminalMeta')}</span>
-              </div>
+            <div style={{ padding: '20px 24px', fontFamily: 'JetBrains Mono, Fira Code, monospace', fontSize: 13, lineHeight: 1.9, textAlign: 'start' }}>
+              {INIT_LINES.map((line, i) => {
+                if (!line.text) return <div key={i} style={{ height: 8 }} />
+                const colorVal =
+                  line.color === 'cyan' ? '#00e5ff' :
+                  line.color === 'green' ? '#22c55e' :
+                  line.color === 'purple' ? '#c040ff' :
+                  line.color === 'bright' ? '#f8f8f8' :
+                  'rgba(255,255,255,0.35)'
+                return (
+                  <div key={i} className="terminal-line" style={{ color: colorVal, fontWeight: line.color === 'bright' ? 600 : 400 }}>
+                    {line.text}
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>

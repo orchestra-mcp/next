@@ -1,228 +1,148 @@
 /**
- * Tests for 3-Panel Dashboard Layout: Icon Rail + Sidebar Panel + Content Area
- * Verifies: layout structure, icon rail navigation, sidebar panel, mobile responsive,
- * RTL support, admin section, user dropdown placement
+ * Tests for 3-Panel Dashboard Layout using @orchestra-mcp/app-shell
+ * Verifies: layout composition, AppShell usage, sidebar data hook, mobile responsive CSS
  */
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
 
 const root = resolve(__dirname, '../..')
 const layoutTsx = readFileSync(resolve(root, 'src/app/(app)/layout.tsx'), 'utf-8')
 const globalsCss = readFileSync(resolve(root, 'src/app/globals.css'), 'utf-8')
 
-describe('3-panel layout structure', () => {
-  it('has icon rail with app-icon-rail class', () => {
-    expect(layoutTsx).toContain('app-icon-rail')
+describe('AppShell composition', () => {
+  it('imports AppShell from @orchestra-mcp/app-shell', () => {
+    expect(layoutTsx).toContain("from '@orchestra-mcp/app-shell'")
+    expect(layoutTsx).toContain('AppShell')
   })
 
-  it('has sidebar panel with app-sidebar-panel class', () => {
-    expect(layoutTsx).toContain('app-sidebar-panel')
+  it('imports AppIconBar adapter', () => {
+    expect(layoutTsx).toContain('AppIconBar')
+    expect(layoutTsx).toContain("from '@/components/layout/app-icon-bar'")
   })
 
-  it('has main content area with app-main class', () => {
-    expect(layoutTsx).toContain('app-main')
+  it('imports AppHeader adapter', () => {
+    expect(layoutTsx).toContain('AppHeader')
+    expect(layoutTsx).toContain("from '@/components/layout/app-header'")
   })
 
-  it('icon rail is 56px wide', () => {
-    expect(layoutTsx).toContain('width: 56')
+  it('imports AppSidebar adapter', () => {
+    expect(layoutTsx).toContain('AppSidebar')
+    expect(layoutTsx).toContain("from '@/components/layout/app-sidebar'")
   })
 
-  it('sidebar panel is 260px wide', () => {
-    expect(layoutTsx).toContain('width: 260')
+  it('uses useSidebarData hook for data fetching', () => {
+    expect(layoutTsx).toContain('useSidebarData')
+    expect(layoutTsx).toContain("from '@/hooks/useSidebarData'")
   })
 
-  it('total sidebar width is 316px (56 + 260)', () => {
-    expect(layoutTsx).toContain('totalSidebarWidth')
-    expect(layoutTsx).toContain('sidebarCollapsed ? 56 : 316')
-  })
-})
-
-describe('icon rail navigation', () => {
-  it('has logo at top of icon rail', () => {
-    // The logo Image should be inside the icon rail
-    expect(layoutTsx).toContain("alt=\"Orchestra\"")
-    expect(layoutTsx).toContain('logo.svg')
-  })
-
-  it('renders nav items as icon-rail-btn links', () => {
-    expect(layoutTsx).toContain('icon-rail-btn')
-  })
-
-  it('shows active indicator bar on active nav item', () => {
-    // Active items have a purple bar on the side
-    expect(layoutTsx).toContain("background: '#a900ff'")
-    expect(layoutTsx).toContain('insetInlineStart:')
-  })
-
-  it('has admin icon in icon rail for admin users', () => {
-    expect(layoutTsx).toContain("can('canViewAdmin')")
-    expect(layoutTsx).toContain('bx-shield-alt-2')
-  })
-
-  it('has sidebar collapse toggle at bottom of icon rail', () => {
-    expect(layoutTsx).toContain('app-sidebar-collapse')
-    expect(layoutTsx).toContain('bx-sidebar')
-    expect(layoutTsx).toContain('bx-collapse-horizontal')
-  })
-
-  it('has user avatar dropdown at bottom of icon rail', () => {
-    // User dropdown is inside the icon rail, not the header
-    expect(layoutTsx).toContain('DropdownMenuContent side="right"')
+  it('renders AppShell with iconBar, header, sidebar props', () => {
+    expect(layoutTsx).toContain('<AppShell')
+    expect(layoutTsx).toContain('iconBar={')
+    expect(layoutTsx).toContain('header={')
+    expect(layoutTsx).toContain('sidebar={')
+    expect(layoutTsx).toContain('sidebarOpen={')
   })
 })
 
-describe('sidebar panel', () => {
-  it('shows workspace switcher in non-admin mode', () => {
-    expect(layoutTsx).toContain('WorkspaceSwitcher')
+describe('sidebar data hook', () => {
+  it('useSidebarData.ts exists', () => {
+    expect(existsSync(resolve(root, 'src/hooks/useSidebarData.ts'))).toBe(true)
   })
 
-  it('shows admin title when on admin routes', () => {
-    expect(layoutTsx).toContain("pathname.startsWith('/admin')")
-    expect(layoutTsx).toContain("t('administration')")
+  it('imports sidebar types from @/types/sidebar', () => {
+    const hookSrc = readFileSync(resolve(root, 'src/hooks/useSidebarData.ts'), 'utf-8')
+    expect(hookSrc).toContain("from '@/types/sidebar'")
   })
 
-  it('renders admin sub-navigation items when on admin routes', () => {
-    expect(layoutTsx).toContain('adminItems.map')
+  it('has MCP response parsers', () => {
+    const hookSrc = readFileSync(resolve(root, 'src/hooks/useSidebarData.ts'), 'utf-8')
+    expect(hookSrc).toContain('parseMCPProjects')
+    expect(hookSrc).toContain('parseMCPNotes')
+    expect(hookSrc).toContain('parseMCPPlans')
   })
 
-  it('renders workspace nav items when not on admin routes', () => {
-    expect(layoutTsx).toContain('navItems.map')
-    expect(layoutTsx).toContain("t('workspace')")
+  it('has CRUD action handlers', () => {
+    const hookSrc = readFileSync(resolve(root, 'src/hooks/useSidebarData.ts'), 'utf-8')
+    expect(hookSrc).toContain('handleDelete')
+    expect(hookSrc).toContain('handlePin')
+    expect(hookSrc).toContain('handleRename')
+    expect(hookSrc).toContain('handleIcon')
+    expect(hookSrc).toContain('handleColor')
+  })
+})
+
+describe('layout features', () => {
+  it('has keyboard shortcuts (CMD+K search, CMD+J smart action)', () => {
+    expect(layoutTsx).toContain("e.key === 'k'")
+    expect(layoutTsx).toContain("e.key === 'j'")
+    expect(layoutTsx).toContain('setSearchOpen')
+    expect(layoutTsx).toContain('setSmartActionOpen')
   })
 
-  it('shows tunnel status at bottom of sidebar panel', () => {
-    expect(layoutTsx).toContain('tunnelStatusColor')
-    expect(layoutTsx).toContain("t('nav.tunnels')")
+  it('has search spotlight', () => {
+    expect(layoutTsx).toContain('SearchSpotlight')
   })
 
-  it('sidebar panel is hidden when collapsed', () => {
-    expect(layoutTsx).toContain('!sidebarCollapsed && (')
+  it('has feature-gated main area', () => {
+    expect(layoutTsx).toContain('FeatureGatedMain')
+  })
+
+  it('has impersonation banner', () => {
+    expect(layoutTsx).toContain('impersonating')
+    expect(layoutTsx).toContain('exitImpersonation')
+  })
+
+  it('has tunnel toast overlay', () => {
+    expect(layoutTsx).toContain('TunnelToastOverlay')
+  })
+
+  it('has notification toast overlay', () => {
+    expect(layoutTsx).toContain('NotificationToastOverlay')
+  })
+
+  it('has noSidebarPages set for pages without sidebar', () => {
+    expect(layoutTsx).toContain('noSidebarPages')
+    expect(layoutTsx).toContain('/workspaces')
+    expect(layoutTsx).toContain('/dashboard')
+    expect(layoutTsx).toContain('/terminal')
+  })
+
+  it('has create item modals', () => {
+    expect(layoutTsx).toContain('CreateItemModal')
+    expect(layoutTsx).toContain('CreateProjectWizard')
+  })
+})
+
+describe('app-shell package', () => {
+  it('AppShell component exists', () => {
+    const shellRoot = resolve(root, '../../components/app-shell')
+    expect(existsSync(resolve(shellRoot, 'src/AppShell/AppShell.tsx'))).toBe(true)
+  })
+
+  it('IconBar component exists', () => {
+    const shellRoot = resolve(root, '../../components/app-shell')
+    expect(existsSync(resolve(shellRoot, 'src/IconBar/IconBar.tsx'))).toBe(true)
+  })
+
+  it('ContextualSidebar component exists', () => {
+    const shellRoot = resolve(root, '../../components/app-shell')
+    expect(existsSync(resolve(shellRoot, 'src/ContextualSidebar/ContextualSidebar.tsx'))).toBe(true)
+  })
+
+  it('SidebarItem component exists', () => {
+    const shellRoot = resolve(root, '../../components/app-shell')
+    expect(existsSync(resolve(shellRoot, 'src/SidebarItem/SidebarItem.tsx'))).toBe(true)
+  })
+
+  it('BulkActionBar component exists', () => {
+    const shellRoot = resolve(root, '../../components/app-shell')
+    expect(existsSync(resolve(shellRoot, 'src/BulkActionBar/BulkActionBar.tsx'))).toBe(true)
   })
 })
 
 describe('mobile responsive behavior', () => {
-  it('icon rail transforms off-screen on mobile', () => {
-    expect(globalsCss).toContain('.app-icon-rail')
-    expect(globalsCss).toContain('transform: translateX(-100%)')
-  })
-
-  it('icon rail slides in with .open class on mobile', () => {
-    expect(globalsCss).toContain('.app-icon-rail.open')
-    expect(globalsCss).toContain('transform: translateX(0)')
-  })
-
-  it('sidebar panel transforms off-screen on mobile', () => {
-    expect(globalsCss).toContain('.app-sidebar-panel')
-  })
-
-  it('sidebar panel slides in with .open class on mobile', () => {
-    expect(globalsCss).toContain('.app-sidebar-panel.open')
-  })
-
-  it('main content has zero margin on mobile', () => {
-    expect(globalsCss).toContain('.app-main')
-    expect(globalsCss).toContain('margin-inline-start: 0')
-  })
-
-  it('hamburger button shows on mobile', () => {
-    expect(globalsCss).toContain('.app-hamburger')
-    expect(globalsCss).toContain('display: flex')
-  })
-})
-
-describe('RTL support for 3-panel layout', () => {
-  it('icon rail flips transform direction for RTL', () => {
-    expect(globalsCss).toContain('[dir="rtl"] .app-icon-rail')
-  })
-
-  it('sidebar panel flips transform direction for RTL', () => {
-    expect(globalsCss).toContain('[dir="rtl"] .app-sidebar-panel')
-  })
-
-  it('RTL icon rail uses positive translateX', () => {
-    // RTL slides right instead of left
-    const rtlSection = globalsCss.slice(globalsCss.indexOf('[dir="rtl"] .app-icon-rail'))
-    expect(rtlSection).toContain('translateX(100%)')
-  })
-})
-
-describe('icon rail hover and styling', () => {
-  it('has icon-rail-btn hover effect in CSS', () => {
-    expect(globalsCss).toContain('.icon-rail-btn:hover')
-  })
-
-  it('icon rail has distinct background from sidebar panel', () => {
-    // Icon rail uses darker bg
-    expect(layoutTsx).toContain("'#0d0b11'")
-    // Sidebar panel uses sidebarBg
-    expect(layoutTsx).toContain('sidebarBg')
-  })
-})
-
-describe('sidebar CRUD lists', () => {
-  it('has hasSidebar flag for conditional sidebar rendering', () => {
-    expect(layoutTsx).toContain('hasSidebar')
-    expect(layoutTsx).toContain("pathname.startsWith('/projects')")
-    expect(layoutTsx).toContain("pathname.startsWith('/notes')")
-    expect(layoutTsx).toContain("pathname.startsWith('/plans')")
-    expect(layoutTsx).toContain("pathname.startsWith('/tunnels')")
-  })
-
-  it('has activeSection detection', () => {
-    expect(layoutTsx).toContain('activeSection')
-  })
-
-  it('has MCP response parsers for sidebar data', () => {
-    expect(layoutTsx).toContain('parseMCPProjects')
-    expect(layoutTsx).toContain('parseMCPNotes')
-    expect(layoutTsx).toContain('parseMCPPlans')
-  })
-
-  it('has SidebarListPanel component', () => {
-    expect(layoutTsx).toContain('SidebarListPanel')
-  })
-
-  it('fetches sidebar data via useMCP', () => {
-    expect(layoutTsx).toContain('useMCP')
-    expect(layoutTsx).toContain('callTool')
-  })
-
-  it('sidebar uses tunnel store for tunnels section', () => {
-    expect(layoutTsx).toContain('useTunnelStore')
-  })
-
-  it('has sidebar search input', () => {
-    expect(layoutTsx).toContain('sidebarSearch')
-  })
-
-  it('pages without lists hide sidebar panel (only icon rail)', () => {
-    // For pages without sidebar, marginInlineStart should be 56 (icon rail only)
-    expect(layoutTsx).toContain('hasSidebar')
-  })
-})
-
-describe('header cleanup', () => {
-  it('header has notification bell', () => {
-    expect(layoutTsx).toContain('bx-bell')
-  })
-
-  it('header has theme toggle', () => {
-    expect(layoutTsx).toContain('ThemeToggle')
-  })
-
-  it('header shows page title', () => {
-    expect(layoutTsx).toContain('getPageTitle')
-  })
-
-  it('header does not have user dropdown (moved to icon rail)', () => {
-    // The header section should not contain a DropdownMenu for the user
-    // User dropdown is in the icon rail at the bottom
-    const headerSection = layoutTsx.slice(
-      layoutTsx.indexOf('className="app-header"'),
-      layoutTsx.indexOf('{/* Page content */')
-    )
-    // Header should NOT have the user avatar dropdown
-    expect(headerSection).not.toContain('DropdownMenuTrigger')
+  it('has mobile breakpoint styles in CSS', () => {
+    expect(globalsCss).toContain('@media')
   })
 })

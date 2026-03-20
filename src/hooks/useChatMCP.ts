@@ -502,6 +502,26 @@ function bridgeEventToCard(ev: BridgeChatEvent): ClaudeCodeEvent {
 // notification handler to know which message to append events to.
 const _activeStreamingMessages = new Map<string, string>()
 
+// Rotating loading messages for typing indicator
+const _LOADING_MESSAGES = ['Thinking...', 'Analyzing your request...', 'Working on it...', 'Processing with AI...', 'Almost there...', 'Generating response...']
+const _typingTimers = new Map<string, ReturnType<typeof setInterval>>()
+
+function _startTypingRotation(sessionId: string) {
+  _stopTypingRotation(sessionId)
+  let idx = 0
+  const store = useChatStore
+  store.getState().setTypingStatus(sessionId, _LOADING_MESSAGES[0])
+  _typingTimers.set(sessionId, setInterval(() => {
+    idx = (idx + 1) % _LOADING_MESSAGES.length
+    store.getState().setTypingStatus(sessionId, _LOADING_MESSAGES[idx])
+  }, 4000))
+}
+
+function _stopTypingRotation(sessionId: string) {
+  const timer = _typingTimers.get(sessionId)
+  if (timer) { clearInterval(timer); _typingTimers.delete(sessionId) }
+}
+
 // Track permission request IDs we've already created cards for to avoid
 // duplicates — the permission poller re-broadcasts pending requests every second.
 const _emittedPermissionIds = new Set<string>()
@@ -636,6 +656,17 @@ export function useChatMCP() {
               store.getState().appendEvent(sid, msgId, questionEvent)
               store.getState().setTypingStatus(sid,
                 `Waiting for answer: ${questions[0]?.header || 'question'}`)
+
+              // Push browser notification for questions
+              if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && typeof document !== 'undefined' && document.hidden) {
+                try {
+                  new Notification('Orchestra — Question', {
+                    body: questions[0]?.question?.slice(0, 120) || 'The AI needs your input',
+                    icon: '/logo.svg',
+                    tag: `question-${req.id}`,
+                  })
+                } catch {}
+              }
             } else {
               // Permission request — show PermissionCard with Approve/Deny
               // Dedup by tool+input fingerprint — Claude CLI sometimes sends
@@ -667,6 +698,17 @@ export function useChatMCP() {
               store.getState().appendEvent(sid, msgId, permEvent)
               store.getState().setTypingStatus(sid,
                 `Waiting for approval: ${req.tool_name || 'tool'}`)
+
+              // Push browser notification if page is not focused
+              if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && typeof document !== 'undefined' && document.hidden) {
+                try {
+                  new Notification('Orchestra — Permission Required', {
+                    body: `${req.tool_name || 'Tool'}: ${req.reason || inputStr.slice(0, 100)}`,
+                    icon: '/logo.svg',
+                    tag: `perm-${req.id}`,
+                  })
+                } catch {}
+              }
             }
           }
         }
@@ -936,7 +978,7 @@ export function useChatMCP() {
     store.getState().pushMessage(sessionId, userMsg)
     store.getState().pushMessage(sessionId, placeholderMsg)
     store.getState().addSendingSession(sessionId)
-    store.getState().setTypingStatus(sessionId, 'Thinking...')
+    _startTypingRotation(sessionId)
 
     // Auto-name session from first user message
     const currentTitle = session.title
@@ -1040,6 +1082,7 @@ export function useChatMCP() {
       _emittedPermissionFingerprints.clear()
       _activeQuestionRequestId = null
       store.getState().removeSendingSession(sessionId)
+      _stopTypingRotation(sessionId)
       store.getState().setTypingStatus(sessionId, null)
     }
   }, [status, callTool])
@@ -1150,6 +1193,7 @@ export function useChatMCP() {
     _emittedPermissionFingerprints.clear()
     _activeQuestionRequestId = null
     store.getState().removeSendingSession(sessionId)
+    _stopTypingRotation(sessionId)
     store.getState().setTypingStatus(sessionId, null)
   }, [status, callTool])
 
@@ -1163,6 +1207,29 @@ export function useChatMCP() {
     }
   }, [status, callTool])
 
+  // Fetch agents + skills from MCP and map to CommandItem format
+  const fetchCommandItems = useCallback(async () => {
+    if (status !== 'connected') return []
+    type CmdItem = { id: string; label: string; description?: string; icon?: string; iconColor?: string; group: 'agents' | 'skills' }
+    const items: CmdItem[] = []
+    try {
+      const agentResult = await callTool('list_agents')
+      const agentText = getMCPText(agentResult)
+      // Parse agent lines: "AGT-XXXX: Name — description"
+      for (const m of agentText.matchAll(/([A-Z]+-[A-Z0-9]+)[:\s]+([^\n—–-]+)(?:[—–-]+\s*(.+))?/g)) {
+        items.push({ id: m[1], label: m[2].trim(), description: m[3]?.trim(), icon: 'bx-bot', iconColor: '#8b5cf6', group: 'agents' })
+      }
+    } catch {}
+    try {
+      const skillResult = await callTool('list_skills')
+      const skillText = getMCPText(skillResult)
+      for (const m of skillText.matchAll(/([A-Z]+-[A-Z0-9]+)[:\s]+([^\n—–-]+)(?:[—–-]+\s*(.+))?/g)) {
+        items.push({ id: m[1], label: m[2].trim(), description: m[3]?.trim(), icon: 'bx-zap', iconColor: '#f59e0b', group: 'skills' })
+      }
+    } catch {}
+    return items
+  }, [status, callTool])
+
   return {
     connected,
     fetchSessions,
@@ -1173,5 +1240,6 @@ export function useChatMCP() {
     stopSession,
     fetchAccounts,
     respondPermission,
+    fetchCommandItems,
   }
 }

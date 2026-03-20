@@ -75,7 +75,9 @@ export default function TwoFactorPage() {
   const submitCode = async (code: string) => {
     try {
       await verify2FA(code, tempToken)
-      router.replace('/dashboard')
+      const currentUser = useAuthStore.getState().user
+      const username = currentUser?.username || (currentUser?.settings?.handle as string | undefined)
+      router.replace(username ? `/@${username}` : '/dashboard')
     } catch {}
   }
 

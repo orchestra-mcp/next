@@ -578,3 +578,105 @@ a { color: inherit; text-decoration: none; }
     transform: translateX(-56px) !important;
   }
 }
+
+/* ── Profile: Editorial Dark ──────────────────────────────── */
+
+:root {
+  --profile-cover-height: 280px;
+  --profile-avatar-size: 140px;
+  --profile-avatar-overlap: -64px;
+  --profile-content-max: 1080px;
+  --profile-sidebar-width: 360px;
+}
+
+@keyframes profileSlideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes counterRoll {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes coverGrain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-2%, -3%); }
+  20% { transform: translate(3%, 1%); }
+  30% { transform: translate(-1%, 2%); }
+  40% { transform: translate(1%, -1%); }
+  50% { transform: translate(-3%, 3%); }
+  60% { transform: translate(2%, -2%); }
+  70% { transform: translate(-2%, 1%); }
+  80% { transform: translate(3%, -3%); }
+  90% { transform: translate(-1%, 2%); }
+}
+
+.profile-grain {
+  position: relative;
+}
+.profile-grain::after {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  pointer-events: none;
+  animation: coverGrain 8s steps(10) infinite;
+  z-index: -1;
+}
+
+.profile-card-glow {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+.profile-card-glow:hover {
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-color: rgba(0, 229, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Profile grid responsive */
+@media (max-width: 768px) {
+  :root {
+    --profile-cover-height: 200px;
+    --profile-avatar-size: 100px;
+    --profile-avatar-overlap: -44px;
+    --profile-sidebar-width: 100%;
+  }
+}
+
+/* anime.js entrance targets — start hidden (sidebar only) */
+.profile-enter-name,
+.profile-enter-handle,
+.profile-enter-bio,
+.profile-enter-meta,
+.profile-enter-socials,
+.profile-enter-stat,
+.profile-enter-sidebar {
+  opacity: 0;
+}
+
+/* ── Context menu item hover ────────────────────────────── */
+.ctx-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  text-align: start;
+  position: relative;
+  transition: background 0.1s ease;
+}
+.ctx-menu-item:hover {
+  background: var(--color-bg-active);
+}
+.ctx-menu-item--danger {
+  color: #ef4444;
+}

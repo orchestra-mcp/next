@@ -13,9 +13,11 @@ export default function OAuthCallbackPage() {
       localStorage.setItem('orchestra_token', token)
       document.cookie = `orchestra_token=${token};path=/;max-age=86400;SameSite=Lax`
       useAuthStore.setState({ token })
-      // Fetch user profile then redirect to dashboard
+      // Fetch user profile then redirect to profile page
       useAuthStore.getState().fetchMe().then(() => {
-        router.replace('/dashboard')
+        const user = useAuthStore.getState().user
+        const username = user?.username || (user?.settings?.handle as string | undefined)
+        router.replace(username ? `/@${username}` : '/dashboard')
       })
     } else {
       router.replace('/login?error=oauth_failed')

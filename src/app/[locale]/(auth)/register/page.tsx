@@ -8,6 +8,12 @@ import { useThemeStore } from '@/store/theme'
 import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 
+function getPostLoginRedirect(): string {
+  const user = useAuthStore.getState().user
+  const username = user?.username || (user?.settings?.handle as string | undefined)
+  return username ? `/@${username}` : '/dashboard'
+}
+
 export default function RegisterPage() {
   const t = useTranslations()
   const router = useRouter()
@@ -31,18 +37,12 @@ export default function RegisterPage() {
       .catch(() => {})
   }, [])
 
-  // If already logged in (returning user), go to dashboard
+  // If already logged in (returning user), go to profile
   useEffect(() => {
     if (token && typeof window !== 'undefined') {
-      const isNew = localStorage.getItem('orchestra_is_new_user')
-      const done = localStorage.getItem('orchestra_onboarding_done')
-      if (isNew === '1' && !done) {
-        router.replace('/onboarding')
-      } else {
-        router.replace('/dashboard')
-      }
+      window.location.href = getPostLoginRedirect()
     }
-  }, [token, router])
+  }, [token])
 
   const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
   const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
@@ -73,7 +73,7 @@ export default function RegisterPage() {
     e.preventDefault()
     try {
       await register(name, email, password)
-      router.push('/onboarding')
+      // Redirect handled by useEffect when token is set
     } catch {}
   }
 

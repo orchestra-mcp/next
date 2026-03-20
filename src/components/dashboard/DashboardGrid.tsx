@@ -53,6 +53,22 @@ export function DashboardGrid({ widgets, editMode, onReorder, children }: Dashbo
           right: auto;
         }
         ${visible.map(w => `.drag-list--grid > .drag-item[data-drag-id="${w.id}"] { grid-column: span ${w.colSpan}; }`).join('\n        ')}
+
+        @media (max-width: 768px) {
+          .drag-list.drag-list--grid {
+            grid-template-columns: 1fr !important;
+          }
+          .drag-list--grid > .drag-item {
+            grid-column: span 1 !important;
+          }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .drag-list.drag-list--grid {
+            grid-template-columns: repeat(6, 1fr) !important;
+          }
+          ${visible.map(w => `.drag-list--grid > .drag-item[data-drag-id="${w.id}"] { grid-column: span ${Math.min(w.colSpan, 6)}; }`).join('\n          ')}
+        }
       `}</style>
       <DragProvider
         direction="grid"

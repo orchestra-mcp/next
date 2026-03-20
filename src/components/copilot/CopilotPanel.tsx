@@ -26,7 +26,7 @@ export function CopilotPanel() {
     connected, copilotSessionId, copilotMode,
     chatSessions, models, messages, isSending, currentTypingStatus,
     selectedModelId, chatMode, showThinking,
-    quickActions, startupPrompts, pageContext,
+    quickActions, startupPrompts, pageContext, commandItems, mentionItems,
     userName, userAvatarUrl,
 
     handleSend, handleStop, handleNewChat,
@@ -100,6 +100,8 @@ export function CopilotPanel() {
           onThinkingToggle={setShowThinking}
           quickActions={quickActions}
           startupPrompts={startupPrompts}
+          commandItems={commandItems}
+          mentionItems={mentionItems}
           loadingMessages={LOADING_MESSAGES}
           activeSessionId={copilotSessionId}
           onQuestionAnswer={handleQuestionAnswer}

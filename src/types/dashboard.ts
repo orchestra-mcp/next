@@ -1,4 +1,4 @@
-export type WidgetType = 'stats' | 'recent_projects' | 'recent_notes' | 'quick_actions'
+export type WidgetType = 'stats' | 'recent_projects' | 'recent_notes' | 'quick_actions' | 'project_health' | 'burndown' | 'velocity' | 'activity_feed' | 'workload' | 'team_members' | 'active_tunnels' | 'team_automation'
 
 export interface WidgetLayout {
   id: string
@@ -53,11 +53,88 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
     minColSpan: 4,
     maxColSpan: 12,
   },
+  project_health: {
+    type: 'project_health',
+    label: 'widgetProjectHealth',
+    icon: 'bx-heart-circle',
+    defaultColSpan: 12,
+    minColSpan: 6,
+    maxColSpan: 12,
+    frameless: true,
+  },
+  burndown: {
+    type: 'burndown',
+    label: 'widgetBurndown',
+    icon: 'bx-line-chart-down',
+    defaultColSpan: 6,
+    minColSpan: 4,
+    maxColSpan: 12,
+  },
+  velocity: {
+    type: 'velocity',
+    label: 'widgetVelocity',
+    icon: 'bx-bar-chart',
+    defaultColSpan: 6,
+    minColSpan: 4,
+    maxColSpan: 12,
+  },
+  activity_feed: {
+    type: 'activity_feed',
+    label: 'widgetActivityFeed',
+    icon: 'bx-pulse',
+    defaultColSpan: 6,
+    minColSpan: 4,
+    maxColSpan: 12,
+  },
+  workload: {
+    type: 'workload',
+    label: 'widgetWorkload',
+    icon: 'bx-user-check',
+    defaultColSpan: 6,
+    minColSpan: 4,
+    maxColSpan: 12,
+  },
+  team_members: {
+    type: 'team_members',
+    label: 'widgetTeamMembers',
+    icon: 'bx-group',
+    defaultColSpan: 6,
+    minColSpan: 4,
+    maxColSpan: 12,
+  },
+  active_tunnels: {
+    type: 'active_tunnels',
+    label: 'widgetActiveTunnels',
+    icon: 'bx-transfer-alt',
+    defaultColSpan: 6,
+    minColSpan: 4,
+    maxColSpan: 12,
+  },
+  team_automation: {
+    type: 'team_automation',
+    label: 'Team Automation',
+    icon: 'bx-terminal',
+    defaultColSpan: 12,
+    minColSpan: 6,
+    maxColSpan: 12,
+    frameless: true,
+  },
 }
 
+// Bump this when DEFAULT_LAYOUT changes significantly to force a reset for existing users
+export const LAYOUT_VERSION = 3
+
 export const DEFAULT_LAYOUT: WidgetLayout[] = [
-  { id: 'stats-1', type: 'stats', colSpan: 12, order: 0, hidden: false, locked: false },
-  { id: 'recent_projects-1', type: 'recent_projects', colSpan: 6, order: 1, hidden: false, locked: false },
-  { id: 'recent_notes-1', type: 'recent_notes', colSpan: 6, order: 2, hidden: false, locked: false },
-  { id: 'quick_actions-1', type: 'quick_actions', colSpan: 12, order: 3, hidden: false, locked: false },
+  { id: 'team_automation-1', type: 'team_automation', colSpan: 12, order: 0, hidden: false, locked: false },
+  { id: 'project_health-1', type: 'project_health', colSpan: 12, order: 1, hidden: false, locked: false },
+  { id: 'stats-1', type: 'stats', colSpan: 12, order: 2, hidden: false, locked: false },
+  { id: 'team_members-1', type: 'team_members', colSpan: 6, order: 3, hidden: false, locked: false },
+  { id: 'active_tunnels-1', type: 'active_tunnels', colSpan: 6, order: 4, hidden: false, locked: false },
+  { id: 'burndown-1', type: 'burndown', colSpan: 6, order: 5, hidden: false, locked: false },
+  { id: 'velocity-1', type: 'velocity', colSpan: 6, order: 6, hidden: false, locked: false },
+  { id: 'activity_feed-1', type: 'activity_feed', colSpan: 6, order: 7, hidden: false, locked: false },
+  { id: 'workload-1', type: 'workload', colSpan: 6, order: 8, hidden: false, locked: false },
+  { id: 'recent_projects-1', type: 'recent_projects', colSpan: 6, order: 9, hidden: false, locked: false },
+  { id: 'recent_notes-1', type: 'recent_notes', colSpan: 6, order: 10, hidden: false, locked: false },
+  { id: 'quick_actions-1', type: 'quick_actions', colSpan: 12, order: 11, hidden: false, locked: false },
 ]

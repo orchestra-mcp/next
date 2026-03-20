@@ -3,6 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useMCP } from '@/hooks/useMCP'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 
 export type CreateItemKind = 'project' | 'plan' | 'feature'
 
@@ -224,29 +225,23 @@ export function CreateItemModal({ kind, projectId, onClose, onSuccess }: CreateI
                 <label style={{ fontSize: 12, fontWeight: 500, color: textMuted, marginBottom: 6, display: 'block' }}>
                   {t('kind')}
                 </label>
-                <select
+                <SearchableSelect
                   value={featureKind}
-                  onChange={e => setFeatureKind(e.target.value as typeof FEATURE_KINDS[number])}
-                  style={{ ...inputSt, cursor: 'pointer' }}
-                >
-                  {FEATURE_KINDS.map(k => (
-                    <option key={k} value={k}>{k.charAt(0).toUpperCase() + k.slice(1)}</option>
-                  ))}
-                </select>
+                  onChange={val => setFeatureKind(val as typeof FEATURE_KINDS[number])}
+                  options={FEATURE_KINDS.map(k => ({ value: k, label: k.charAt(0).toUpperCase() + k.slice(1) }))}
+                  style={{ cursor: 'pointer' }}
+                />
               </div>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 12, fontWeight: 500, color: textMuted, marginBottom: 6, display: 'block' }}>
                   {t('priority')}
                 </label>
-                <select
+                <SearchableSelect
                   value={priority}
-                  onChange={e => setPriority(e.target.value as typeof PRIORITIES[number])}
-                  style={{ ...inputSt, cursor: 'pointer' }}
-                >
-                  {PRIORITIES.map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
+                  onChange={val => setPriority(val as typeof PRIORITIES[number])}
+                  options={PRIORITIES.map(p => ({ value: p, label: p }))}
+                  style={{ cursor: 'pointer' }}
+                />
               </div>
             </div>
           )}

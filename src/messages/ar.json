@@ -52,7 +52,8 @@
     "admin": "الإدارة",
     "community": "المجتمع",
     "sponsors": "الرعاة",
-    "issues": "المشاكل"
+    "issues": "المشاكل",
+    "profile": "الملف الشخصي"
   },
   "footer": {
     "product": "المنتج",
@@ -630,7 +631,58 @@
     "widgetStats": "نظرة عامة",
     "widgetProjects": "المشاريع الأخيرة",
     "widgetNotes": "الملاحظات الأخيرة",
-    "widgetQuickActions": "إجراءات سريعة"
+    "widgetQuickActions": "إجراءات سريعة",
+    "widgetProjectHealth": "صحة المشاريع",
+    "widgetBurndown": "مخطط الإنجاز",
+    "widgetVelocity": "السرعة",
+    "widgetActivityFeed": "آخر النشاطات",
+    "widgetWorkload": "حمل العمل",
+    "onTrack": "على المسار",
+    "atRisk": "في خطر",
+    "blocked": "محظور",
+    "done": "مكتمل",
+    "review": "مراجعة",
+    "noProjectsHealth": "لا توجد مشاريع بعد",
+    "noActivity": "لا يوجد نشاط حديث",
+    "viewAllActivity": "عرض الكل",
+    "noBurndownData": "لا توجد بيانات إنجاز بعد",
+    "noVelocityData": "لا توجد بيانات سرعة بعد",
+    "noWorkloadData": "لا توجد بيانات حمل عمل"
+  },
+  "workspaces": {
+    "title": "مساحات العمل",
+    "createWorkspace": "إنشاء مساحة عمل",
+    "noWorkspaces": "لا توجد مساحات عمل بعد",
+    "noWorkspacesDesc": "أنشئ مساحة عمل لتنظيم مشاريعك.",
+    "projects": "{count} مشاريع",
+    "members": "{count} أعضاء",
+    "allWorkspaces": "جميع مساحات العمل",
+    "deleteConfirm": "حذف مساحة العمل هذه؟"
+  },
+  "sync": {
+    "title": "حالة المزامنة",
+    "connected": "متصل",
+    "syncing": "جاري المزامنة",
+    "error": "خطأ",
+    "allSynced": "تمت مزامنة جميع التغييرات",
+    "syncingChanges": "جاري مزامنة التغييرات...",
+    "connectionLost": "انقطع الاتصال. جاري إعادة المحاولة...",
+    "connectedTunnels": "الأنفاق المتصلة",
+    "noTunnels": "لا توجد أنفاق متصلة",
+    "recentEvents": "الأحداث الأخيرة",
+    "noEvents": "لا توجد أحداث حديثة",
+    "tunnelCount": "{count} نفق"
+  },
+  "smartActions": {
+    "workingOn": "العمل على: {title}",
+    "startFeature": "بدء الميزة",
+    "runTests": "تشغيل الاختبارات",
+    "writeDocs": "كتابة التوثيق",
+    "startSmartAction": "بدء إجراء ذكي",
+    "connectDesktop": "اتصل بسطح المكتب لاستخدام الإجراءات الذكية",
+    "changeStatus": "تغيير الحالة",
+    "assignTo": "تعيين إلى",
+    "noMembers": "لا يوجد أعضاء فريق"
   },
   "settings": {
     "title": "الإعدادات",

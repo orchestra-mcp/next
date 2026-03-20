@@ -9,6 +9,12 @@ import { useThemeStore } from '@/store/theme'
 import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 
+function getPostLoginRedirect(): string {
+  const user = useAuthStore.getState().user
+  const username = user?.username || (user?.settings?.handle as string | undefined)
+  return username ? `/@${username}` : '/dashboard'
+}
+
 // Dev seed credentials (shown in UI for easy access)
 const DEV_SEEDS = [
   { label: 'Admin', email: 'admin@orchestra.dev', role: 'admin' as const, color: '#ef4444' },
@@ -46,7 +52,7 @@ export default function LoginPage() {
       .catch(() => {})
   }, [])
 
-  useEffect(() => { if (token) router.replace('/dashboard') }, [token, router])
+  useEffect(() => { if (token) window.location.href = getPostLoginRedirect() }, [token])
 
   const handleDevSeed = (seed: typeof DEV_SEEDS[0]) => {
     // Inject seed data into role store + set the chosen role
@@ -57,26 +63,26 @@ export default function LoginPage() {
     document.cookie = 'orchestra_token=dev_seed_token;path=/;max-age=86400;SameSite=Lax'
     const fakeUser = { id: DEV_SEEDS.indexOf(seed) + 1, name: seed.label + ' (Dev)', email: seed.email }
     useAuthStore.setState({ token: 'dev_seed_token', user: fakeUser })
-    router.push('/dashboard')
+    window.location.href = getPostLoginRedirect()
   }
 
-  const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
-  const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const cardBg = isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'
-  const cardBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'
-  const cardShadow = isDark ? '0 0 60px rgba(169,0,255,0.08)' : '0 8px 32px rgba(0,0,0,0.06)'
-  const inputBg = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
-  const inputColor = isDark ? '#f8f8f8' : '#0f0f12'
-  const labelColor = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
-  const socialBtnBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'
-  const socialBtnBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
-  const dividerBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
-  const dividerText = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'
-  const eyeColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)'
-  const footerText = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)'
-  const loadingBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
-  const loadingColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+  const textPrimary = 'var(--color-fg, #f8f8f8)'
+  const textMuted = 'var(--color-fg-muted, rgba(255,255,255,0.4))'
+  const cardBg = 'var(--color-bg-alt, rgba(255,255,255,0.03))'
+  const cardBorder = 'var(--color-border, rgba(255,255,255,0.08))'
+  const cardShadow = 'var(--color-shadow-md, 0 0 60px rgba(169,0,255,0.08))'
+  const inputBg = 'var(--color-bg-alt, rgba(255,255,255,0.05))'
+  const inputBorder = 'var(--color-border, rgba(255,255,255,0.1))'
+  const inputColor = 'var(--color-fg, #f8f8f8)'
+  const labelColor = 'var(--color-fg-dim, rgba(255,255,255,0.5))'
+  const socialBtnBg = 'var(--color-bg-alt, rgba(255,255,255,0.04))'
+  const socialBtnBorder = 'var(--color-border, rgba(255,255,255,0.1))'
+  const dividerBg = 'var(--color-border, rgba(255,255,255,0.08))'
+  const dividerText = 'var(--color-fg-dim, rgba(255,255,255,0.3))'
+  const eyeColor = 'var(--color-fg-dim, rgba(255,255,255,0.35))'
+  const footerText = 'var(--color-fg-dim, rgba(255,255,255,0.35))'
+  const loadingBg = 'var(--color-border, rgba(255,255,255,0.08))'
+  const loadingColor = 'var(--color-fg-dim, rgba(255,255,255,0.4))'
 
   const inputSt: React.CSSProperties = {
     width: '100%', padding: '11px 14px', borderRadius: 10,
@@ -89,7 +95,7 @@ export default function LoginPage() {
     e.preventDefault()
     try {
       await login(email, password)
-      router.push('/dashboard')
+      // Redirect handled by useEffect above when token is set
     } catch (e: any) {
       if (e?.requires2fa) {
         router.push('/two-factor')
@@ -102,9 +108,11 @@ export default function LoginPage() {
       {/* Logo */}
       <div style={{ textAlign: 'center', marginBottom: 40 }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-          <Image src="/logo.svg" alt="Orchestra" width={52} height={52} />
+          <Image src="/logo.svg" alt="Orchestra" width={48} height={48} />
         </div>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>{t('auth.signInToOrchestra')}</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em', textAlign: 'center' }}>
+          {t('auth.signInToOrchestra')}
+        </h1>
         <p style={{ fontSize: 14, color: textMuted, marginTop: 8 }}>{t('auth.welcomeBack')}</p>
       </div>
 
@@ -200,7 +208,7 @@ export default function LoginPage() {
               setPasskeyError('')
               try {
                 await loginWithPasskey()
-                router.push('/dashboard')
+                // Redirect handled by useEffect when token is set
               } catch (e: any) {
                 setPasskeyError(e?.message || 'Passkey authentication failed')
               }

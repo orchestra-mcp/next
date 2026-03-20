@@ -4,7 +4,6 @@ import Image from 'next/image'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useRouter, usePathname } from 'next/navigation'
-import { useThemeStore } from '@/store/theme'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/ui/theme-provider'
@@ -64,7 +63,6 @@ export function MarketingNav() {
   const { token, user, logout } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
-  const { theme } = useThemeStore()
   const { notifications, fetchNotifications, markNotificationRead, markAllRead } = useSettingsStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [animating, setAnimating] = useState(false)
@@ -72,8 +70,6 @@ export function MarketingNav() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
-  const isDark = theme === 'dark'
-
   // Fetch notifications when logged in
   useEffect(() => {
     if (token && user) fetchNotifications()
@@ -164,19 +160,19 @@ export function MarketingNav() {
 
   const initials = user?.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() ?? 'U'
 
-  // Colors
-  const navBg = isDark ? 'rgba(15,15,18,0.92)' : 'rgba(255,255,255,0.95)'
-  const navBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
-  const logoColor = isDark ? '#f8f8f8' : '#0f0f12'
-  const overlayBg = isDark ? '#0f0f12' : '#f5f5f7'
-  const groupTitle = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.35)'
-  const linkColor = isDark ? '#f8f8f8' : '#0f0f12'
-  const descColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const linkHoverBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'
-  const overlayBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
-  const signInColor = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)'
-  const hamburgerColor = isDark ? '#f8f8f8' : '#0f0f12'
-  const activeIndicator = '#00e5ff'
+  // Colors — using CSS variables for theme support
+  const navBg = 'var(--color-bg)'
+  const navBorder = 'var(--color-border)'
+  const logoColor = 'var(--color-fg)'
+  const overlayBg = 'var(--color-bg)'
+  const groupTitle = 'var(--color-fg-dim)'
+  const linkColor = 'var(--color-fg)'
+  const descColor = 'var(--color-fg-dim)'
+  const linkHoverBg = 'var(--color-bg-active)'
+  const overlayBorder = 'var(--color-border)'
+  const signInColor = 'var(--color-fg-muted)'
+  const hamburgerColor = 'var(--color-fg)'
+  const activeIndicator = 'var(--color-accent, #00e5ff)'
 
   // Toggle menu with animation
   const toggleMenu = useCallback(() => {
@@ -312,9 +308,9 @@ export function MarketingNav() {
               title={`Search (${typeof navigator !== 'undefined' && navigator?.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+K)`}
               style={{
                 width: 34, height: 34, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'}`,
-                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
-                color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-bg-alt)',
+                color: 'var(--color-fg-muted)',
                 cursor: 'pointer', padding: 0,
               }}
             >
@@ -329,25 +325,25 @@ export function MarketingNav() {
                   title="Notifications"
                   style={{
                     width: 34, height: 34, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'}`,
-                    background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
-                    color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
+                    border: '1px solid var(--color-border)',
+                    background: 'var(--color-bg-alt)',
+                    color: 'var(--color-fg-muted)',
                     cursor: 'pointer', padding: 0, position: 'relative',
                   }}
                 >
                   <i className="bx bx-bell" style={{ fontSize: 16 }} />
                   {notifications.some(n => !n.read_at) && (
-                    <span style={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, borderRadius: '50%', background: '#00e5ff', border: `1.5px solid ${isDark ? '#0f0f12' : '#fff'}` }} />
+                    <span style={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, borderRadius: '50%', background: '#00e5ff', border: '1.5px solid var(--color-bg)' }} />
                   )}
                 </button>
                 {notifOpen && (
                   <div style={{
                     position: 'absolute', top: 42, right: 0, width: 340, zIndex: 200,
-                    background: isDark ? '#1a1a1e' : '#fff',
-                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+                    background: 'var(--color-bg-alt)',
+                    border: '1px solid var(--color-border)',
                     borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,0.3)', overflow: 'hidden',
                   }}>
-                    <div style={{ padding: '12px 16px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: linkColor }}>
                         Notifications
                         {notifications.filter(n => !n.read_at).length > 0 && (
@@ -372,7 +368,7 @@ export function MarketingNav() {
                           <div
                             key={n.id}
                             onClick={() => { if (!n.read_at) markNotificationRead(n.id) }}
-                            style={{ padding: '12px 16px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`, display: 'flex', gap: 10, cursor: !n.read_at ? 'pointer' : 'default', background: !n.read_at ? 'rgba(0,229,255,0.03)' : 'transparent' }}
+                            style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-bg-active)', display: 'flex', gap: 10, cursor: !n.read_at ? 'pointer' : 'default', background: !n.read_at ? 'rgba(0,229,255,0.03)' : 'transparent' }}
                           >
                             <div style={{ width: 30, height: 30, borderRadius: 8, background: `${meta.color}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
                               <i className={`bx ${meta.icon}`} style={{ fontSize: 14, color: meta.color }} />
@@ -410,7 +406,7 @@ export function MarketingNav() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" sideOffset={8} style={{ width: 220 }}>
-                  <div style={{ padding: '10px 12px 8px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` }}>
+                  <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--color-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <Avatar style={{ width: 36, height: 36, flexShrink: 0 }}>
                         {user.avatar_url && <AvatarImage src={user.avatar_url} alt={initials} />}
@@ -422,11 +418,11 @@ export function MarketingNav() {
                       </div>
                     </div>
                   </div>
-                  <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-                    <i className="bx bx-home-alt" style={{ marginInlineEnd: 8 }} /> {t('nav.dashboard')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/settings')}>
-                    <i className="bx bx-cog" style={{ marginInlineEnd: 8 }} /> {t('nav.settings')}
+                  <DropdownMenuItem onClick={() => {
+                    const handle = user.username || (user.settings?.handle as string)
+                    router.push(handle ? `/@${handle}` : '/dashboard')
+                  }}>
+                    <i className="bx bx-user" style={{ marginInlineEnd: 8 }} /> {t('nav.profile')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => { logout(); router.push('/') }} style={{ color: '#ff6b6b' }}>
@@ -450,8 +446,8 @@ export function MarketingNav() {
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               width: 34, height: 34, borderRadius: 11, padding: 0,
-              background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
-              border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'}`,
+              background: 'var(--color-bg-alt)',
+              border: '1px solid var(--color-border)',
               cursor: 'pointer', zIndex: 101,
               transition: 'background 0.2s',
               flexShrink: 0,
@@ -546,7 +542,7 @@ export function MarketingNav() {
                           {/* Icon */}
                           <div className="menu-link-icon-box" style={{
                             width: 42, height: 42, borderRadius: 10,
-                            background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                            background: 'var(--color-bg-active)',
                             border: `1px solid ${overlayBorder}`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             flexShrink: 0,
@@ -603,10 +599,10 @@ export function MarketingNav() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {token && user ? (
                   <>
-                    <Link href="/dashboard" onClick={() => toggleMenu()} style={{
+                    <Link href={`/@${user.username || (user.settings?.handle as string) || ''}`} onClick={() => toggleMenu()} style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       padding: '10px 20px', borderRadius: 10,
-                      background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                      background: 'var(--color-bg-active)',
                       border: `1px solid ${overlayBorder}`,
                       textDecoration: 'none', color: linkColor, fontSize: 14, fontWeight: 500,
                     }}>
@@ -614,7 +610,7 @@ export function MarketingNav() {
                         {user.avatar_url && <AvatarImage src={user.avatar_url} alt={initials} />}
                         <AvatarFallback style={{ fontSize: 10, fontWeight: 700 }}>{initials}</AvatarFallback>
                       </Avatar>
-                      {t('nav.dashboard')}
+                      {t('nav.profile')}
                     </Link>
                     <button onClick={() => { logout(); router.push('/'); toggleMenu() }} style={{
                       padding: '10px 20px', borderRadius: 10,
@@ -628,7 +624,7 @@ export function MarketingNav() {
                   <>
                     <Link href="/login" onClick={() => toggleMenu()} style={{
                       padding: '10px 20px', borderRadius: 10,
-                      background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                      background: 'var(--color-bg-active)',
                       border: `1px solid ${overlayBorder}`,
                       textDecoration: 'none', color: linkColor, fontSize: 14, fontWeight: 500,
                     }}>
@@ -650,14 +646,14 @@ export function MarketingNav() {
                 <LanguageSwitcher />
                 <ThemeToggle size={34} />
                 {[
-                  { icon: 'bxl-github', href: 'https://github.com/orchestra-mcp' },
+                  { icon: 'bxl-github', href: 'https://github.com/orchestra-mcp/framework' },
                   { icon: 'bxl-twitter', href: 'https://twitter.com/orchestramcp' },
                   { icon: 'bxl-discord-alt', href: 'https://discord.gg/orchestra' },
                 ].map(s => (
                   <a key={s.icon} href={s.href} target="_blank" rel="noopener" style={{
                     width: 36, height: 36, borderRadius: 8,
                     border: `1px solid ${overlayBorder}`,
-                    background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                    background: 'var(--color-bg-alt)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: descColor, textDecoration: 'none', fontSize: 17,
                     transition: 'color 0.15s',

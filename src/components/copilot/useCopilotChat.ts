@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import type { ChatSession } from '@orchestra-mcp/ai/ChatHeader'
 import type { QuickAction, StartupPrompt, AIModel } from '@orchestra-mcp/ai/types'
@@ -27,15 +27,6 @@ function getPageContext(pathname: string): { label: string; quickActions: QuickA
       quickActions: [
         { id: 'qa-notes', label: 'Search Notes', prompt: 'Search my notes', color: '#22c55e' },
         { id: 'qa-create-note', label: 'Create Note', prompt: 'Create a new note titled ', color: '#f59e0b' },
-      ],
-    }
-  }
-  if (pathname.startsWith('/plans')) {
-    return {
-      label: 'Plans',
-      quickActions: [
-        { id: 'qa-plans', label: 'List Plans', prompt: 'List all plans with their status', color: '#8b5cf6' },
-        { id: 'qa-create-plan', label: 'Create Plan', prompt: 'Create a plan for ', color: '#a900ff' },
       ],
     }
   }
@@ -113,7 +104,7 @@ export function useCopilotChat() {
 
   const {
     connected, sendMessage, createSession, deleteSession, stopSession,
-    loadSession, respondPermission,
+    loadSession, respondPermission, fetchCommandItems,
   } = useChatMCP()
 
   // Load session messages when copilot session changes
@@ -122,6 +113,30 @@ export function useCopilotChat() {
       loadSession(copilotSessionId)
     }
   }, [connected, copilotSessionId, loadSession])
+
+  // Fetch agents/skills for / command palette
+  const [commandItems, setCommandItems] = useState<Array<{ id: string; label: string; description?: string; icon?: string; iconColor?: string; group: 'agents' | 'skills' }>>([])
+  useEffect(() => {
+    if (connected) {
+      fetchCommandItems().then(items => { if (items.length > 0) setCommandItems(items) }).catch(() => {})
+    }
+  }, [connected, fetchCommandItems])
+
+  // Build mention items from sessions for @ mentions
+  const mentionItems = useMemo(() => {
+    const items: Array<{ id: string; label: string; description?: string; icon?: string; iconColor?: string; group: 'sessions' }> = []
+    for (const s of sessions) {
+      items.push({
+        id: s.id,
+        label: s.title || s.id,
+        description: `${s.messages.length} messages`,
+        icon: 'bx-chat',
+        iconColor: '#06b6d4',
+        group: 'sessions',
+      })
+    }
+    return items
+  }, [sessions])
 
   // Map store sessions to ChatHeader ChatSession format
   const chatSessions: ChatSession[] = useMemo(() =>
@@ -302,7 +317,7 @@ export function useCopilotChat() {
     connected, copilotOpen, copilotSessionId, copilotMode,
     chatSessions, models, messages, isSending, currentTypingStatus,
     selectedModelId, chatMode, showThinking,
-    quickActions, startupPrompts, pageContext,
+    quickActions, startupPrompts, pageContext, commandItems, mentionItems,
     sessions, userName, userAvatarUrl,
 
     // Actions

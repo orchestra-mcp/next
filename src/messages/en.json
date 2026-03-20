@@ -55,7 +55,8 @@
     "chat": "Chat",
     "community": "Community",
     "sponsors": "Sponsors",
-    "issues": "Issues"
+    "issues": "Issues",
+    "profile": "Profile"
   },
   "footer": {
     "product": "Product",
@@ -484,7 +485,61 @@
     "widgetStats": "Stats Overview",
     "widgetProjects": "Recent Projects",
     "widgetNotes": "Recent Notes",
-    "widgetQuickActions": "Quick Actions"
+    "widgetQuickActions": "Quick Actions",
+    "widgetProjectHealth": "Project Health",
+    "widgetBurndown": "Burndown Chart",
+    "widgetVelocity": "Velocity",
+    "widgetActivityFeed": "Activity Feed",
+    "widgetWorkload": "Team Workload",
+    "widgetTeamMembers": "Team Members",
+    "widgetActiveTunnels": "Active Tunnels",
+    "widgetTeamAutomation": "Team Automation",
+    "onTrack": "On Track",
+    "atRisk": "At Risk",
+    "blocked": "Blocked",
+    "done": "done",
+    "review": "review",
+    "noProjectsHealth": "No projects yet",
+    "noActivity": "No recent activity",
+    "viewAllActivity": "View all activity",
+    "noBurndownData": "No burndown data yet",
+    "noVelocityData": "No velocity data yet",
+    "noWorkloadData": "No workload data"
+  },
+  "workspaces": {
+    "title": "Workspaces",
+    "createWorkspace": "Create Workspace",
+    "noWorkspaces": "No workspaces yet",
+    "noWorkspacesDesc": "Create a workspace to organize your projects.",
+    "projects": "{count} projects",
+    "members": "{count} members",
+    "allWorkspaces": "All workspaces",
+    "deleteConfirm": "Delete this workspace?"
+  },
+  "sync": {
+    "title": "Sync Status",
+    "connected": "Connected",
+    "syncing": "Syncing",
+    "error": "Error",
+    "allSynced": "All changes synced",
+    "syncingChanges": "Synchronizing changes...",
+    "connectionLost": "Connection lost. Retrying...",
+    "connectedTunnels": "Connected Tunnels",
+    "noTunnels": "No tunnels connected",
+    "recentEvents": "Recent Events",
+    "noEvents": "No recent events",
+    "tunnelCount": "{count} tunnel(s)"
+  },
+  "smartActions": {
+    "workingOn": "Working on: {title}",
+    "startFeature": "Start Feature",
+    "runTests": "Run Tests",
+    "writeDocs": "Write Docs",
+    "startSmartAction": "Start Smart Action",
+    "connectDesktop": "Connect desktop to use Smart Actions",
+    "changeStatus": "Change Status",
+    "assignTo": "Assign to",
+    "noMembers": "No team members"
   },
   "settings": {
     "title": "Settings",

@@ -61,7 +61,11 @@ export function useWebSocket(options?: UseWebSocketOptions): { status: WSStatus 
         ws.onclose = null
         ws.onerror = null
         ws.onmessage = null
-        ws.close()
+        // Only close if already open — closing a CONNECTING socket triggers the
+        // "WebSocket is closed before the connection is established" warning.
+        if (ws.readyState !== WebSocket.CONNECTING) {
+          ws.close()
+        }
         ws = null
       }
     }

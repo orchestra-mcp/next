@@ -177,7 +177,7 @@ function _doConnect() {
   _setStatus('connecting')
 
   const client = new MCPClient({
-    timeout: 30_000,
+    timeout: 120_000,
     autoInitialize: false,
     onStreamChunk: _handleStreamChunk,
     onNotification: _handleNotification,
@@ -256,9 +256,14 @@ export function useTunnelConnection() {
   }, [tunnelId, status, setConnectionStatus])
 
   const sendRequest = useCallback(
-    (method: string, params?: Record<string, unknown>): Promise<JSONRPCResponse> => {
+    async (method: string, params?: Record<string, unknown>): Promise<JSONRPCResponse> => {
       if (!_client || _status !== 'connected') return Promise.reject(new Error('not connected'))
-      return _client.request(method, params)
+      _activeRequests++
+      try {
+        return await _client.request(method, params)
+      } finally {
+        _activeRequests--
+      }
     }, []
   )
 

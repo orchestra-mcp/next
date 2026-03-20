@@ -9,7 +9,7 @@ import { ThemeProvider } from '@/components/ui/theme-provider'
 
 export const metadata: Metadata = {
   title: { default: 'Orchestra', template: '%s | Orchestra' },
-  description: 'AI-native platform for every developer. 131 tools, 5 platforms, one protocol.',
+  description: 'AI-agentic IDE framework. 300+ MCP tools, 38 plugins, 9 IDEs, 6 platforms.',
   icons: { icon: '/favicon.png' },
   alternates: {
     languages: Object.fromEntries(

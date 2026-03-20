@@ -22,29 +22,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@orchestra-mcp/ui": ["./packages/@orchestra-mcp/ui/src/index.ts"],
-      "@orchestra-mcp/icons": ["./packages/@orchestra-mcp/icons/src/index.ts"],
-      "@orchestra-mcp/icons/code": ["./packages/@orchestra-mcp/icons/src/code/index.ts"],
-      "@orchestra-mcp/icons/boxicons": ["./packages/@orchestra-mcp/icons/src/boxicons/index.ts"],
-      "@orchestra-mcp/theme": ["./packages/@orchestra-mcp/theme/src/index.ts"],
-      "@orchestra-mcp/theme/styles": ["./packages/@orchestra-mcp/theme/src/styles/index.css"],
-      "@orchestra-mcp/tasks": ["./packages/@orchestra-mcp/tasks/src/index.ts"],
-      "@orchestra-mcp/widgets": ["./packages/@orchestra-mcp/widgets/src/index.ts"],
-      "@orchestra-mcp/shared": ["./packages/@orchestra-mcp/shared/src/index.ts"],
-      "@orchestra-mcp/marketplace": ["./packages/@orchestra-mcp/marketplace/src/index.ts"],
-      "@orchestra-mcp/explorer": ["./packages/@orchestra-mcp/explorer/src/index.ts"],
-      "@orchestra-mcp/settings": ["./packages/@orchestra-mcp/settings/src/index.ts"],
-      "@orchestra-mcp/search": ["./packages/@orchestra-mcp/search/src/index.ts"],
-      "@orchestra-mcp/editor": ["./packages/@orchestra-mcp/editor/src/index.ts"],
-      "@orchestra-mcp/editor/MarkdownEditor": ["./packages/@orchestra-mcp/editor/src/MarkdownEditor/MarkdownEditor.tsx"],
-      "@orchestra-mcp/editor/MarkdownRenderer": ["./packages/@orchestra-mcp/editor/src/MarkdownRenderer/MarkdownRenderer.tsx"],
-      "@orchestra-mcp/ai": ["./packages/@orchestra-mcp/ai/src/index.ts"],
-      "@orchestra-mcp/ai/ChatBox": ["./packages/@orchestra-mcp/ai/src/ChatBox/index.ts"],
-      "@orchestra-mcp/ai/BubbleButton": ["./packages/@orchestra-mcp/ai/src/BubbleButton/index.ts"],
-      "@orchestra-mcp/ai/types": ["./packages/@orchestra-mcp/ai/src/types/index.ts"],
-      "@orchestra-mcp/ai/ChatHeader": ["./packages/@orchestra-mcp/ai/src/ChatHeader/index.ts"],
-      "@orchestra-mcp/ai/PromptCardEditor": ["./packages/@orchestra-mcp/ai/src/PromptCardEditor/index.ts"]
+      "@/*": ["./src/*"]
     },
     "target": "ES2017"
   },

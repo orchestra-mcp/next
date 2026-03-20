@@ -20,7 +20,7 @@ const BYPASS_PATHS = [
 const PUBLIC_PREFIXES = ['/_next', '/api', '/favicon', '/logo', '/og-image', '/icons']
 
 // Public routes under [locale]/ that use intl middleware (URL-based locale)
-// Everything else is a dashboard route (cookie-based locale, no URL prefix)
+// Everything else is an app route (cookie-based locale, no URL prefix)
 const PUBLIC_ROUTES = [
   '/blog', '/docs', '/download', '/solutions', '/marketplace',
   '/contact', '/privacy', '/terms', '/report', '/coming-soon',
@@ -78,7 +78,7 @@ export async function middleware(req: NextRequest) {
     return intlMiddleware(req)
   }
 
-  // Dashboard routes — skip intl middleware, use cookie-based locale
+  // App routes (settings, subscription, etc.) — skip intl middleware, use cookie-based locale
   if (isBypass) {
     return NextResponse.next()
   }

@@ -221,7 +221,6 @@ export const useRoleStore = create<RolesState & RolesActions>()(
           const team = ('team' in res && res.team) ? res.team : res as Team
           set({ team, loading: false })
         } catch (e) {
-          if ((e as any).devSeed) { set({ loading: false }); return }
           set({ error: (e as Error).message, loading: false })
         }
       },
@@ -238,8 +237,7 @@ export const useRoleStore = create<RolesState & RolesActions>()(
           }
           // Only update `team` if not already set (don't override active team)
           set(state => ({ teams, team: state.team ?? teams[0] ?? null }))
-        } catch (e) {
-          if ((e as any).devSeed) return
+        } catch {
           // Non-fatal: keep existing teams
         }
       },
@@ -258,7 +256,6 @@ export const useRoleStore = create<RolesState & RolesActions>()(
           const res = await apiFetch<{ members: TeamMember[] }>(url)
           set({ members: res.members, loading: false })
         } catch (e) {
-          if ((e as any).devSeed) { set({ loading: false }); return }
           set({ error: (e as Error).message, loading: false })
         }
       },
@@ -269,7 +266,6 @@ export const useRoleStore = create<RolesState & RolesActions>()(
           const res = await apiFetch<{ users: TeamMember[] }>('/api/admin/users')
           set({ allUsers: res.users, loading: false })
         } catch (e) {
-          if ((e as any).devSeed) { set({ loading: false }); return }
           set({ error: (e as Error).message, loading: false })
         }
       },
@@ -286,7 +282,6 @@ export const useRoleStore = create<RolesState & RolesActions>()(
           set({ loading: false })
           await get().fetchMembers()
         } catch (e) {
-          if ((e as any).devSeed) { set({ loading: false }); throw e }
           set({ error: (e as Error).message, loading: false })
           throw e
         }
@@ -305,7 +300,6 @@ export const useRoleStore = create<RolesState & RolesActions>()(
             loading: false,
           }))
         } catch (e) {
-          if ((e as any).devSeed) { set({ loading: false }); throw e }
           set({ error: (e as Error).message, loading: false })
           throw e
         }
@@ -320,7 +314,6 @@ export const useRoleStore = create<RolesState & RolesActions>()(
             loading: false,
           }))
         } catch (e) {
-          if ((e as any).devSeed) { set({ loading: false }); throw e }
           set({ error: (e as Error).message, loading: false })
           throw e
         }
@@ -335,7 +328,6 @@ export const useRoleStore = create<RolesState & RolesActions>()(
             loading: false,
           }))
         } catch (e) {
-          if ((e as any).devSeed) { set({ loading: false }); throw e }
           set({ error: (e as Error).message, loading: false })
           throw e
         }
@@ -350,7 +342,6 @@ export const useRoleStore = create<RolesState & RolesActions>()(
             loading: false,
           }))
         } catch (e) {
-          if ((e as any).devSeed) { set({ loading: false }); throw e }
           set({ error: (e as Error).message, loading: false })
           throw e
         }
@@ -367,7 +358,6 @@ export const useRoleStore = create<RolesState & RolesActions>()(
           })
           set({ team: res.team, loading: false })
         } catch (e) {
-          if ((e as any).devSeed) { set({ loading: false }); throw e }
           set({ error: (e as Error).message, loading: false })
           throw e
         }

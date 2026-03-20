@@ -5,6 +5,7 @@ import { useThemeStore } from '@/store/theme'
 import { useFeatureFlagsStore } from '@/store/feature-flags'
 import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 
 interface GitHubIssue {
   id: number
@@ -264,19 +265,21 @@ export default function IssuesPage() {
                 <div style={{ width: 1, height: 20, background: cardBorder }} />
 
                 {/* Repo dropdown */}
-                <select
+                <SearchableSelect
                   value={repoFilter}
-                  onChange={(e) => setRepoFilter(e.target.value)}
+                  onChange={setRepoFilter}
+                  options={[
+                    { value: 'all', label: 'All Repos' },
+                    ...repos.map(r => ({ value: r, label: r })),
+                  ]}
+                  placeholder="All Repos"
                   style={{
                     padding: '6px 12px', borderRadius: 8,
                     border: `1px solid ${cardBorder}`, background: pillBg,
                     color: textPrimary, fontSize: 13, fontFamily: 'inherit',
                     cursor: 'pointer', outline: 'none',
                   }}
-                >
-                  <option value="all">All Repos</option>
-                  {repos.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
+                />
               </>
             )}
           </div>

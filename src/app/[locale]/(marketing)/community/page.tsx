@@ -11,7 +11,7 @@ export default function CommunityPage() {
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
   const { isEnabled } = useFeatureFlagsStore()
-  const { members, membersTotal, loading, fetchMembers } = useCommunityStore()
+  const { members = [], membersTotal, loading, fetchMembers } = useCommunityStore()
 
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)

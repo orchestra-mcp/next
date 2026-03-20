@@ -76,7 +76,9 @@ export default function VerifyOtpPage() {
         router.push(`/reset-password?token=${encodeURIComponent(result.token ?? '')}`)
       } else {
         // magic login — user is now logged in
-        router.replace('/dashboard')
+        const currentUser = useAuthStore.getState().user
+        const username = currentUser?.username || (currentUser?.settings?.handle as string | undefined)
+        router.replace(username ? `/@${username}` : '/dashboard')
       }
     } catch {}
   }

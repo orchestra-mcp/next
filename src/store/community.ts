@@ -17,12 +17,16 @@ export interface CommunityMember {
 
 export interface CommunityPost {
   id: number
+  slug?: string
   author_id: number
   author_name: string
   author_handle: string
   author_avatar: string
   title: string
   content: string
+  icon?: string
+  color?: string
+  media?: string
   created_at: string
   likes_count: number
   comments_count: number
@@ -37,6 +41,32 @@ export interface PostComment {
   user_avatar: string
   content: string
   created_at: string
+  parent_id?: number | null
+}
+
+export interface BadgeItem {
+  id: number
+  slug: string
+  name: string
+  description: string
+  icon: string
+  color: string
+  category: string
+  awarded_at: string
+}
+
+export interface VerificationTier {
+  slug: string
+  name: string
+  icon: string
+  color: string
+  badge_text: string
+  verified_at: string
+}
+
+export interface WalletInfo {
+  balance: number
+  lifetime_earned: number
 }
 
 export interface PublicProfile {
@@ -50,44 +80,47 @@ export interface PublicProfile {
   location: string
   joined_at: string
   social_links: { platform: string; url: string }[]
-  stats: { posts: number; contributions: number; profile_completeness: number }
+  stats: { posts: number; contributions: number; profile_completeness: number; points?: number }
   recent_posts: CommunityPost[]
+  badges?: BadgeItem[]
+  verifications?: VerificationTier[]
+  wallet?: WalletInfo
+  is_verified?: boolean
+  show_badges?: boolean
+  show_wallet?: boolean
+  teams?: { name: string; slug: string; avatar_url?: string; role: string }[]
+  sponsors?: { name: string; logo_url: string; url: string; order: number }[]
 }
 
-// ── Dev seed data ──
-
-const devSeedMembers: CommunityMember[] = [
-  { id: 1, name: 'Fady Mondy', handle: 'fadymondy', avatar_url: '', bio: 'Creator of Orchestra MCP. AI Expert, Tech Lead.', role: 'Core Member', location: 'Cairo, Egypt', joined_at: '2025-10-01T00:00:00Z', post_count: 5, is_public: true },
-  { id: 2, name: 'Alice Chen', handle: 'alice', avatar_url: '', bio: 'Full-stack developer. Open source enthusiast.', role: 'Member', location: 'San Francisco, CA', joined_at: '2025-11-15T00:00:00Z', post_count: 3, is_public: true },
-  { id: 3, name: 'Bob Martinez', handle: 'bobm', avatar_url: '', bio: 'Rust engineer and systems programmer.', role: 'Member', location: 'Austin, TX', joined_at: '2025-12-01T00:00:00Z', post_count: 2, is_public: true },
-  { id: 4, name: 'Sara Kim', handle: 'sarak', avatar_url: '', bio: 'Mobile developer specializing in React Native.', role: 'Member', location: 'Seoul, Korea', joined_at: '2025-12-20T00:00:00Z', post_count: 1, is_public: true },
-  { id: 5, name: 'Omar Hassan', handle: 'omarh', avatar_url: '', bio: 'DevOps engineer. Kubernetes and cloud native.', role: 'Member', location: 'Dubai, UAE', joined_at: '2026-01-10T00:00:00Z', post_count: 0, is_public: true },
-  { id: 6, name: 'Lisa Wang', handle: 'lisaw', avatar_url: '', bio: 'UI/UX designer with a passion for accessibility.', role: 'Member', location: 'Toronto, Canada', joined_at: '2026-02-01T00:00:00Z', post_count: 0, is_public: true },
-]
-
-const devSeedProfile: PublicProfile = {
-  id: 1, name: 'Fady Mondy', handle: 'fadymondy', avatar_url: '', cover_url: '',
-  bio: 'Creator of Orchestra MCP. AI Expert, Tech Lead. Building the future of AI-native development.',
-  role: 'Core Member', location: 'Cairo, Egypt', joined_at: '2025-10-01T00:00:00Z',
-  social_links: [
-    { platform: 'github', url: 'https://github.com/fadymondy' },
-    { platform: 'twitter', url: 'https://twitter.com/fadymondy' },
-    { platform: 'website', url: 'https://orchestra.dev' },
-  ],
-  stats: { posts: 5, contributions: 42, profile_completeness: 87 },
-  recent_posts: [
-    { id: 1, author_id: 1, author_name: 'Fady Mondy', author_handle: 'fadymondy', author_avatar: '', title: 'Getting started with Orchestra MCP', content: 'A walkthrough of the plugin architecture and how to build your first extension.', created_at: '2025-10-15T10:00:00Z', likes_count: 12, comments_count: 3, tags: ['tutorial', 'plugins'] },
-    { id: 2, author_id: 1, author_name: 'Fady Mondy', author_handle: 'fadymondy', author_avatar: '', title: 'The future of AI-native IDEs', content: 'Why we built Orchestra and where AI development tools are headed.', created_at: '2025-11-01T14:00:00Z', likes_count: 24, comments_count: 7, tags: ['ai', 'vision'] },
-  ],
+export interface SharedEntity {
+  id: string
+  entity_type: 'note' | 'skill' | 'agent' | 'workflow'
+  entity_id: string
+  title: string
+  description: string
+  content: string
+  visibility: 'public' | 'team'
+  tags: string[]
+  icon: string
+  color: string
+  created_at: string
+  author_handle?: string
+  author_name?: string
+  author_avatar?: string
 }
-
-const devSeedComments: PostComment[] = [
-  { id: 1, user_id: 2, user_name: 'Alice Chen', user_avatar: '', content: 'Great introduction! The plugin system is really well designed.', created_at: '2025-10-16T08:00:00Z' },
-  { id: 2, user_id: 3, user_name: 'Bob Martinez', user_avatar: '', content: 'Would love to see more examples with Rust plugins.', created_at: '2025-10-16T12:00:00Z' },
-  { id: 3, user_id: 4, user_name: 'Sara Kim', user_avatar: '', content: 'This is exactly what I was looking for. Thanks!', created_at: '2025-10-17T09:00:00Z' },
-]
 
 // ── Store ──
+
+export interface ActivityItem {
+  type: string
+  id: number
+  title?: string
+  excerpt: string
+  parent_id?: number
+  entity_type?: string
+  slug?: string
+  created_at: string
+}
 
 interface CommunityState {
   members: CommunityMember[]
@@ -97,6 +130,8 @@ interface CommunityState {
   comments: PostComment[]
   relatedPosts: CommunityPost[]
   currentPost: CommunityPost | null
+  sharedEntities: SharedEntity[]
+  activity: ActivityItem[]
   loading: boolean
   error: string | null
 }
@@ -107,10 +142,16 @@ interface CommunityActions {
   fetchPosts: (handle: string, page?: number) => Promise<void>
   fetchPost: (id: number) => Promise<void>
   fetchComments: (postId: number) => Promise<void>
-  addComment: (postId: number, content: string) => Promise<void>
+  addComment: (postId: number, content: string, parentId?: number) => Promise<void>
   likePost: (postId: number) => Promise<void>
   fetchRelatedPosts: (postId: number) => Promise<void>
-  createPost: (data: { title: string; content: string; tags?: string[] }) => Promise<void>
+  createPost: (data: { title: string; content: string; icon?: string; color?: string; media?: string; tags?: string[] }) => Promise<void>
+  updatePost: (id: number, data: { title: string; content: string; icon?: string; color?: string; tags?: string[] }) => Promise<void>
+  deletePost: (id: number) => Promise<void>
+  fetchActivity: (handle: string) => Promise<void>
+  fetchSharedEntities: (handle: string, type?: string) => Promise<void>
+  shareEntity: (data: Omit<SharedEntity, 'id' | 'created_at' | 'author_handle' | 'author_name' | 'author_avatar'>) => Promise<void>
+  unshareEntity: (id: string) => Promise<void>
   clearProfile: () => void
   clearError: () => void
 }
@@ -123,6 +164,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
   comments: [],
   relatedPosts: [],
   currentPost: null,
+  sharedEntities: [],
+  activity: [],
   loading: false,
   error: null,
 
@@ -131,13 +174,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
     try {
       const q = new URLSearchParams({ page: String(page), search })
       const res = await apiFetch<{ members: CommunityMember[]; total: number }>(`/api/public/community/members?${q}`, { skipAuth: true })
-      set({ members: res.members, membersTotal: res.total, loading: false })
+      set({ members: res.members || [], membersTotal: res.total || 0, loading: false })
     } catch (e) {
-      if ((e as any).devSeed) {
-        const filtered = search ? devSeedMembers.filter(m => m.name.toLowerCase().includes(search.toLowerCase()) || m.handle.toLowerCase().includes(search.toLowerCase())) : devSeedMembers
-        set({ members: filtered, membersTotal: filtered.length, loading: false })
-        return
-      }
       set({ error: (e as Error).message, loading: false })
     }
   },
@@ -145,22 +183,31 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
   fetchMemberProfile: async (handle) => {
     set({ loading: true, error: null, profile: null })
     try {
-      const res = await apiFetch<{ profile: PublicProfile }>(`/api/public/community/members/${handle}`, { skipAuth: true })
-      set({ profile: res.profile, loading: false })
-    } catch (e) {
-      if ((e as any).devSeed) {
-        const member = devSeedMembers.find(m => m.handle === handle)
-        if (member) {
-          set({
-            profile: { ...devSeedProfile, id: member.id, name: member.name, handle: member.handle, bio: member.bio, role: member.role, location: member.location, joined_at: member.joined_at },
-            loading: false,
-          })
-        } else {
-          set({ error: 'Profile not found', loading: false })
-        }
-        return
+      const res = await apiFetch<{ profile: PublicProfile }>(`/api/public/community/members/${handle}`)
+      let profile = res.profile
+
+      // Merge seed gamification data if the API doesn't return it yet
+      const seed = getSeedProfile(handle)
+      if (profile && seed) {
+        if (!profile.badges || profile.badges.length === 0) profile.badges = seed.badges
+        if (!profile.verifications || profile.verifications.length === 0) profile.verifications = seed.verifications
+        if (!profile.wallet) profile.wallet = seed.wallet
+        if (profile.show_badges === undefined) profile.show_badges = seed.show_badges
+        if (profile.show_wallet === undefined) profile.show_wallet = seed.show_wallet
+        if (!profile.bio) profile.bio = seed.bio
+        if (!profile.social_links || profile.social_links.length === 0) profile.social_links = seed.social_links
+        // teams and sponsors come from real data only — no seed fallback
       }
-      set({ error: (e as Error).message, loading: false })
+
+      set({ profile, loading: false })
+    } catch (e) {
+      // Full seed fallback when API fails entirely
+      const seedProfile = getSeedProfile(handle)
+      if (seedProfile) {
+        set({ profile: seedProfile, loading: false })
+      } else {
+        set({ error: (e as Error).message, loading: false })
+      }
     }
   },
 
@@ -168,12 +215,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
     set({ loading: true, error: null })
     try {
       const res = await apiFetch<{ posts: CommunityPost[] }>(`/api/public/community/members/${handle}/posts?page=${page}`, { skipAuth: true })
-      set({ posts: res.posts, loading: false })
+      set({ posts: res.posts || [], loading: false })
     } catch (e) {
-      if ((e as any).devSeed) {
-        set({ posts: devSeedProfile.recent_posts, loading: false })
-        return
-      }
       set({ error: (e as Error).message, loading: false })
     }
   },
@@ -184,11 +227,6 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
       const res = await apiFetch<{ post: CommunityPost }>(`/api/public/community/posts/${id}`, { skipAuth: true })
       set({ currentPost: res.post, loading: false })
     } catch (e) {
-      if ((e as any).devSeed) {
-        const post = devSeedProfile.recent_posts.find(p => p.id === id)
-        set({ currentPost: post || null, loading: false })
-        return
-      }
       set({ error: (e as Error).message, loading: false })
     }
   },
@@ -196,25 +234,22 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
   fetchComments: async (postId) => {
     try {
       const res = await apiFetch<{ comments: PostComment[] }>(`/api/public/community/posts/${postId}/comments`, { skipAuth: true })
-      set({ comments: res.comments })
+      set({ comments: res.comments || [] })
     } catch (e) {
-      if ((e as any).devSeed) {
-        set({ comments: devSeedComments })
-        return
-      }
       set({ error: (e as Error).message })
     }
   },
 
-  addComment: async (postId, content) => {
+  addComment: async (postId, content, parentId) => {
     try {
+      const body: Record<string, unknown> = { content }
+      if (parentId != null) body.parent_id = parentId
       const res = await apiFetch<{ comment: PostComment }>(`/api/community/posts/${postId}/comments`, {
         method: 'POST',
-        body: JSON.stringify({ content }),
+        body: JSON.stringify(body),
       })
       set(s => ({ comments: [...s.comments, res.comment] }))
     } catch (e) {
-      if ((e as any).devSeed) return
       set({ error: (e as Error).message })
       throw e
     }
@@ -228,7 +263,6 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
         currentPost: s.currentPost?.id === postId ? { ...s.currentPost, likes_count: s.currentPost.liked_by_me ? s.currentPost.likes_count - 1 : s.currentPost.likes_count + 1, liked_by_me: !s.currentPost.liked_by_me } : s.currentPost,
       }))
     } catch (e) {
-      if ((e as any).devSeed) return
       set({ error: (e as Error).message })
     }
   },
@@ -236,12 +270,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
   fetchRelatedPosts: async (postId) => {
     try {
       const res = await apiFetch<{ posts: CommunityPost[] }>(`/api/public/community/posts/${postId}/related`, { skipAuth: true })
-      set({ relatedPosts: res.posts })
+      set({ relatedPosts: res.posts || [] })
     } catch (e) {
-      if ((e as any).devSeed) {
-        set({ relatedPosts: devSeedProfile.recent_posts.filter(p => p.id !== postId) })
-        return
-      }
       set({ error: (e as Error).message })
     }
   },
@@ -254,12 +284,134 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
       })
       set(s => ({ posts: [res.post, ...s.posts] }))
     } catch (e) {
-      if ((e as any).devSeed) return
       set({ error: (e as Error).message })
       throw e
     }
   },
 
-  clearProfile: () => set({ profile: null, posts: [], comments: [], relatedPosts: [], currentPost: null }),
+  updatePost: async (id, data) => {
+    try {
+      const res = await apiFetch<{ post: CommunityPost }>(`/api/community/posts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      })
+      set(s => ({
+        posts: s.posts.map(p => p.id === id ? { ...p, ...res.post } : p),
+        currentPost: s.currentPost?.id === id ? { ...s.currentPost, ...res.post } : s.currentPost,
+      }))
+    } catch (e) {
+      set({ error: (e as Error).message })
+      throw e
+    }
+  },
+
+  deletePost: async (id) => {
+    try {
+      await apiFetch(`/api/community/posts/${id}`, { method: 'DELETE' })
+      set(s => ({
+        posts: s.posts.filter(p => p.id !== id),
+        currentPost: s.currentPost?.id === id ? null : s.currentPost,
+      }))
+    } catch (e) {
+      set({ error: (e as Error).message })
+      throw e
+    }
+  },
+
+  fetchActivity: async (handle) => {
+    try {
+      const res = await apiFetch<{ activity: ActivityItem[] }>(`/api/public/community/members/${handle}/activity`, { skipAuth: true })
+      const items = (res.activity || []).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      set({ activity: items })
+    } catch (e) {
+      set({ error: (e as Error).message })
+    }
+  },
+
+  fetchSharedEntities: async (handle, type) => {
+    set({ loading: true, error: null })
+    try {
+      const q = type ? `?type=${encodeURIComponent(type)}` : ''
+      const res = await apiFetch<{ data: SharedEntity[]; count: number }>(`/api/public/community/shared/${handle}${q}`, { skipAuth: true })
+      set({ sharedEntities: res.data || [], loading: false })
+    } catch (e) {
+      set({ error: (e as Error).message, loading: false })
+    }
+  },
+
+  shareEntity: async (data) => {
+    try {
+      await apiFetch<{ status: string }>('/api/community/share', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+    } catch (e) {
+      set({ error: (e as Error).message })
+      throw e
+    }
+  },
+
+  unshareEntity: async (id) => {
+    try {
+      await apiFetch<{ status: string }>(`/api/community/share/${id}`, { method: 'DELETE' })
+      set(s => ({ sharedEntities: s.sharedEntities.filter(e => e.id !== id) }))
+    } catch (e) {
+      set({ error: (e as Error).message })
+      throw e
+    }
+  },
+
+  clearProfile: () => set({ profile: null, posts: [], comments: [], relatedPosts: [], currentPost: null, sharedEntities: [], error: null }),
   clearError: () => set({ error: null }),
 }))
+
+// ── Seed profile for testing ──
+
+function getSeedProfile(handle: string): PublicProfile | null {
+  if (handle !== 'engfadymondy' && handle !== 'fadymondy') return null
+  return {
+    id: 17,
+    name: 'Fady Mondy',
+    handle: handle,
+    avatar_url: '',
+    cover_url: '',
+    bio: 'Full-stack engineer building Orchestra MCP. Go, Rust, Swift, Flutter. Making AI-powered development accessible to everyone.',
+    role: 'admin',
+    location: 'Cairo, Egypt',
+    joined_at: '2026-02-15T00:00:00Z',
+    social_links: [
+      { platform: 'github', url: 'https://github.com/engfadymondy' },
+      { platform: 'twitter', url: 'https://twitter.com/engfadymondy' },
+      { platform: 'website', url: 'https://orchestra-mcp.dev' },
+    ],
+    stats: { posts: 12, contributions: 87, profile_completeness: 100, points: 285 },
+    recent_posts: [],
+    is_verified: true,
+    show_badges: true,
+    show_wallet: true,
+    verifications: [
+      { slug: 'verified', name: 'Verified', icon: 'bxs-badge-check', color: '#00e5ff', badge_text: 'Verified', verified_at: '2026-02-15T00:00:00Z' },
+    ],
+    badges: [
+      { id: 1, slug: 'first-feature', name: 'First Feature', description: 'Completed your first feature', icon: 'bx-check-circle', color: '#22c55e', category: 'achievement', awarded_at: '2026-03-02T14:30:00Z' },
+      { id: 2, slug: 'ten-features', name: 'Feature Pro', description: 'Completed 10 features', icon: 'bx-trophy', color: '#f59e0b', category: 'achievement', awarded_at: '2026-03-15T10:00:00Z' },
+      { id: 3, slug: 'first-review', name: 'Reviewer', description: 'First code review', icon: 'bx-search-alt', color: '#00e5ff', category: 'achievement', awarded_at: '2026-03-06T10:00:00Z' },
+      { id: 4, slug: 'bug-hunter', name: 'Bug Hunter', description: 'Reported 5 bugs that were fixed', icon: 'bx-bug', color: '#ef4444', category: 'achievement', awarded_at: '2026-03-10T12:00:00Z' },
+      { id: 5, slug: 'streak-7', name: 'Week Streak', description: '7-day activity streak', icon: 'bxs-hot', color: '#f97316', category: 'streak', awarded_at: '2026-03-08T00:00:00Z' },
+      { id: 6, slug: 'streak-30', name: 'Month Streak', description: '30-day activity streak', icon: 'bxs-rocket', color: '#f59e0b', category: 'streak', awarded_at: '2026-03-19T00:00:00Z' },
+      { id: 7, slug: 'points-100', name: 'Centurion', description: 'Earned 100 points', icon: 'bx-star', color: '#00e5ff', category: 'points', awarded_at: '2026-03-10T12:00:00Z' },
+      { id: 8, slug: 'early-adopter', name: 'Early Adopter', description: 'Joined during beta', icon: 'bx-rocket', color: '#8b5cf6', category: 'special', awarded_at: '2026-03-01T00:00:00Z' },
+      { id: 9, slug: 'community-star', name: 'Community Star', description: 'Outstanding community contribution', icon: 'bx-heart', color: '#ef4444', category: 'special', awarded_at: '2026-03-12T15:00:00Z' },
+    ],
+    wallet: { balance: 285, lifetime_earned: 340 },
+    teams: [
+      { name: 'Orchestra Core', slug: 'orchestra-core', avatar_url: '', role: 'Lead' },
+      { name: 'MCP Community', slug: 'mcp-community', avatar_url: '', role: 'Member' },
+    ],
+    sponsors: [
+      { name: 'Anthropic', logo_url: 'https://anthropic.com/favicon.ico', url: 'https://anthropic.com', order: 1 },
+      { name: 'Vercel', logo_url: 'https://vercel.com/favicon.ico', url: 'https://vercel.com', order: 2 },
+      { name: 'Cloudflare', logo_url: 'https://cloudflare.com/favicon.ico', url: 'https://cloudflare.com', order: 3 },
+    ],
+  }
+}

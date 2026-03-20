@@ -1,31 +1,27 @@
 'use client'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useThemeStore } from '@/store/theme'
 import { useTranslations } from 'next-intl'
 
 export function MarketingFooter() {
   const t = useTranslations()
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
-
   const cols = [
     { title: t('footer.product'), links: [{ label: t('footer.features'), href: '/#features' }, { label: t('nav.marketplace'), href: '/marketplace' }, { label: t('footer.pricing'), href: '/#pricing' }, { label: t('nav.download'), href: '/download' }, { label: t('footer.changelog'), href: '/blog' }] },
-    { title: t('footer.developers'), links: [{ label: t('footer.documentation'), href: '/docs' }, { label: t('footer.apiReference'), href: '/docs/api' }, { label: t('footer.pluginSdk'), href: '/docs/sdk' }, { label: t('footer.reportIssue'), href: '/report' }, { label: t('footer.github'), href: 'https://github.com/orchestra-mcp' }] },
+    { title: t('footer.developers'), links: [{ label: t('footer.documentation'), href: '/docs' }, { label: t('footer.apiReference'), href: '/docs/api' }, { label: t('footer.pluginSdk'), href: '/docs/sdk' }, { label: t('footer.reportIssue'), href: '/report' }, { label: t('footer.github'), href: 'https://github.com/orchestra-mcp/framework' }] },
     { title: t('footer.company'), links: [{ label: t('footer.blog'), href: '/blog' }, { label: t('nav.solutions'), href: '/solutions' }, { label: t('footer.contact'), href: '/contact' }, { label: t('footer.about'), href: '/about' }] },
     { title: t('footer.legal'), links: [{ label: t('footer.termsOfService'), href: '/terms' }, { label: t('footer.privacyPolicy'), href: '/privacy' }, { label: t('footer.cookiePolicy'), href: '/privacy#cookies' }] },
   ]
 
-  const bg = isDark ? '#0a0a0d' : '#f0f0f3'
-  const borderColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
-  const logoText = isDark ? '#f8f8f8' : '#0f0f12'
-  const descText = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
-  const colTitle = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)'
-  const linkColor = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.55)'
-  const linkHover = isDark ? '#f8f8f8' : '#0f0f12'
-  const socialBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'
-  const socialBg = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)'
-  const copyrightColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.35)'
+  const bg = 'var(--color-bg)'
+  const borderColor = 'var(--color-border)'
+  const logoText = 'var(--color-fg)'
+  const descText = 'var(--color-fg-dim)'
+  const colTitle = 'var(--color-fg-dim)'
+  const linkColor = 'var(--color-fg-muted)'
+  const linkHover = 'var(--color-fg-bright)'
+  const socialBorder = 'var(--color-border)'
+  const socialBg = 'var(--color-bg-alt)'
+  const copyrightColor = 'var(--color-fg-dim)'
 
   return (
     <>
@@ -56,7 +52,7 @@ export function MarketingFooter() {
             {/* Social */}
             <div style={{ display: 'flex', gap: 8 }}>
               {[
-                { icon: 'bxl-github', href: 'https://github.com/orchestra-mcp' },
+                { icon: 'bxl-github', href: 'https://github.com/orchestra-mcp/framework' },
                 { icon: 'bxl-twitter', href: 'https://twitter.com/orchestramcp' },
                 { icon: 'bxl-discord-alt', href: 'https://discord.gg/orchestra' },
               ].map(s => (

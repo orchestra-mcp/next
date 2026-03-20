@@ -153,7 +153,7 @@ export function CopilotBubble() {
     connected, copilotOpen, copilotSessionId, copilotMode,
     chatSessions, models, messages, isSending, currentTypingStatus,
     selectedModelId, chatMode, showThinking,
-    quickActions, startupPrompts, pageContext, sessions,
+    quickActions, startupPrompts, pageContext, commandItems, mentionItems, sessions,
     userName, userAvatarUrl,
 
     handleSend, handleStop, handleNewChat,
@@ -289,6 +289,8 @@ export function CopilotBubble() {
           onThinkingToggle={setShowThinking}
           quickActions={quickActions}
           startupPrompts={startupPrompts}
+          commandItems={commandItems}
+          mentionItems={mentionItems}
           loadingMessages={LOADING_MESSAGES}
           activeSessionId={copilotSessionId}
           onQuestionAnswer={handleQuestionAnswer}
@@ -389,6 +391,8 @@ export function CopilotBubble() {
           onThinkingToggle={setShowThinking}
           quickActions={quickActions}
           startupPrompts={startupPrompts}
+          commandItems={commandItems}
+          mentionItems={mentionItems}
           loadingMessages={LOADING_MESSAGES}
           activeSessionId={copilotSessionId}
           onQuestionAnswer={handleQuestionAnswer}

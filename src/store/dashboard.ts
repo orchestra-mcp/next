@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { apiFetch } from '@/lib/api'
 import type { WidgetLayout } from '@/types/dashboard'
-import { DEFAULT_LAYOUT, WIDGET_REGISTRY } from '@/types/dashboard'
+import { DEFAULT_LAYOUT, WIDGET_REGISTRY, LAYOUT_VERSION } from '@/types/dashboard'
 
 interface DashboardState {
   widgets: WidgetLayout[]
@@ -43,10 +43,10 @@ function migrateLayout(saved: WidgetLayout[]): WidgetLayout[] {
   const knownTypes = Object.keys(WIDGET_REGISTRY)
   // Filter out unknown widget types
   const valid = saved.filter(w => knownTypes.includes(w.type))
-  // Add any missing default widgets
+  // Add any missing default widgets — visible by default so users see new widgets
   for (const def of DEFAULT_LAYOUT) {
     if (!valid.find(w => w.type === def.type)) {
-      valid.push({ ...def, order: valid.length, hidden: true })
+      valid.push({ ...def, order: valid.length, hidden: false })
     }
   }
   // Re-sort by order
@@ -71,8 +71,7 @@ export const useDashboardStore = create<DashboardState & DashboardActions>()(
           } else {
             set({ loaded: true })
           }
-        } catch (e) {
-          if ((e as any).devSeed) { set({ loaded: true }); return }
+        } catch {
           set({ loaded: true })
         }
       },
@@ -130,7 +129,12 @@ export const useDashboardStore = create<DashboardState & DashboardActions>()(
     }),
     {
       name: 'orchestra-dashboard',
+      version: LAYOUT_VERSION,
       partialize: (s) => ({ widgets: s.widgets }),
+      migrate: () => {
+        // On version bump, reset to new default layout
+        return { widgets: [...DEFAULT_LAYOUT] }
+      },
     }
   )
 )

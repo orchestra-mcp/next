@@ -27,7 +27,7 @@ export function RecentProjectsWidget({ projects }: RecentProjectsWidgetProps) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {projects.slice(0, 5).map(p => (
-            <Link key={p.id} href={`/projects/${p.id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: '1px solid var(--color-border)', background: 'var(--color-bg-alt)', textDecoration: 'none' }}>
+            <Link key={p.id} href={`/projects/${p.slug || p.id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: '1px solid var(--color-border)', background: 'var(--color-bg-alt)', textDecoration: 'none' }}>
               <div style={{ width: 28, height: 28, borderRadius: 7, background: 'rgba(0,229,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <i className="bx bx-folder" style={{ fontSize: 14, color: '#00e5ff' }} />
               </div>
