@@ -22,13 +22,6 @@ const nextConfig: NextConfig = {
       asyncWebAssembly: true,
       layers: true,
     }
-    // Ignore @powersync/web if not installed (CI without WASM support)
-    config.plugins.push(
-      new (require('webpack')).IgnorePlugin({
-        resourceRegExp: /^@powersync\/web$/,
-        contextRegExp: /powersync/,
-      })
-    )
     return config
   },
   transpilePackages: [

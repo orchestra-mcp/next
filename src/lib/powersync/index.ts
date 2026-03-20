@@ -1,35 +1,33 @@
 let db: any = null
 let connected = false
-let PowerSyncDatabase: any = null
-
-async function loadPowerSync() {
-  if (PowerSyncDatabase) return
-  if (typeof window === 'undefined') return // SSR — skip
-  const mod = await import('@powersync/web')
-  PowerSyncDatabase = mod.PowerSyncDatabase
-}
 
 /**
  * Get or create the PowerSync database singleton.
- * Uses IndexedDB for local storage on web.
+ * Uses dynamic import to avoid SSR/WASM build issues.
  */
 export async function getPowerSyncDatabase() {
-  await loadPowerSync()
   if (db) return db
-  if (!PowerSyncDatabase) return null
+  if (typeof window === 'undefined') return null
 
-  const { powersyncSchema } = await import('./schema')
-  db = new PowerSyncDatabase({
-    schema: powersyncSchema,
-    database: { dbFilename: 'orchestra-sync.db' },
-  })
+  try {
+    const { PowerSyncDatabase } = await import('@powersync/web')
+    const { getPowerSyncSchema } = await import('./schema')
+    const schema = await getPowerSyncSchema()
+    if (!schema) return null
 
-  return db
+    db = new PowerSyncDatabase({
+      schema,
+      database: { dbFilename: 'orchestra-sync.db' },
+    })
+    return db
+  } catch (e) {
+    console.warn('[PowerSync] Init failed:', e)
+    return null
+  }
 }
 
 /**
  * Connect to PowerSync with the current user's credentials.
- * Call this after login.
  */
 export async function connectPowerSync(): Promise<void> {
   if (connected) return
@@ -37,10 +35,9 @@ export async function connectPowerSync(): Promise<void> {
   const database = await getPowerSyncDatabase()
   if (!database) return
 
-  const { OrchestraConnector } = await import('./connector')
-  const connector = new OrchestraConnector()
-
   try {
+    const { OrchestraConnector } = await import('./connector')
+    const connector = new OrchestraConnector()
     await database.connect(connector)
     connected = true
     console.log('[PowerSync] Connected')
@@ -59,6 +56,3 @@ export async function disconnectPowerSync(): Promise<void> {
   connected = false
   console.log('[PowerSync] Disconnected')
 }
-
-export { powersyncSchema } from './schema'
-export { OrchestraConnector } from './connector'

@@ -1,26 +1,17 @@
-import {
-  AbstractPowerSyncDatabase,
-  PowerSyncBackendConnector,
-  PowerSyncCredentials,
-  UpdateType,
-} from '@powersync/web'
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
 const POWERSYNC_URL = process.env.NEXT_PUBLIC_POWERSYNC_URL || 'http://localhost:8585'
 
 /**
  * PowerSync backend connector for Orchestra Next.js app.
- *
- * - fetchCredentials: obtains a PowerSync JWT from the Orchestra backend
- * - uploadData: sends local CRUD operations to the Orchestra REST API
+ * Uses dynamic import to avoid SSR/build issues with @powersync/web WASM.
  */
-export class OrchestraConnector implements PowerSyncBackendConnector {
+export class OrchestraConnector {
   private getToken(): string | null {
     if (typeof window === 'undefined') return null
     return localStorage.getItem('orchestra_token')
   }
 
-  async fetchCredentials(): Promise<PowerSyncCredentials> {
+  async fetchCredentials() {
     const token = this.getToken()
     if (!token) throw new Error('Not authenticated')
 
@@ -42,10 +33,11 @@ export class OrchestraConnector implements PowerSyncBackendConnector {
     }
   }
 
-  async uploadData(database: AbstractPowerSyncDatabase): Promise<void> {
+  async uploadData(database: any): Promise<void> {
     const token = this.getToken()
     if (!token) return
 
+    const { UpdateType } = await import('@powersync/web')
     const transaction = await database.getNextCrudTransaction()
     if (!transaction) return
 
@@ -89,7 +81,6 @@ export class OrchestraConnector implements PowerSyncBackendConnector {
       await transaction.complete()
     } catch (e) {
       console.error('[PowerSync] Upload failed:', e)
-      // Don't complete — will retry
     }
   }
 }
