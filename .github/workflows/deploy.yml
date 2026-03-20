@@ -61,10 +61,12 @@ jobs:
             echo "--- Pulling latest ---"
             git fetch origin master
             git reset --hard origin/master
+            echo "Commit: $(git rev-parse --short HEAD)"
 
             echo "--- Installing pnpm ---"
             export COREPACK_ENABLE_STRICT=0
-            corepack enable 2>/dev/null || true
+            export COREPACK_HOME="$HOME/.corepack"
+            corepack enable --install-directory "$HOME/.local/bin" 2>/dev/null || true
             corepack prepare pnpm@latest --activate 2>/dev/null || true
 
             echo "--- Installing dependencies ---"
@@ -75,6 +77,7 @@ jobs:
             [ -f "$HOME/orchestra-next.env" ] && cp "$HOME/orchestra-next.env" .env.local
 
             echo "--- Building ---"
+            rm -rf .next
             npx --yes next build
 
             echo "--- Restarting with PM2 ---"
