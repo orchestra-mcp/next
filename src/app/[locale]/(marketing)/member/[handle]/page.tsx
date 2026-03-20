@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useFeatureFlagsStore } from '@/store/feature-flags'
 import { useCommunityStore } from '@/store/community'
 import { useAuthStore } from '@/store/auth'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, uploadUrl } from '@/lib/api'
 import { useProfileTheme } from '@/components/profile/use-profile-theme'
 import ProfileCard from '@/components/profile/profile-card'
 import PostEmbed from '@/components/profile/post-embed'
@@ -383,7 +383,7 @@ export default function MemberProfilePage(props: PageProps) {
               className="w-full flex items-center gap-3 px-5 py-3 bg-transparent border-none cursor-pointer text-left font-inherit"
             >
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url.startsWith('http') ? profile.avatar_url : `/uploads/${profile.avatar_url}`} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                <img src={uploadUrl(profile.avatar_url)} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
               ) : (
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
