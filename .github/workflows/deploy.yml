@@ -79,27 +79,27 @@ jobs:
 
             echo "--- Restarting with PM2 ---"
             export PM2_HOME="$HOME/.pm2"
-            npm list -g pm2 >/dev/null 2>&1 || npm install -g pm2 --prefix "$HOME/.local"
             export PATH="$HOME/.local/bin:$HOME/.local/lib/node_modules/.bin:$PATH"
-            pm2 delete orchestra-next 2>/dev/null || true
+            npm list -g pm2 >/dev/null 2>&1 || npm install -g pm2 --prefix "$HOME/.local"
+            if pm2 describe orchestra-next > /dev/null 2>&1; then
+              pm2 stop orchestra-next
+              pm2 delete orchestra-next
+            fi
             pm2 start "npx next start -p 3000" --name orchestra-next --cwd "$DEPLOY_DIR"
-            pm2 save
+            pm2 save --force
+
+            echo "--- Health check ---"
+            sleep 8
+            for i in $(seq 1 15); do
+              curl -sf http://localhost:3000 > /dev/null 2>&1 && echo "Next.js: healthy (attempt $i)" && break
+              [ "$i" -eq 15 ] && echo "FATAL: Next.js health check failed" && PM2_HOME="$HOME/.pm2" pm2 logs orchestra-next --lines 30 --nostream && exit 1
+              sleep 3
+            done
+
+            echo "--- PM2 Status ---"
+            pm2 list
 
             echo "--- Deploy complete ---"
-
-      - name: Verify deployment
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          script: |
-            echo "--- Health Check ---"
-            sleep 5
-            curl -sf http://localhost:3000 > /dev/null && echo " Next.js: OK" || (echo " Next.js: FAILED" && exit 1)
-            echo "--- PM2 Status ---"
-            pm2 list || npx --yes pm2 list
 
       - name: Notify Discord — Deploy succeeded
         if: success()
