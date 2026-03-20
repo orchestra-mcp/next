@@ -78,9 +78,11 @@ jobs:
             npx --yes next build
 
             echo "--- Restarting with PM2 ---"
-            command -v pm2 >/dev/null 2>&1 || npm install -g pm2 || npx --yes pm2 --version
+            export PM2_HOME="$HOME/.pm2"
+            npm list -g pm2 >/dev/null 2>&1 || npm install -g pm2 --prefix "$HOME/.local"
+            export PATH="$HOME/.local/bin:$HOME/.local/lib/node_modules/.bin:$PATH"
             pm2 delete orchestra-next 2>/dev/null || true
-            pm2 start npx --name orchestra-next -- next start -p 3000
+            pm2 start "npx next start -p 3000" --name orchestra-next --cwd "$DEPLOY_DIR"
             pm2 save
 
             echo "--- Deploy complete ---"
