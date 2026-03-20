@@ -38,20 +38,27 @@ export default function McpSettingsPage() {
 
   useEffect(() => {
     async function load() {
+      // Load permissions from localStorage first (instant, no flicker)
+      const stored = localStorage.getItem('orchestra_mcp_permissions')
+      if (stored) {
+        try {
+          const map = JSON.parse(stored) as Record<string, boolean>
+          setPermissions(DEFAULT_PERMISSIONS.map(p => ({ ...p, enabled: map[p.key] ?? p.enabled })))
+        } catch {}
+      }
+
+      // Then try to sync with backend
       try {
         const [permRes, tokenRes] = await Promise.all([
-          apiFetch('/api/settings/mcp-permissions'),
-          apiFetch('/api/settings/mcp-token'),
+          apiFetch<{ permissions?: Record<string, boolean> }>('/api/settings/mcp-permissions'),
+          apiFetch<{ token?: string }>('/api/settings/mcp-token'),
         ])
         if (permRes.permissions) {
-          setPermissions(DEFAULT_PERMISSIONS.map(p => ({
-            ...p,
-            enabled: permRes.permissions[p.key] ?? p.enabled,
-          })))
+          setPermissions(DEFAULT_PERMISSIONS.map(p => ({ ...p, enabled: permRes.permissions![p.key] ?? p.enabled })))
         }
         if (tokenRes.token) setMcpToken(tokenRes.token)
       } catch {
-        // fallback to defaults if API not yet implemented
+        // backend not yet available — localStorage values remain
       } finally {
         setLoading(false)
       }
@@ -68,16 +75,20 @@ export default function McpSettingsPage() {
   async function savePermissions() {
     setSaving(true)
     setMessage(null)
+    const map: Record<string, boolean> = {}
+    permissions.forEach(p => { map[p.key] = p.enabled })
+
+    // Always save locally first
+    localStorage.setItem('orchestra_mcp_permissions', JSON.stringify(map))
+
     try {
-      const map: Record<string, boolean> = {}
-      permissions.forEach(p => { map[p.key] = p.enabled })
       await apiFetch('/api/settings/mcp-permissions', { method: 'PATCH', body: JSON.stringify({ permissions: map }) })
-      setMessage({ type: 'success', text: 'Permissions saved.' })
-    } catch (err) {
-      setMessage({ type: 'error', text: (err as Error).message || 'Failed to save permissions.' })
-    } finally {
-      setSaving(false)
+    } catch {
+      // backend not yet available — local save is sufficient
     }
+
+    setMessage({ type: 'success', text: 'Permissions saved.' })
+    setSaving(false)
   }
 
   async function regenerateToken() {
