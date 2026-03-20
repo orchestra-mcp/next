@@ -1,17 +1,24 @@
-import { PowerSyncDatabase } from '@powersync/web'
-import { powersyncSchema } from './schema'
-import { OrchestraConnector } from './connector'
-
-let db: PowerSyncDatabase | null = null
+let db: any = null
 let connected = false
+let PowerSyncDatabase: any = null
+
+async function loadPowerSync() {
+  if (PowerSyncDatabase) return
+  if (typeof window === 'undefined') return // SSR — skip
+  const mod = await import('@powersync/web')
+  PowerSyncDatabase = mod.PowerSyncDatabase
+}
 
 /**
  * Get or create the PowerSync database singleton.
  * Uses IndexedDB for local storage on web.
  */
-export function getPowerSyncDatabase(): PowerSyncDatabase {
+export async function getPowerSyncDatabase() {
+  await loadPowerSync()
   if (db) return db
+  if (!PowerSyncDatabase) return null
 
+  const { powersyncSchema } = await import('./schema')
   db = new PowerSyncDatabase({
     schema: powersyncSchema,
     database: { dbFilename: 'orchestra-sync.db' },
@@ -27,7 +34,10 @@ export function getPowerSyncDatabase(): PowerSyncDatabase {
 export async function connectPowerSync(): Promise<void> {
   if (connected) return
 
-  const database = getPowerSyncDatabase()
+  const database = await getPowerSyncDatabase()
+  if (!database) return
+
+  const { OrchestraConnector } = await import('./connector')
   const connector = new OrchestraConnector()
 
   try {
@@ -50,16 +60,5 @@ export async function disconnectPowerSync(): Promise<void> {
   console.log('[PowerSync] Disconnected')
 }
 
-/**
- * Watch a SQL query reactively. Returns an async iterable.
- *
- * Usage:
- * ```ts
- * const db = getPowerSyncDatabase()
- * for await (const results of db.watch('SELECT * FROM notes')) {
- *   setNotes(results.rows._array)
- * }
- * ```
- */
 export { powersyncSchema } from './schema'
 export { OrchestraConnector } from './connector'
