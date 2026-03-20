@@ -11,7 +11,7 @@ export async function getPowerSyncSchema() {
   if (_schema) return _schema
 
   try {
-    const { column, Schema, TableV2 } = await import('@powersync/web')
+    const { column, Schema, TableV2 } = await import(/* webpackIgnore: true */ '@powersync/web')
 
     const water_logs = new TableV2({ user_id: column.integer, amount_ml: column.integer, logged_at: column.text, source: column.text, is_gout_flush: column.integer, created_at: column.text, updated_at: column.text })
     const caffeine_logs = new TableV2({ user_id: column.integer, drink_type: column.text, caffeine_mg: column.integer, is_clean: column.integer, sugar_g: column.integer, logged_at: column.text, created_at: column.text, updated_at: column.text })

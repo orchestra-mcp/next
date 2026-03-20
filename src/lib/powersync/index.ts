@@ -10,7 +10,7 @@ export async function getPowerSyncDatabase() {
   if (typeof window === 'undefined') return null
 
   try {
-    const { PowerSyncDatabase } = await import('@powersync/web')
+    const { PowerSyncDatabase } = await import(/* webpackIgnore: true */ '@powersync/web')
     const { getPowerSyncSchema } = await import('./schema')
     const schema = await getPowerSyncSchema()
     if (!schema) return null

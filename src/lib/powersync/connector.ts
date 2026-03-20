@@ -37,7 +37,7 @@ export class OrchestraConnector {
     const token = this.getToken()
     if (!token) return
 
-    const { UpdateType } = await import('@powersync/web')
+    const { UpdateType } = await import(/* webpackIgnore: true */ '@powersync/web')
     const transaction = await database.getNextCrudTransaction()
     if (!transaction) return
 
