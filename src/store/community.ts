@@ -89,6 +89,7 @@ export interface PublicProfile {
   show_badges?: boolean
   show_wallet?: boolean
   teams?: { name: string; slug: string; avatar_url?: string; role: string }[]
+  appearance?: { theme?: string; accent?: string; font?: string; layout?: string }
   sponsors?: { name: string; logo_url: string; url: string; order: number }[]
 }
 
