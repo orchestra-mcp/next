@@ -49,7 +49,16 @@ jobs:
             set -e
             export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin:$HOME/.local/share/pnpm:$HOME/.local/bin
 
-            cd /opt/orchestra/apps/next
+            DEPLOY_DIR="/opt/orchestra/apps/next"
+
+            echo "--- Ensuring deploy directory ---"
+            if [ ! -d "$DEPLOY_DIR/.git" ]; then
+              sudo mkdir -p /opt/orchestra/apps
+              sudo chown $(whoami):$(whoami) /opt/orchestra/apps
+              git clone git@github.com:orchestra-mcp/next.git "$DEPLOY_DIR"
+            fi
+
+            cd "$DEPLOY_DIR"
 
             echo "--- Pulling latest ---"
             git fetch origin master
