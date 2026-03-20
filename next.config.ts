@@ -7,24 +7,28 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  experimental: {
-    serverComponentsExternalPackages: ['@powersync/web'],
-  },
+  serverExternalPackages: ['@powersync/web'],
   webpack: (config, { isServer }) => {
-    // @powersync/web is client-only (uses WASM + IndexedDB)
     if (isServer) {
       config.externals = [...(config.externals || []), '@powersync/web']
-    } else {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-      }
+    }
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
     }
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
+      layers: true,
     }
+    // Ignore @powersync/web if not installed (CI without WASM support)
+    config.plugins.push(
+      new (require('webpack')).IgnorePlugin({
+        resourceRegExp: /^@powersync\/web$/,
+        contextRegExp: /powersync/,
+      })
+    )
     return config
   },
   transpilePackages: [
