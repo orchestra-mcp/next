@@ -107,11 +107,6 @@ export default function McpSettingsPage() {
   }
 
   const authToken = mcpToken || token || ''
-  const deepLinkAnon = `claude://install-mcp?name=orchestra-cloud&type=sse&url=${encodeURIComponent(MCP_URL)}`
-  const deepLinkAuth = authToken
-    ? `claude://install-mcp?name=orchestra-cloud&type=sse&url=${encodeURIComponent(MCP_URL)}&headers=${encodeURIComponent(`Authorization:Bearer ${authToken}`)}`
-    : null
-
   const jsonAnon = `{\n  "mcpServers": {\n    "orchestra-cloud": {\n      "type": "sse",\n      "url": "${MCP_URL}"\n    }\n  }\n}`
   const jsonAuth = authToken
     ? `{\n  "mcpServers": {\n    "orchestra-cloud": {\n      "type": "sse",\n      "url": "${MCP_URL}",\n      "headers": {\n        "Authorization": "Bearer ${authToken}"\n      }\n    }\n  }\n}`
@@ -134,43 +129,41 @@ export default function McpSettingsPage() {
         </div>
       )}
 
-      {/* Quick connect */}
+      {/* Connect Claude Desktop */}
       <ProfileCard variant="default" style={{ padding: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
           <i className="bx bx-bot" style={{ fontSize: 20, color: '#00e5ff' }} />
           <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-fg)', margin: 0 }}>Connect Claude Desktop</h3>
         </div>
         <p style={{ fontSize: 13, color: 'var(--color-fg-muted)', marginBottom: 20, lineHeight: 1.6 }}>
-          One-click install Orchestra MCP into Claude Desktop. Use the authenticated option for profile management and marketplace access.
+          Add Orchestra as a connector in Claude — go to Settings → Connectors and paste the URL below.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {/* Anonymous */}
-          <div style={{ padding: 16, borderRadius: 10, border: '1px solid var(--color-border)', background: 'var(--color-bg-alt)' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)', marginBottom: 4 }}>Without account</div>
-            <div style={{ fontSize: 12, color: 'var(--color-fg-muted)', marginBottom: 12, lineHeight: 1.5 }}>Install tools, check status — no sign-in needed.</div>
-            <a
-              href={deepLinkAnon}
-              style={{ display: 'block', padding: '9px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center', background: 'var(--color-bg-alt)', color: 'var(--color-fg)', border: '1px solid var(--color-border)' }}
-            >
-              <i className="bx bx-plus" style={{ marginRight: 6 }} />Add to Claude Desktop
+        {/* Step 1 */}
+        <div style={{ display: 'flex', gap: 14, marginBottom: 14, alignItems: 'flex-start' }}>
+          <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: 'rgba(0,229,255,0.15)', border: '1px solid rgba(0,229,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#00e5ff' }}>1</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)', marginBottom: 6 }}>Open Claude → Settings → Connectors</div>
+            <a href="https://claude.ai/settings/connectors" target="_blank" rel="noopener" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, textDecoration: 'none', background: 'rgba(0,229,255,0.12)', color: '#00e5ff', border: '1px solid rgba(0,229,255,0.3)' }}>
+              <i className="bx bx-link-external" />Open Connectors settings
             </a>
           </div>
+        </div>
 
-          {/* Authenticated */}
-          <div style={{ padding: 16, borderRadius: 10, border: '1px solid rgba(0,229,255,0.25)', background: 'rgba(0,229,255,0.04)' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)', marginBottom: 4 }}>With your account</div>
-            <div style={{ fontSize: 12, color: 'var(--color-fg-muted)', marginBottom: 12, lineHeight: 1.5 }}>Profile access, marketplace, and permission controls.</div>
-            {deepLinkAuth ? (
-              <a
-                href={deepLinkAuth}
-                style={{ display: 'block', padding: '9px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center', background: 'rgba(0,229,255,0.12)', color: '#00e5ff', border: '1px solid rgba(0,229,255,0.3)' }}
+        {/* Step 2 */}
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+          <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: 'rgba(0,229,255,0.15)', border: '1px solid rgba(0,229,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#00e5ff' }}>2</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)', marginBottom: 6 }}>Click "Add custom connector" and paste this URL</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-bg)', borderRadius: 8, padding: '9px 12px', border: '1px solid var(--color-border)' }}>
+              <code style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', color: 'var(--color-fg)' }}>{MCP_URL}</code>
+              <button
+                onClick={() => copy(MCP_URL, 'mcp-url')}
+                style={{ flexShrink: 0, padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: copied === 'mcp-url' ? 'rgba(0,229,255,0.12)' : 'var(--color-bg-alt)', color: copied === 'mcp-url' ? '#00e5ff' : 'var(--color-fg-muted)', border: '1px solid var(--color-border)', cursor: 'pointer' }}
               >
-                <i className="bx bx-key" style={{ marginRight: 6 }} />Add with my account
-              </a>
-            ) : (
-              <div style={{ fontSize: 12, color: 'var(--color-fg-dim)', fontStyle: 'italic' }}>Log in to get your token</div>
-            )}
+                {copied === 'mcp-url' ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
           </div>
         </div>
       </ProfileCard>

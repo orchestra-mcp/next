@@ -160,43 +160,41 @@ export default function DownloadClient({ data }: { data: DownloadData }) {
           No local install required. Connect Claude Desktop directly to Orchestra Cloud MCP — install Orchestra, browse packs, and manage your profile from any Claude chat.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
-          {/* Anonymous — no account */}
-          <div style={{ padding: '20px', borderRadius: 12, border: `1px solid ${cardBorder}`, background: cardBg }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>Without account</div>
-            <div style={{ fontSize: 12, color: textMuted, marginBottom: 14, lineHeight: 1.5 }}>Install tools, check status — no sign-in needed.</div>
-            <a
-              href={`claude://install-mcp?name=orchestra-cloud&type=sse&url=${encodeURIComponent('https://orchestra-mcp.dev/mcp')}`}
-              style={{ display: 'block', padding: '10px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center', background: dlPrimaryBg, color: textPrimary, border: `1px solid ${dlPrimaryBorder}` }}
-            >
-              <i className="bx bx-plus" style={{ marginRight: 6 }} />
-              Add to Claude Desktop
-            </a>
-          </div>
-
-          {/* Authenticated — with account */}
-          <div style={{ padding: '20px', borderRadius: 12, border: '1px solid rgba(0,229,255,0.25)', background: isDark ? 'rgba(0,229,255,0.03)' : 'rgba(0,229,255,0.04)' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 6 }}>With your account</div>
-            <div style={{ fontSize: 12, color: textMuted, marginBottom: 14, lineHeight: 1.5 }}>Profile access, marketplace, and permission controls.</div>
-            <a
-              href="/settings?tab=mcp"
-              style={{ display: 'block', padding: '10px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center', background: 'rgba(0,229,255,0.12)', color: '#00e5ff', border: '1px solid rgba(0,229,255,0.3)' }}
-            >
-              <i className="bx bx-key" style={{ marginRight: 6 }} />
-              Get my MCP token
+        {/* Step 1 — open connectors */}
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16, alignItems: 'flex-start' }}>
+          <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,229,255,0.15)', border: '1px solid rgba(0,229,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#00e5ff' }}>1</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 4 }}>Open Claude → Settings → Connectors</div>
+            <a href="https://claude.ai/settings/connectors" target="_blank" rel="noopener" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', background: 'rgba(0,229,255,0.12)', color: '#00e5ff', border: '1px solid rgba(0,229,255,0.3)' }}>
+              <i className="bx bx-link-external" />
+              Open Connectors settings
             </a>
           </div>
         </div>
 
-        <div style={{ fontSize: 12, color: textDim, marginBottom: 12 }}>Or add manually to your Claude Desktop config:</div>
-        <div style={{ background: termBg, borderRadius: 10, padding: '14px 18px', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#f8f8f8', border: `1px solid ${termBorder}`, whiteSpace: 'pre' }}>{`{
-  "mcpServers": {
-    "orchestra-cloud": {
-      "type": "sse",
-      "url": "https://orchestra-mcp.dev/mcp"
-    }
-  }
-}`}</div>
+        {/* Step 2 — paste URL */}
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16, alignItems: 'flex-start' }}>
+          <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,229,255,0.15)', border: '1px solid rgba(0,229,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#00e5ff' }}>2</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 4 }}>Click "Add custom connector" and paste this URL</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: termBg, borderRadius: 8, padding: '10px 14px', border: `1px solid ${termBorder}` }}>
+              <span style={{ flex: 1, fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#f8f8f8' }}>https://orchestra-mcp.dev/mcp</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Step 3 — with account */}
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+          <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: `1px solid ${cardBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: textMuted }}>3</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 4 }}>Optional: add your account token for full access</div>
+            <div style={{ fontSize: 12, color: textMuted, marginBottom: 8, lineHeight: 1.5 }}>Profile management, marketplace, and permission controls require your personal token.</div>
+            <a href="/settings?tab=mcp" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', background: dlPrimaryBg, color: textPrimary, border: `1px solid ${dlPrimaryBorder}` }}>
+              <i className="bx bx-key" />
+              Get my MCP token
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   )
