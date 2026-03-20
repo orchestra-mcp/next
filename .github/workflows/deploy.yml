@@ -53,9 +53,8 @@ jobs:
 
             echo "--- Ensuring deploy directory ---"
             if [ ! -d "$DEPLOY_DIR/.git" ]; then
-              sudo mkdir -p /opt/orchestra/apps
-              sudo chown $(whoami):$(whoami) /opt/orchestra/apps
-              git clone git@github.com:orchestra-mcp/next.git "$DEPLOY_DIR"
+              mkdir -p /opt/orchestra/apps
+              git clone https://github.com/orchestra-mcp/next.git "$DEPLOY_DIR"
             fi
 
             cd "$DEPLOY_DIR"
