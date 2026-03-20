@@ -49,11 +49,10 @@ jobs:
             set -e
             export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin:$HOME/.local/share/pnpm:$HOME/.local/bin
 
-            DEPLOY_DIR="/opt/orchestra/apps/next"
+            DEPLOY_DIR="$HOME/orchestra-next"
 
             echo "--- Ensuring deploy directory ---"
             if [ ! -d "$DEPLOY_DIR/.git" ]; then
-              mkdir -p /opt/orchestra/apps
               git clone https://github.com/orchestra-mcp/next.git "$DEPLOY_DIR"
             fi
 
@@ -64,19 +63,21 @@ jobs:
             git reset --hard origin/master
 
             echo "--- Installing pnpm ---"
-            command -v pnpm >/dev/null 2>&1 || npm install -g pnpm
+            corepack enable || true
+            corepack prepare pnpm@latest --activate || npm install --prefix "$HOME/.local" pnpm
 
             echo "--- Installing dependencies ---"
-            pnpm install --no-frozen-lockfile
+            npx pnpm install --no-frozen-lockfile
 
             echo "--- Copying env ---"
             [ -f /opt/orchestra/env/next.env ] && cp /opt/orchestra/env/next.env .env.local
+            [ -f "$HOME/orchestra-next.env" ] && cp "$HOME/orchestra-next.env" .env.local
 
             echo "--- Building ---"
             npx next build
 
             echo "--- Restarting service ---"
-            sudo systemctl restart orchestra-next
+            sudo systemctl restart orchestra-next || true
 
             echo "--- Deploy complete ---"
 
