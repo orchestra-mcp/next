@@ -2,30 +2,30 @@
   "name": "@orchestra-mcp/theme",
   "version": "0.2.0",
   "description": "25 color themes + 3 component variants using Tailwind CSS v4 Oxide",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "require": "./src/index.ts"
     },
     "./styles": "./src/styles/base.css",
     "./themes": {
-      "types": "./dist/themes.d.ts",
-      "import": "./dist/themes.mjs",
-      "require": "./dist/themes.js"
+      "types": "./src/themes.ts",
+      "import": "./src/themes.ts",
+      "require": "./src/themes.ts"
     },
     "./variants": {
-      "types": "./dist/variants.d.ts",
-      "import": "./dist/variants.mjs",
-      "require": "./dist/variants.js"
+      "types": "./src/variants.ts",
+      "import": "./src/variants.ts",
+      "require": "./src/variants.ts"
     },
     "./theme-switcher": {
-      "types": "./dist/theme-switcher.d.ts",
-      "import": "./dist/theme-switcher.mjs",
-      "require": "./dist/theme-switcher.js"
+      "types": "./src/theme-switcher.ts",
+      "import": "./src/theme-switcher.ts",
+      "require": "./src/theme-switcher.ts"
     }
   },
   "files": [

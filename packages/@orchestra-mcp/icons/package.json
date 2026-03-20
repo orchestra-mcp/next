@@ -3,25 +3,25 @@
   "version": "0.1.0",
   "description": "React SVG icon components for Orchestra MCP",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
     },
     "./code": {
-      "import": "./dist/code/index.js",
-      "types": "./dist/code/index.d.ts"
+      "import": "./src/code/index.ts",
+      "types": "./src/code/index.ts"
     },
     "./launcher": {
-      "import": "./dist/launcher/index.js",
-      "types": "./dist/launcher/index.d.ts"
+      "import": "./src/launcher/index.ts",
+      "types": "./src/launcher/index.ts"
     },
     "./boxicons": {
-      "import": "./dist/boxicons/index.js",
-      "types": "./dist/boxicons/index.d.ts"
+      "import": "./src/boxicons/index.ts",
+      "types": "./src/boxicons/index.ts"
     }
   },
   "files": [
