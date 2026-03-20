@@ -81,10 +81,12 @@ jobs:
             export PM2_HOME="$HOME/.pm2"
             export PATH="$HOME/.local/bin:$HOME/.local/lib/node_modules/.bin:$PATH"
             npm list -g pm2 >/dev/null 2>&1 || npm install -g pm2 --prefix "$HOME/.local"
-            if pm2 describe orchestra-next > /dev/null 2>&1; then
-              pm2 stop orchestra-next
-              pm2 delete orchestra-next
-            fi
+            # Kill any existing process on port 3000 first
+            fuser -k 3000/tcp 2>/dev/null || true
+            # Clean up all pm2 instances with this name across any pm2_home
+            pm2 delete orchestra-next 2>/dev/null || true
+            pm2 kill 2>/dev/null || true
+            sleep 2
             pm2 start "npx next start -p 3000" --name orchestra-next --cwd "$DEPLOY_DIR"
             pm2 save --force
 
