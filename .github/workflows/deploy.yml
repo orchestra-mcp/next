@@ -63,21 +63,25 @@ jobs:
             git reset --hard origin/master
 
             echo "--- Installing pnpm ---"
-            corepack enable || true
-            corepack prepare pnpm@latest --activate || npm install --prefix "$HOME/.local" pnpm
+            export COREPACK_ENABLE_STRICT=0
+            corepack enable 2>/dev/null || true
+            corepack prepare pnpm@latest --activate 2>/dev/null || true
 
             echo "--- Installing dependencies ---"
-            npx pnpm install --no-frozen-lockfile
+            npx --yes pnpm install --no-frozen-lockfile
 
             echo "--- Copying env ---"
             [ -f /opt/orchestra/env/next.env ] && cp /opt/orchestra/env/next.env .env.local
             [ -f "$HOME/orchestra-next.env" ] && cp "$HOME/orchestra-next.env" .env.local
 
             echo "--- Building ---"
-            npx next build
+            npx --yes next build
 
-            echo "--- Restarting service ---"
-            sudo systemctl restart orchestra-next || true
+            echo "--- Restarting with PM2 ---"
+            command -v pm2 >/dev/null 2>&1 || npm install -g pm2 || npx --yes pm2 --version
+            pm2 delete orchestra-next 2>/dev/null || true
+            pm2 start npx --name orchestra-next -- next start -p 3000
+            pm2 save
 
             echo "--- Deploy complete ---"
 
@@ -90,9 +94,10 @@ jobs:
           port: ${{ secrets.VPS_SSH_PORT }}
           script: |
             echo "--- Health Check ---"
+            sleep 5
             curl -sf http://localhost:3000 > /dev/null && echo " Next.js: OK" || (echo " Next.js: FAILED" && exit 1)
-            echo "--- Service Status ---"
-            sudo systemctl status orchestra-next --no-pager -l | head -5
+            echo "--- PM2 Status ---"
+            pm2 list || npx --yes pm2 list
 
       - name: Notify Discord — Deploy succeeded
         if: success()
