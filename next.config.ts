@@ -11,14 +11,16 @@ const nextConfig: NextConfig = {
     serverComponentsExternalPackages: ['@powersync/web'],
   },
   webpack: (config, { isServer }) => {
-    if (!isServer) {
+    // @powersync/web is client-only (uses WASM + IndexedDB)
+    if (isServer) {
+      config.externals = [...(config.externals || []), '@powersync/web']
+    } else {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         path: false,
       }
     }
-    // Enable WASM for @powersync/web
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
