@@ -91,7 +91,7 @@ export default function ProfileSettingsPage() {
         body: JSON.stringify({
           name, email, phone, gender, position, timezone,
           public_profile_enabled: publicEnabled,
-          handle: profileHandle,
+          ...(profileHandle.trim() ? { handle: profileHandle.trim() } : {}),
           bio,
           social_links: socialLinks.filter(l => l.url.trim()),
         }),

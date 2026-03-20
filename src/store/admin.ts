@@ -561,9 +561,10 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   fetchSetting: async (key) => {
     const { contentLocale } = get()
     try {
-      const res = await apiFetch<{ setting: { key: string; value: Record<string, unknown>; locale: string; updated_at: string } }>(`/api/admin/settings/${key}?locale=${contentLocale}`)
-      set(s => ({ settings: { ...s.settings, [key]: res.setting.value } }))
-      return res.setting.value
+      const res = await apiFetch<{ key: string; value: Record<string, unknown>; updated_at?: string }>(`/api/admin/settings/${key}?locale=${contentLocale}`)
+      const val = res.value as Record<string, unknown>
+      set(s => ({ settings: { ...s.settings, [key]: val } }))
+      return val
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -575,7 +576,7 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
     try {
       await apiFetch(`/api/admin/settings/${key}?locale=${contentLocale}`, {
         method: 'PATCH',
-        body: JSON.stringify({ value }),
+        body: JSON.stringify(value),
       })
       set(s => ({ settings: { ...s.settings, [key]: value } }))
     } catch (e) {

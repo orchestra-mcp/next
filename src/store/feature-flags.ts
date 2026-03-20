@@ -3,26 +3,71 @@ import { create } from 'zustand'
 import { apiFetch } from '@/lib/api'
 
 interface FeatureFlags {
+  // Public pages
+  community: boolean
+  marketplace: boolean
+  blog: boolean
+  docs: boolean
+  download: boolean
+  solutions: boolean
+  contact: boolean
+  sponsors: boolean
+  issues: boolean
+  badges: boolean
+  // App features
   projects: boolean
   notes: boolean
   plans: boolean
   wiki: boolean
   devtools: boolean
-  sponsors: boolean
-  community: boolean
-  issues: boolean
+  notifications: boolean
+  push_notifications: boolean
+  // AI
+  ai_chat: boolean
+  rag_memory: boolean
+  multi_agent: boolean
+  voice: boolean
+  // Desktop / Mobile
+  extensions: boolean
+  terminal: boolean
+  tunnels: boolean
+  health: boolean
+  sync: boolean
+  // Profile
+  wallet: boolean
+  activity: boolean
   [key: string]: boolean
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
+  community: true,
+  marketplace: true,
+  blog: true,
+  docs: true,
+  download: true,
+  solutions: true,
+  contact: true,
+  sponsors: true,
+  issues: true,
+  badges: true,
   projects: true,
   notes: true,
   plans: true,
   wiki: true,
   devtools: true,
-  sponsors: true,
-  community: true,
-  issues: true,
+  notifications: true,
+  push_notifications: true,
+  ai_chat: true,
+  rag_memory: true,
+  multi_agent: true,
+  voice: true,
+  extensions: true,
+  terminal: true,
+  tunnels: true,
+  health: true,
+  sync: true,
+  wallet: true,
+  activity: true,
 }
 
 interface FeatureFlagsState {
@@ -45,16 +90,24 @@ export const useFeatureFlagsStore = create<FeatureFlagsState>()((set, get) => ({
         if (typeof val[k] === 'boolean') {
           flags[k] = val[k] as boolean
         }
+        // Also check enable_ prefixed keys for backward compatibility
+        const enableKey = `enable_${k}`
+        if (typeof val[enableKey] === 'boolean') {
+          flags[k] = val[enableKey] as boolean
+        }
       }
       set({ flags, loaded: true })
     } catch {
-      // On error (dev seed, network), keep defaults (all enabled)
       set({ loaded: true })
     }
   },
 
   isEnabled: (key: string) => {
-    const { flags } = get()
+    const { flags, loaded, fetchFlags } = get()
+    // Auto-fetch on first access
+    if (!loaded) {
+      fetchFlags()
+    }
     return flags[key] !== false
   },
 }))

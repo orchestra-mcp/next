@@ -12,6 +12,8 @@ export default function PrivacySettingsPage() {
   const [showBadges, setShowBadges] = useState(true)
   const [showWallet, setShowWallet] = useState(true)
   const [showComments, setShowComments] = useState(true)
+  const [showTeams, setShowTeams] = useState(true)
+  const [showSponsors, setShowSponsors] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -21,6 +23,8 @@ export default function PrivacySettingsPage() {
     setShowBadges(s.show_badges !== undefined ? !!(s.show_badges) : true)
     setShowWallet(s.show_wallet !== undefined ? !!(s.show_wallet) : true)
     setShowComments(s.show_comments_on_profile !== undefined ? !!(s.show_comments_on_profile) : true)
+    setShowTeams(s.show_teams !== undefined ? !!(s.show_teams) : true)
+    setShowSponsors(s.show_sponsors !== undefined ? !!(s.show_sponsors) : true)
   }, [user])
 
   const save = async () => {
@@ -33,6 +37,8 @@ export default function PrivacySettingsPage() {
           show_badges: showBadges,
           show_wallet: showWallet,
           show_comments_on_profile: showComments,
+          show_teams: showTeams,
+          show_sponsors: showSponsors,
         }),
       })
       await fetchMe()
@@ -66,12 +72,28 @@ export default function PrivacySettingsPage() {
         <Switch checked={showWallet} onChange={setShowWallet} />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--color-border)' }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-fg)' }}>Show comments on profile</div>
           <div style={{ fontSize: 11, color: 'var(--color-fg-dim)' }}>Allow comments on your profile posts</div>
         </div>
         <Switch checked={showComments} onChange={setShowComments} />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--color-border)' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-fg)' }}>Show teams on profile</div>
+          <div style={{ fontSize: 11, color: 'var(--color-fg-dim)' }}>When off, your team memberships are hidden from public view</div>
+        </div>
+        <Switch checked={showTeams} onChange={setShowTeams} />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-fg)' }}>Show sponsors on profile</div>
+          <div style={{ fontSize: 11, color: 'var(--color-fg-dim)' }}>When off, your sponsors are hidden from public view</div>
+        </div>
+        <Switch checked={showSponsors} onChange={setShowSponsors} />
       </div>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 20 }}>

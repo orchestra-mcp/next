@@ -55,7 +55,8 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
   const coverSrc = uploadUrl(profile.cover_url)
   const verification = (profile.verifications ?? [])[0]
   const badges = profile.badges ?? []
-  const stats = profile.stats ?? {}
+  const rawStats = profile.stats ?? {}
+  const stats = { ...rawStats, points: rawStats.points ?? profile.wallet?.balance ?? 0 }
 
   return (
     <>
@@ -166,14 +167,18 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
             </div>
           </div>
           {profile.show_wallet !== false && stats.points != null && stats.points > 0 && (
-            <button onClick={() => router.push(`/@${handle}/wallet`)} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-              width: '100%', marginTop: 10, padding: '5px 0', borderRadius: 7,
-              background: 'rgba(249,168,37,0.06)', border: '1px solid rgba(249,168,37,0.12)', cursor: 'pointer',
-            }}>
+            <div
+              onClick={() => { if (isOwner) router.push(`/@${handle}/wallet`) }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                width: '100%', marginTop: 10, padding: '5px 0', borderRadius: 7,
+                background: 'rgba(249,168,37,0.06)', border: '1px solid rgba(249,168,37,0.12)',
+                cursor: isOwner ? 'pointer' : 'default',
+              }}
+            >
               <i className="bx bx-star" style={{ fontSize: 14, color: '#f9a825' }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: '#f9a825' }}>{stats.points.toLocaleString()} points</span>
-            </button>
+            </div>
           )}
         </div>
 

@@ -12,6 +12,7 @@ import { SearchSpotlight } from '@orchestra-mcp/search'
 import type { SearchResult } from '@orchestra-mcp/search'
 import { useSettingsStore } from '@/store/settings'
 import { useTranslations } from 'next-intl'
+import { useFeatureFlagsStore } from '@/store/feature-flags'
 
 
 // Static searchable content for the marketing site
@@ -137,26 +138,40 @@ export function MarketingNav() {
     return () => document.removeEventListener('mousedown', handler)
   }, [notifOpen])
 
+  const { isEnabled } = useFeatureFlagsStore()
+
+  // Map href paths to feature flag keys
+  const hrefToFeature: Record<string, string> = {
+    '/docs': 'docs', '/marketplace': 'marketplace', '/download': 'download',
+    '/solutions': 'solutions', '/blog': 'blog', '/community': 'community',
+    '/sponsors': 'sponsors', '/issues': 'issues', '/contact': 'contact',
+  }
+
+  const filterLinks = (links: NavLink[]) => links.filter(l => {
+    const feature = hrefToFeature[l.href]
+    return !feature || isEnabled(feature)
+  })
+
   const navGroups: NavGroup[] = [
     {
       title: t('footer.product'),
-      links: [
+      links: filterLinks([
         { href: '/docs', label: t('nav.docs'), icon: 'bx-book-open', desc: 'Guides, tutorials & API reference' },
         { href: '/marketplace', label: t('nav.marketplace'), icon: 'bx-store', desc: 'Browse & install packs' },
         { href: '/download', label: t('nav.download'), icon: 'bx-download', desc: 'Get Orchestra for your IDE' },
         { href: '/solutions', label: t('nav.solutions'), icon: 'bx-bulb', desc: 'Use cases & workflows' },
-      ],
+      ]),
     },
     {
       title: t('footer.company'),
-      links: [
+      links: filterLinks([
         { href: '/blog', label: t('nav.blog'), icon: 'bx-news', desc: 'Updates, releases & articles' },
         { href: '/community', label: t('nav.community'), icon: 'bx-group', desc: 'Join the community' },
         { href: '/sponsors', label: t('nav.sponsors'), icon: 'bx-heart', desc: 'Support the project' },
         { href: '/issues', label: t('nav.issues'), icon: 'bx-bug', desc: 'Report bugs & request features' },
-      ],
+      ]),
     },
-  ]
+  ].filter(g => g.links.length > 0)
 
   const initials = user?.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() ?? 'U'
 

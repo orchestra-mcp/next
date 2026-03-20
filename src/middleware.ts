@@ -47,6 +47,23 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
+  // Fast bypass — never block auth pages or coming-soon itself, even when
+  // coming-soon is enabled. This check runs BEFORE any async API call so
+  // login/register are always reachable regardless of backend availability.
+  const pathNoLocale = pathname.replace(/^\/(en|ar)/, '') || '/'
+  const isBypass = BYPASS_PATHS.some(p =>
+    pathNoLocale === p || pathNoLocale.startsWith(p + '/') ||
+    pathname === p || pathname.startsWith(p + '/')
+  )
+
+  // Coming soon check for ALL non-bypass routes (including /@handle profiles)
+  if (!isBypass) {
+    const comingSoonResponse = await handleComingSoon(req)
+    if (comingSoonResponse.status === 307 || comingSoonResponse.status === 308) {
+      return comingSoonResponse
+    }
+  }
+
   // Rewrite /@handle paths to /member/handle (and /@handle/post/ID to /member/handle/post/ID)
   const atMatch = pathname.match(/^\/(en|ar)?\/?@([a-zA-Z0-9_-]+)(\/.*)?$/)
   if (atMatch) {
@@ -58,31 +75,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.rewrite(url)
   }
 
-  // Fast bypass — never block auth pages or coming-soon itself, even when
-  // coming-soon is enabled. This check runs BEFORE any async API call so
-  // login/register are always reachable regardless of backend availability.
-  const pathNoLocale = pathname.replace(/^\/(en|ar)/, '') || '/'
-  const isBypass = BYPASS_PATHS.some(p =>
-    pathNoLocale === p || pathNoLocale.startsWith(p + '/') ||
-    pathname === p || pathname.startsWith(p + '/')
-  )
-
   // Public routes — use intl middleware for locale-prefixed URLs
   if (isPublicRoute(pathname)) {
-    if (!isBypass) {
-      const comingSoonResponse = await handleComingSoon(req)
-      if (comingSoonResponse.status === 307 || comingSoonResponse.status === 308) {
-        return comingSoonResponse
-      }
-    }
     return intlMiddleware(req)
   }
 
-  // App routes (settings, subscription, etc.) — skip intl middleware, use cookie-based locale
-  if (isBypass) {
-    return NextResponse.next()
-  }
-  return handleComingSoon(req)
+  // App routes (settings, subscription, etc.)
+  return NextResponse.next()
 }
 
 async function handleComingSoon(req: NextRequest): Promise<NextResponse> {
@@ -124,7 +123,7 @@ async function handleComingSoon(req: NextRequest): Promise<NextResponse> {
     if (token === 'dev_seed_token') {
       return NextResponse.next()
     }
-    // Any valid JWT token means the user is logged in — let them through
+    // Only admins can bypass coming soon — regular users see coming soon too
     try {
       const parts = token.split('.')
       if (parts.length === 3) {
@@ -132,7 +131,10 @@ async function handleComingSoon(req: NextRequest): Promise<NextResponse> {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (meRes.ok) {
-          return NextResponse.next()
+          const user = await meRes.json()
+          if (user.role === 'admin') {
+            return NextResponse.next()
+          }
         }
       }
     } catch {

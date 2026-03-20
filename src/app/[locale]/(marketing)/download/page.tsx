@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import DownloadClient from './DownloadClient'
+import FeatureGate from '@/components/feature-gate'
 
 export const metadata: Metadata = {
   title: 'Download',
@@ -32,5 +33,9 @@ async function getDownloadData() {
 
 export default async function DownloadPage() {
   const data = await getDownloadData()
-  return <DownloadClient data={data} />
+  return (
+    <FeatureGate feature="download">
+      <DownloadClient data={data} />
+    </FeatureGate>
+  )
 }

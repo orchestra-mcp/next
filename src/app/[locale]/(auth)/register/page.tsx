@@ -24,6 +24,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [enabledProviders, setEnabledProviders] = useState<Record<string, boolean>>({})
+  const [registrationDisabled, setRegistrationDisabled] = useState(false)
 
   useEffect(() => {
     apiFetch<{ value: Record<string, unknown> }>('/api/public/settings/integrations', { skipAuth: true })
@@ -33,6 +34,12 @@ export default function RegisterPage() {
           if (k.endsWith('_enabled')) providers[k.replace('_enabled', '')] = !!v
         }
         setEnabledProviders(providers)
+      })
+      .catch(() => {})
+
+    apiFetch<{ value: Record<string, unknown> }>('/api/public/settings/general', { skipAuth: true })
+      .then(res => {
+        if (res.value?.allow_register === false) setRegistrationDisabled(true)
       })
       .catch(() => {})
   }, [])
@@ -75,6 +82,19 @@ export default function RegisterPage() {
       await register(name, email, password)
       // Redirect handled by useEffect when token is set
     } catch {}
+  }
+
+  if (registrationDisabled) {
+    return (
+      <div style={{ maxWidth: 420, margin: '0 auto', textAlign: 'center', paddingTop: 60 }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+          <Image src="/logo.svg" alt="Orchestra" width={52} height={52} />
+        </div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: isDark ? '#f8f8f8' : '#1a1a2e', margin: '0 0 12px', letterSpacing: '-0.02em' }}>Registration Disabled</h1>
+        <p style={{ fontSize: 14, color: isDark ? '#9ca3af' : '#6b7280', marginBottom: 24 }}>New account registration is currently disabled by the administrator.</p>
+        <Link href="/login" style={{ color: '#00e5ff', textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>Sign in instead</Link>
+      </div>
+    )
   }
 
   return (

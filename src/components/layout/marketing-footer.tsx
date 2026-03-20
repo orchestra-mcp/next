@@ -2,15 +2,29 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
+import { useFeatureFlagsStore } from '@/store/feature-flags'
+
+const HREF_TO_FEATURE: Record<string, string> = {
+  '/docs': 'docs', '/docs/api': 'docs', '/docs/sdk': 'docs',
+  '/marketplace': 'marketplace', '/download': 'download',
+  '/solutions': 'solutions', '/blog': 'blog',
+  '/community': 'community', '/sponsors': 'sponsors',
+  '/issues': 'issues', '/contact': 'contact',
+}
 
 export function MarketingFooter() {
   const t = useTranslations()
+  const { isEnabled } = useFeatureFlagsStore()
+
+  const filterLinks = (links: { label: string; href: string }[]) =>
+    links.filter(l => { const f = HREF_TO_FEATURE[l.href]; return !f || isEnabled(f) })
+
   const cols = [
-    { title: t('footer.product'), links: [{ label: t('footer.features'), href: '/#features' }, { label: t('nav.marketplace'), href: '/marketplace' }, { label: t('footer.pricing'), href: '/#pricing' }, { label: t('nav.download'), href: '/download' }, { label: t('footer.changelog'), href: '/blog' }] },
-    { title: t('footer.developers'), links: [{ label: t('footer.documentation'), href: '/docs' }, { label: t('footer.apiReference'), href: '/docs/api' }, { label: t('footer.pluginSdk'), href: '/docs/sdk' }, { label: t('footer.reportIssue'), href: '/report' }, { label: t('footer.github'), href: 'https://github.com/orchestra-mcp/framework' }] },
-    { title: t('footer.company'), links: [{ label: t('footer.blog'), href: '/blog' }, { label: t('nav.solutions'), href: '/solutions' }, { label: t('footer.contact'), href: '/contact' }, { label: t('footer.about'), href: '/about' }] },
+    { title: t('footer.product'), links: filterLinks([{ label: t('footer.features'), href: '/#features' }, { label: t('nav.marketplace'), href: '/marketplace' }, { label: t('footer.pricing'), href: '/#pricing' }, { label: t('nav.download'), href: '/download' }, { label: t('footer.changelog'), href: '/blog' }]) },
+    { title: t('footer.developers'), links: filterLinks([{ label: t('footer.documentation'), href: '/docs' }, { label: t('footer.apiReference'), href: '/docs/api' }, { label: t('footer.pluginSdk'), href: '/docs/sdk' }, { label: t('footer.reportIssue'), href: '/report' }, { label: t('footer.github'), href: 'https://github.com/orchestra-mcp/framework' }]) },
+    { title: t('footer.company'), links: filterLinks([{ label: t('footer.blog'), href: '/blog' }, { label: t('nav.solutions'), href: '/solutions' }, { label: t('footer.contact'), href: '/contact' }, { label: t('footer.about'), href: '/about' }]) },
     { title: t('footer.legal'), links: [{ label: t('footer.termsOfService'), href: '/terms' }, { label: t('footer.privacyPolicy'), href: '/privacy' }, { label: t('footer.cookiePolicy'), href: '/privacy#cookies' }] },
-  ]
+  ].filter(c => c.links.length > 0)
 
   const bg = 'var(--color-bg)'
   const borderColor = 'var(--color-border)'

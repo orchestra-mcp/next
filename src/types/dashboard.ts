@@ -1,4 +1,4 @@
-export type WidgetType = 'stats' | 'recent_projects' | 'recent_notes' | 'quick_actions' | 'project_health' | 'burndown' | 'velocity' | 'activity_feed' | 'workload' | 'team_members' | 'active_tunnels' | 'team_automation'
+export type WidgetType = 'stats' | 'recent_projects' | 'recent_notes' | 'quick_actions' | 'project_health' | 'burndown' | 'velocity' | 'activity_feed' | 'workload' | 'team_members' | 'active_tunnels' | 'team_automation' | 'api_collections' | 'presentations' | 'docs' | 'team_activity'
 
 export interface WidgetLayout {
   id: string
@@ -119,10 +119,42 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
     maxColSpan: 12,
     frameless: true,
   },
+  api_collections: {
+    type: 'api_collections',
+    label: 'widgetApiCollections',
+    icon: 'bx-collection',
+    defaultColSpan: 6,
+    minColSpan: 4,
+    maxColSpan: 12,
+  },
+  presentations: {
+    type: 'presentations',
+    label: 'widgetPresentations',
+    icon: 'bx-slideshow',
+    defaultColSpan: 6,
+    minColSpan: 4,
+    maxColSpan: 12,
+  },
+  docs: {
+    type: 'docs',
+    label: 'widgetDocs',
+    icon: 'bx-file',
+    defaultColSpan: 6,
+    minColSpan: 4,
+    maxColSpan: 12,
+  },
+  team_activity: {
+    type: 'team_activity',
+    label: 'widgetTeamActivity',
+    icon: 'bx-group',
+    defaultColSpan: 6,
+    minColSpan: 4,
+    maxColSpan: 12,
+  },
 }
 
 // Bump this when DEFAULT_LAYOUT changes significantly to force a reset for existing users
-export const LAYOUT_VERSION = 3
+export const LAYOUT_VERSION = 5
 
 export const DEFAULT_LAYOUT: WidgetLayout[] = [
   { id: 'team_automation-1', type: 'team_automation', colSpan: 12, order: 0, hidden: false, locked: false },
@@ -137,4 +169,8 @@ export const DEFAULT_LAYOUT: WidgetLayout[] = [
   { id: 'recent_projects-1', type: 'recent_projects', colSpan: 6, order: 9, hidden: false, locked: false },
   { id: 'recent_notes-1', type: 'recent_notes', colSpan: 6, order: 10, hidden: false, locked: false },
   { id: 'quick_actions-1', type: 'quick_actions', colSpan: 12, order: 11, hidden: false, locked: false },
+  { id: 'api_collections-1', type: 'api_collections', colSpan: 6, order: 12, hidden: false, locked: false },
+  { id: 'presentations-1', type: 'presentations', colSpan: 6, order: 13, hidden: false, locked: false },
+  { id: 'docs-1', type: 'docs', colSpan: 6, order: 14, hidden: false, locked: false },
+  { id: 'team_activity-1', type: 'team_activity', colSpan: 6, order: 15, hidden: false, locked: false },
 ]

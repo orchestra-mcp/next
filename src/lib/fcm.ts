@@ -1,54 +1,94 @@
-import { getApps, initializeApp } from 'firebase/app'
-import { getMessaging, getToken, onMessage, type Messaging } from 'firebase/messaging'
+// src/lib/fcm.ts — Web Push API (no Firebase)
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'FIREBASE_API_KEY',
-  authDomain: 'orchestra-mcp.firebaseapp.com',
-  projectId: 'orchestra-mcp',
-  storageBucket: 'orchestra-mcp.appspot.com',
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_SENDER_ID || '000000000000',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:000000000000:web:0000000000000000',
+function getApiUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL || ''
 }
 
-let messaging: Messaging | null = null
-
-function getMessagingInstance(): Messaging | null {
-  if (typeof window === 'undefined') return null
-  if (messaging) return messaging
-
-  const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
-  messaging = getMessaging(app)
-  return messaging
+function getAuthHeaders(): HeadersInit {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('orchestra_token') : null
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
 }
 
-export async function requestNotificationPermission(): Promise<string | null> {
+export async function requestNotificationPermission(): Promise<PushSubscription | null> {
   try {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return null
+
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') return null
 
-    const m = getMessagingInstance()
-    if (!m) return null
+    const registration = await navigator.serviceWorker.register('/sw.js')
+    await navigator.serviceWorker.ready
 
-    const token = await getToken(m, {
-      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || '',
+    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    if (!vapidKey) {
+      console.warn('[Push] No VAPID public key configured')
+      return null
+    }
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey),
     })
-    return token
+
+    // Register with backend
+    const keys = subscription.toJSON().keys ?? {}
+    await fetch(`${getApiUrl()}/api/notifications/push/subscribe`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        endpoint: subscription.endpoint,
+        p256dh: keys.p256dh ?? '',
+        auth: keys.auth ?? '',
+        platform: 'web',
+        user_agent: navigator.userAgent,
+      }),
+    })
+
+    return subscription
   } catch (e) {
-    console.error('[FCM] Failed to get token:', e)
+    console.error('[Push] Failed to subscribe:', e)
     return null
   }
 }
 
-export function onForegroundMessage(callback: (payload: any) => void): (() => void) | null {
-  const m = getMessagingInstance()
-  if (!m) return null
-  return onMessage(m, callback)
+export async function unsubscribeDevice(): Promise<void> {
+  try {
+    const registration = await navigator.serviceWorker.getRegistration()
+    const subscription = await registration?.pushManager.getSubscription()
+    if (!subscription) return
+
+    await subscription.unsubscribe()
+    await fetch(`${getApiUrl()}/api/notifications/push/unsubscribe`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ endpoint: subscription.endpoint }),
+    })
+  } catch (e) {
+    console.error('[Push] Failed to unsubscribe:', e)
+  }
 }
 
-export async function subscribeDevice(token: string): Promise<void> {
-  await fetch('/api/notifications/subscribe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, platform: 'web' }),
-  })
+// Check if push is currently subscribed
+export async function isPushSubscribed(): Promise<boolean> {
+  try {
+    const registration = await navigator.serviceWorker.getRegistration()
+    const subscription = await registration?.pushManager.getSubscription()
+    return !!subscription
+  } catch {
+    return false
+  }
+}
+
+// Helper: convert VAPID base64 to Uint8Array
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
 }

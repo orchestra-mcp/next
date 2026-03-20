@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import MarketplaceClient from './MarketplaceClient'
+import FeatureGate from '@/components/feature-gate'
 
 async function getMarketplaceData() {
   try {
@@ -56,5 +57,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function MarketplacePage() {
   const data = await getMarketplaceData()
-  return <MarketplaceClient data={data} />
+  return (
+    <FeatureGate feature="marketplace">
+      <MarketplaceClient data={data} />
+    </FeatureGate>
+  )
 }

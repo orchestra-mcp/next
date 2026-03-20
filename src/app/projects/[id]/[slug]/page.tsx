@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { useAuthStore } from '@/store/auth'
+import { ProjectSmartActionsBar } from '@/components/projects/ProjectSmartActionsBar'
 
 interface FeatureCard {
   id: string
@@ -62,6 +64,9 @@ export default function PublicProjectPage() {
   const params = useParams()
   const user = params.id as string
   const slug = params.slug as string
+
+  const { user: authUser } = useAuthStore()
+  const isOwner = !!authUser && (authUser.username === user || (authUser.settings?.handle as string) === user)
 
   const [data, setData] = useState<PublicProject | null>(null)
   const [loading, setLoading] = useState(true)
@@ -160,6 +165,19 @@ export default function PublicProjectPage() {
           <StatCard label="In Review" value={String(health.in_review)} color={colors.yellow} />
           <StatCard label="To Do" value={String(health.todo)} color={colors.muted} />
         </div>
+
+        {/* Smart Actions Bar — owner only */}
+        {isOwner && (
+          <div style={{
+            marginBottom: 24,
+            padding: '10px 16px',
+            background: 'rgba(0,0,0,0.6)',
+            borderRadius: 10,
+            border: '1px solid rgba(255,255,255,0.06)',
+          }}>
+            <ProjectSmartActionsBar projectSlug={slug} projectName={data?.project.name} />
+          </div>
+        )}
 
         {/* Kanban Board */}
         <h2 style={{

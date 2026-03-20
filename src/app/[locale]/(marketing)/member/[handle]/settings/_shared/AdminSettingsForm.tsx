@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAdminStore } from '@/store/admin'
 import { useRoleStore } from '@/store/roles'
+import { apiFetch } from '@/lib/api'
 import { ContentLocaleTabs } from '@/components/ui/content-locale-tabs'
 import ProfileCard from '@/components/profile/profile-card'
 import { Switch } from '@orchestra-mcp/ui'
@@ -36,8 +37,8 @@ export default function AdminSettingsForm({ settingKey, title, fields, showLocal
     try {
       const val = await fetchSetting(settingKey)
       if (val && typeof val === 'object') {
-        // Merge defaults with fetched values (fetched takes priority)
-        setValues(prev => ({ ...(defaults ?? {}), ...prev, ...(val as Record<string, unknown>) }))
+        const merged = { ...(defaults ?? {}), ...(val as Record<string, unknown>) }
+        setValues(merged)
       }
     } catch {}
     setLoaded(true)
@@ -52,10 +53,22 @@ export default function AdminSettingsForm({ settingKey, title, fields, showLocal
   const save = async () => {
     setSaving(true)
     try {
-      await updateSetting(settingKey, values)
+      await apiFetch(`/api/admin/settings/${settingKey}?locale=${contentLocale}`, {
+        method: 'PATCH',
+        body: JSON.stringify(values),
+      })
+      // Sync standalone settings that have their own keys
+      if (settingKey === 'general' && 'coming_soon' in values) {
+        await apiFetch(`/api/admin/settings/coming_soon?locale=${contentLocale}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ enabled: !!(values.coming_soon), title: 'Coming Soon', message: "We're putting the finishing touches on something amazing. Stay tuned!" }),
+        })
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
-    } catch {}
+    } catch (e) {
+      alert('Save failed: ' + (e as Error).message)
+    }
     setSaving(false)
   }
 
@@ -117,7 +130,7 @@ export default function AdminSettingsForm({ settingKey, title, fields, showLocal
           })}
 
           <div style={{ marginTop: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button style={saveBtnSt} onClick={save} disabled={saving}>
+            <button type="button" style={{ ...saveBtnSt, opacity: saving ? 0.6 : 1 }} onClick={save}>
               {saving ? 'Saving...' : 'Save'}
             </button>
             {saved && <span style={{ fontSize: 12, color: '#22c55e' }}>Saved!</span>}

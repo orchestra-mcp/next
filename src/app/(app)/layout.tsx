@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { useRoleStore } from '@/store/roles'
 import { useSettingsStore } from '@/store/settings'
+import { useRealtimeSync } from '@/hooks/useRealtimeSync'
+import { NotificationToast } from '@/components/NotificationToast'
+import { requestNotificationPermission, isPushSubscribed } from '@/lib/fcm'
 import { MarketingNav } from '@/components/layout/marketing-nav'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 
@@ -12,6 +15,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { token, user, fetchMe, impersonating, exitImpersonation } = useAuthStore()
   const { fetchMyRole } = useRoleStore()
   const { fetchNotifications } = useSettingsStore()
+
+  // Connect WebSocket for realtime sync + notifications
+  useRealtimeSync()
+
   // Auth + initial data loading
   useEffect(() => {
     if (!token) { router.push('/login'); return }
@@ -19,6 +26,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     fetchMyRole()
     fetchNotifications()
   }, [token, user, router, fetchMe])
+
+  // Auto-request push notification permission on first visit
+  useEffect(() => {
+    if (!token || !user) return
+    const timer = setTimeout(async () => {
+      if (typeof window === 'undefined' || !('Notification' in window)) return
+      if (Notification.permission !== 'default') return // already decided
+      const subscribed = await isPushSubscribed()
+      if (!subscribed) {
+        await requestNotificationPermission()
+      }
+    }, 3000) // delay 3s to not interrupt the user immediately
+    return () => clearTimeout(timer)
+  }, [token, user])
 
   if (!token) return null
 
@@ -47,6 +68,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <MarketingNav />
       <main style={{ flex: 1 }}>{children}</main>
       <MarketingFooter />
+      <NotificationToast />
     </div>
   )
 }

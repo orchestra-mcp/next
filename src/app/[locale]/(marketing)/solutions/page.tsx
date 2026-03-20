@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import SolutionsClient from './SolutionsClient'
+import FeatureGate from '@/components/feature-gate'
 
 export const metadata: Metadata = {
   title: 'Solutions',
@@ -32,5 +33,9 @@ async function getSolutionsData() {
 
 export default async function SolutionsPage() {
   const data = await getSolutionsData()
-  return <SolutionsClient data={data} />
+  return (
+    <FeatureGate feature="solutions">
+      <SolutionsClient data={data} />
+    </FeatureGate>
+  )
 }

@@ -49,6 +49,13 @@ export function usePowerSyncQuery<T = Record<string, unknown>>(
 
     const watchData = async () => {
       try {
+        // Guard: db.watch may not be available in all environments
+        if (!db || typeof db.watch !== 'function') {
+          const results = await db.getAll(sql, params)
+          setData(results as T[])
+          setLoading(false)
+          return
+        }
         for await (const results of db.watch(sql, params, {
           signal: abortController.signal,
         })) {
@@ -58,7 +65,12 @@ export function usePowerSyncQuery<T = Record<string, unknown>>(
         }
       } catch (e) {
         if (!cancelled) {
-          console.error('[PowerSync] Watch error:', e)
+          // Fallback: try single query if watch fails
+          try {
+            const results = await db.getAll(sql, params)
+            setData(results as T[])
+          } catch {}
+          setLoading(false)
         }
       }
     }

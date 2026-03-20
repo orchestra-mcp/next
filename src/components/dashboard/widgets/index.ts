@@ -12,6 +12,10 @@ import { WorkloadWidget } from './WorkloadWidget'
 import { TeamMembersWidget } from './TeamMembersWidget'
 import { ActiveTunnelsWidget } from './ActiveTunnelsWidget'
 import { TeamAutomationWidget } from './TeamAutomationWidget'
+import { ApiCollectionsWidget } from './ApiCollectionsWidget'
+import { PresentationsWidget } from './PresentationsWidget'
+import { DocsWidget } from './DocsWidget'
+import { TeamActivityWidget } from './TeamActivityWidget'
 
 export { StatsWidget } from './StatsWidget'
 export { RecentProjectsWidget } from './RecentProjectsWidget'
@@ -25,8 +29,16 @@ export { WorkloadWidget } from './WorkloadWidget'
 export { TeamMembersWidget } from './TeamMembersWidget'
 export { ActiveTunnelsWidget } from './ActiveTunnelsWidget'
 export { TeamAutomationWidget } from './TeamAutomationWidget'
+export { ApiCollectionsWidget } from './ApiCollectionsWidget'
+export { PresentationsWidget } from './PresentationsWidget'
+export { DocsWidget } from './DocsWidget'
+export { TeamActivityWidget } from './TeamActivityWidget'
 export type { Project } from './RecentProjectsWidget'
 export type { Note } from './RecentNotesWidget'
+export type { ApiCollectionItem } from './ApiCollectionsWidget'
+export type { PresentationItem } from './PresentationsWidget'
+export type { DocItem } from './DocsWidget'
+export type { TeamActivity } from './TeamActivityWidget'
 
 export const WIDGET_COMPONENTS: Record<WidgetType, ComponentType<any>> = {
   stats: StatsWidget,
@@ -41,4 +53,8 @@ export const WIDGET_COMPONENTS: Record<WidgetType, ComponentType<any>> = {
   team_members: TeamMembersWidget,
   active_tunnels: ActiveTunnelsWidget,
   team_automation: TeamAutomationWidget,
+  api_collections: ApiCollectionsWidget,
+  presentations: PresentationsWidget,
+  docs: DocsWidget,
+  team_activity: TeamActivityWidget,
 }

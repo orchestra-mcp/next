@@ -187,27 +187,38 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
       const res = await apiFetch<{ profile: PublicProfile }>(`/api/public/community/members/${handle}`)
       let profile = res.profile
 
-      // Merge seed gamification data if the API doesn't return it yet
+      // Merge seed data only for fields the API doesn't return yet
+      // NEVER override privacy flags or fill hidden data from seed
       const seed = getSeedProfile(handle)
       if (profile && seed) {
-        if (!profile.badges || profile.badges.length === 0) profile.badges = seed.badges
+        // Only fill badges from seed if show_badges is not explicitly false
+        if (profile.show_badges !== false && (!profile.badges || profile.badges.length === 0)) {
+          profile.badges = seed.badges
+        }
         if (!profile.verifications || profile.verifications.length === 0) profile.verifications = seed.verifications
-        if (!profile.wallet) profile.wallet = seed.wallet
-        if (profile.show_badges === undefined) profile.show_badges = seed.show_badges
-        if (profile.show_wallet === undefined) profile.show_wallet = seed.show_wallet
+        // Only fill wallet from seed if show_wallet is not explicitly false
+        if (profile.show_wallet !== false && !profile.wallet) {
+          profile.wallet = seed.wallet
+        }
         if (!profile.bio) profile.bio = seed.bio
         if (!profile.social_links || profile.social_links.length === 0) profile.social_links = seed.social_links
-        // teams and sponsors come from real data only — no seed fallback
+        // teams, sponsors, show_badges, show_wallet come from API — no seed override
       }
 
       set({ profile, loading: false })
     } catch (e) {
-      // Full seed fallback when API fails entirely
-      const seedProfile = getSeedProfile(handle)
-      if (seedProfile) {
-        set({ profile: seedProfile, loading: false })
+      const msg = (e as Error).message
+      // If profile is private or not found, don't use seed fallback — show the error
+      if (msg.includes('private') || msg.includes('not found') || msg.includes('403') || msg.includes('404')) {
+        set({ error: msg, loading: false })
       } else {
-        set({ error: (e as Error).message, loading: false })
+        // Network/server error — try seed fallback for dev experience
+        const seedProfile = getSeedProfile(handle)
+        if (seedProfile) {
+          set({ profile: seedProfile, loading: false })
+        } else {
+          set({ error: msg, loading: false })
+        }
       }
     }
   },

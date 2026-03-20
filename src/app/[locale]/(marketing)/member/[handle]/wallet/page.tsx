@@ -1,6 +1,7 @@
 'use client'
 import { use, useState, useEffect } from 'react'
 import { useCommunityStore } from '@/store/community'
+import { useAuthStore } from '@/store/auth'
 import { useProfileTheme } from '@/components/profile/use-profile-theme'
 import ProfileSection from '@/components/profile/profile-section'
 import ProfileCard from '@/components/profile/profile-card'
@@ -52,7 +53,13 @@ interface PageProps { params: Promise<{ handle: string }> }
 export default function PublicWalletPage(props: PageProps) {
   const { handle } = use(props.params)
   const { profile } = useCommunityStore()
+  const { user } = useAuthStore()
   const { colors } = useProfileTheme()
+
+  const isOwner = !!user && (
+    user.username === handle ||
+    (user.settings?.handle as string) === handle
+  )
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [balance, setBalance] = useState(0)
   const [lifetime, setLifetime] = useState(0)
@@ -75,11 +82,11 @@ export default function PublicWalletPage(props: PageProps) {
     load()
   }, [handle])
 
-  // Privacy check
-  if (profile && profile.show_wallet === false) {
+  // Wallet is owner-only — guests and other users cannot view it
+  if (!isOwner) {
     return (
       <ProfileSection title="Wallet" icon="bx-wallet">
-        <p style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center' }}>This user has hidden their wallet.</p>
+        <p style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center' }}>Wallet is only visible to the profile owner.</p>
       </ProfileSection>
     )
   }

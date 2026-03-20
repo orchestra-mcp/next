@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import BlogClient from './BlogClient'
+import FeatureGate from '@/components/feature-gate'
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -32,5 +33,9 @@ async function getBlogData() {
 
 export default async function BlogPage() {
   const data = await getBlogData()
-  return <BlogClient data={data} />
+  return (
+    <FeatureGate feature="blog">
+      <BlogClient data={data} />
+    </FeatureGate>
+  )
 }
