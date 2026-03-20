@@ -56,15 +56,8 @@ export async function middleware(req: NextRequest) {
     pathname === p || pathname.startsWith(p + '/')
   )
 
-  // Coming soon check for ALL non-bypass routes (including /@handle profiles)
-  if (!isBypass) {
-    const comingSoonResponse = await handleComingSoon(req)
-    if (comingSoonResponse.status === 307 || comingSoonResponse.status === 308) {
-      return comingSoonResponse
-    }
-  }
-
-  // Rewrite /@handle paths to /member/handle (and /@handle/post/ID to /member/handle/post/ID)
+  // Rewrite /@handle paths FIRST (before coming-soon check so the rewritten
+  // path is what gets checked, and settings pages aren't accidentally blocked)
   const atMatch = pathname.match(/^\/(en|ar)?\/?@([a-zA-Z0-9_-]+)(\/.*)?$/)
   if (atMatch) {
     const locale = atMatch[1] || 'en'
@@ -72,7 +65,26 @@ export async function middleware(req: NextRequest) {
     const rest = atMatch[3] || ''
     const url = req.nextUrl.clone()
     url.pathname = `/${locale}/member/${handle}${rest}`
+    // Settings pages are always accessible to the owner (no coming-soon block)
+    if (rest.startsWith('/settings')) {
+      return NextResponse.rewrite(url)
+    }
+    // For other @handle pages, apply coming-soon check after rewrite
+    if (!isBypass) {
+      const comingSoonResponse = await handleComingSoon(req)
+      if (comingSoonResponse.status === 307 || comingSoonResponse.status === 308) {
+        return comingSoonResponse
+      }
+    }
     return NextResponse.rewrite(url)
+  }
+
+  // Coming soon check for all other non-bypass routes
+  if (!isBypass) {
+    const comingSoonResponse = await handleComingSoon(req)
+    if (comingSoonResponse.status === 307 || comingSoonResponse.status === 308) {
+      return comingSoonResponse
+    }
   }
 
   // Public routes — use intl middleware for locale-prefixed URLs
