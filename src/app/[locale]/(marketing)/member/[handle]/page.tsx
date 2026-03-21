@@ -567,14 +567,13 @@ export default function MemberProfilePage(props: PageProps) {
           ))}
         </div>
 
-        {/* Right: filter chips (only when viewing posts) */}
+        {/* Right: filter — icon-only circles with tooltip */}
         {feedView === 'posts' && (
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 4 }}>
             {(['all', 'post', 'skill', 'agent', 'workflow'] as const).map(f => {
-              const count = feedCounts[f]
               const chipMeta: Record<string, { label: string; color: string; icon: string }> = {
-                all:      { label: 'All',       color: 'rgba(255,255,255,0.6)', icon: 'bx-grid-alt' },
-                post:     { label: 'Posts',     color: 'rgba(255,255,255,0.6)', icon: 'bx-edit' },
+                all:      { label: 'All',       color: 'rgba(255,255,255,0.7)', icon: 'bx-grid-alt' },
+                post:     { label: 'Posts',     color: 'rgba(255,255,255,0.7)', icon: 'bx-edit' },
                 skill:    { label: 'Skills',    color: '#00e5ff',               icon: 'bx-code-alt' },
                 agent:    { label: 'Agents',    color: '#a900ff',               icon: 'bx-bot' },
                 workflow: { label: 'Workflows', color: '#22c55e',               icon: 'bx-git-merge' },
@@ -582,17 +581,15 @@ export default function MemberProfilePage(props: PageProps) {
               const { label, color, icon } = chipMeta[f]
               const active = feedFilter === f
               return (
-                <button key={f} type="button" onClick={() => setFeedFilter(f)} style={{
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                  background: active ? `${color}15` : 'transparent',
-                  border: `1px solid ${active ? `${color}50` : 'var(--color-border, rgba(255,255,255,0.07))'}`,
+                <button key={f} type="button" onClick={() => setFeedFilter(f)} title={label} style={{
+                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: active ? `${color}18` : 'transparent',
+                  border: `1.5px solid ${active ? color : 'var(--color-border, rgba(255,255,255,0.12))'}`,
                   color: active ? color : 'var(--color-fg-muted, rgba(255,255,255,0.35))',
-                  transition: 'all 0.15s',
+                  cursor: 'pointer', transition: 'all 0.15s',
                 }}>
-                  <i className={`bx ${icon}`} style={{ fontSize: 11 }} />
-                  {label}
-                  {count > 0 && <span style={{ fontSize: 9, fontWeight: 700, opacity: active ? 0.8 : 0.5 }}>{count}</span>}
+                  <i className={`bx ${icon}`} style={{ fontSize: 13 }} />
                 </button>
               )
             })}
