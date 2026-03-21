@@ -45,6 +45,18 @@ export default function MemberProfileLayout({ children, params }: LayoutProps) {
           flex: 1;
           min-width: 0;
         }
+        /* Keep code blocks from overflowing post cards */
+        .profile-main-col pre {
+          overflow-x: auto;
+          max-width: 100%;
+          white-space: pre;
+        }
+        .profile-main-col code {
+          word-break: break-word;
+        }
+        .profile-main-col pre code {
+          word-break: normal;
+        }
         @media (max-width: 768px) {
           .profile-columns {
             flex-direction: column;

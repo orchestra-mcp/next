@@ -616,7 +616,7 @@ export default function MemberProfilePage(props: PageProps) {
       ) : (
         displayPosts.filter(Boolean).map((post) => (
           <ProfileCard key={post.id} className="profile-enter-post" style={{ marginBottom: 12, ...getPostTypeBorderStyle(post) }}>
-            <div style={{ padding: '20px 24px' }}>
+            <div style={{ padding: '16px', overflow: 'hidden' }}>
               {editingId === post.id ? (
                 /* ── Edit mode — matches create composer style ── */
                 <div className="flex flex-col gap-2.5">
@@ -734,7 +734,7 @@ export default function MemberProfilePage(props: PageProps) {
                     />
                   </div>
 
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         {post.title ? (
@@ -773,6 +773,7 @@ export default function MemberProfilePage(props: PageProps) {
                       {relativeTime(post.created_at)}
                     </div>
                     {/* Content with truncation for long posts */}
+                    <div style={{ overflow: 'hidden', maxWidth: '100%' }}>
                     {post.content.length > 500 ? (
                       <div>
                         <div style={{ maxHeight: 200, overflow: 'hidden', position: 'relative' }}>
@@ -790,6 +791,7 @@ export default function MemberProfilePage(props: PageProps) {
                     ) : (
                       <MarkdownRenderer content={post.content} />
                     )}
+                    </div>
 
                     {/* Media embeds */}
                     {post.media && (() => {
