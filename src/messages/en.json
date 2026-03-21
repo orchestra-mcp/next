@@ -201,7 +201,8 @@
     "readMore": "Read more",
     "backToBlog": "Back to blog",
     "allPosts": "All posts",
-    "postNotFound": "Post not found"
+    "postNotFound": "Post not found",
+    "noPosts": "No posts published yet. Check back soon."
   },
   "solutions": {
     "title": "Built for every team",

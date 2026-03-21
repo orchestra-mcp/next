@@ -23,12 +23,6 @@ const tagColors: Record<string, { bg: string; border: string; text: string }> = 
   Product:      { bg: 'rgba(251,191,36,0.08)',  border: 'rgba(251,191,36,0.2)',  text: '#fbbf24' },
 }
 
-const FALLBACK_POSTS: Post[] = [
-  { slug: 'orchestra-v1-release', title: 'Orchestra v1.0.0 — GA release', excerpt: 'After months of development, Orchestra v1.0.0 is here. 290 tools, 36 plugins, 17 packs, 5 platforms.', date: 'Mar 02, 2026', read_time: '5 min read', tag: 'Announcement' },
-  { slug: 'in-process-architecture', title: 'Why we switched to in-process architecture', excerpt: 'We replaced our QUIC plugin mesh with an in-process single-binary design for local IDE use.', date: 'Mar 01, 2026', read_time: '7 min read', tag: 'Engineering' },
-  { slug: 'rag-memory-engine', title: 'How our RAG Memory Engine works', excerpt: 'A deep dive into Tantivy full-text search, SQLite vector embeddings, and how we got 22 tools running in Rust.', date: 'Feb 27, 2026', read_time: '8 min read', tag: 'Engineering' },
-]
-
 export default function BlogClient({ data }: { data: BlogData }) {
   const t = useTranslations()
   const { theme } = useThemeStore()
@@ -39,7 +33,7 @@ export default function BlogClient({ data }: { data: BlogData }) {
   const cardBg = isDark ? 'rgba(255,255,255,0.02)' : '#ffffff'
   const cardBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
 
-  const posts = data.posts?.length ? data.posts : FALLBACK_POSTS
+  const posts = data.posts ?? []
 
   return (
     <div className="mkt-page" style={{ maxWidth: 1100, margin: '0 auto', padding: '72px 32px' }}>
@@ -47,6 +41,11 @@ export default function BlogClient({ data }: { data: BlogData }) {
         <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 800, letterSpacing: '-0.04em', color: textPrimary, marginBottom: 14 }}>{t('blog.title')}</h1>
         <p style={{ fontSize: 17, color: textMuted, maxWidth: 480, margin: '0 auto' }}>{t('blog.subtitle')}</p>
       </div>
+      {posts.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '60px 0' }}>
+          <p style={{ fontSize: 15, color: textMuted }}>{t('blog.noPosts')}</p>
+        </div>
+      )}
       <div className="mkt-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
         {posts.map(post => {
           const tag = tagColors[post.tag] ?? tagColors.Announcement

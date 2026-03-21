@@ -18,12 +18,6 @@ interface Sponsor {
   status: 'active' | 'inactive'
 }
 
-const DEV_SEED_SPONSORS: Sponsor[] = [
-  { id: 1, name: 'Vercel', slug: 'vercel', logo_url: 'https://assets.vercel.com/image/upload/v1588805858/repositories/vercel/logo.png', website_url: 'https://vercel.com', tier: 'platinum', description: 'The platform for frontend developers. Build, deploy, and scale web apps.', order: 1, status: 'active' },
-  { id: 2, name: 'Supabase', slug: 'supabase', logo_url: 'https://supabase.com/brand-assets/supabase-logo-icon.png', website_url: 'https://supabase.com', tier: 'gold', description: 'The open source Firebase alternative with Postgres.', order: 1, status: 'active' },
-  { id: 3, name: 'Turso', slug: 'turso', logo_url: 'https://turso.tech/favicon.ico', website_url: 'https://turso.tech', tier: 'silver', description: 'SQLite for production.', order: 1, status: 'active' },
-  { id: 4, name: 'Bun', slug: 'bun', logo_url: 'https://bun.sh/logo.svg', website_url: 'https://bun.sh', tier: 'bronze', description: 'Incredibly fast JavaScript runtime.', order: 1, status: 'active' },
-]
 
 const TIER_CONFIG = {
   platinum: { label: 'Platinum', color: '#00e5ff', cols: 2, height: 200, showDesc: true },
@@ -71,7 +65,7 @@ export default function SponsorsPage() {
         }
       } catch {
         if (!cancelled) {
-          setSponsors(DEV_SEED_SPONSORS)
+          setSponsors([])
           setLoading(false)
         }
       }
