@@ -251,10 +251,11 @@ export default function MemberProfilePage(props: PageProps) {
     setDeleteConfirmId(null)
   }
 
-  const POST_TYPE_STYLES: Record<string, { color: string; bg: string; label: string }> = {
-    skill: { color: '#00e5ff', bg: 'rgba(0,229,255,0.1)', label: 'Skill' },
-    agent: { color: '#a900ff', bg: 'rgba(169,0,255,0.1)', label: 'Agent' },
-    workflow: { color: '#22c55e', bg: 'rgba(34,197,94,0.1)', label: 'Workflow' },
+  const POST_TYPE_STYLES: Record<string, { color: string; bg: string; label: string; icon: string; borderColor: string }> = {
+    post:     { color: 'rgba(255,255,255,0.5)', bg: 'rgba(255,255,255,0.06)', label: 'Post',     icon: 'bx-edit',     borderColor: 'rgba(255,255,255,0.15)' },
+    skill:    { color: '#00e5ff',               bg: 'rgba(0,229,255,0.1)',    label: 'Skill',    icon: 'bx-code-alt', borderColor: 'rgba(0,229,255,0.35)' },
+    agent:    { color: '#a900ff',               bg: 'rgba(169,0,255,0.1)',    label: 'Agent',    icon: 'bx-bot',      borderColor: 'rgba(169,0,255,0.35)' },
+    workflow: { color: '#22c55e',               bg: 'rgba(34,197,94,0.1)',    label: 'Workflow', icon: 'bx-git-merge',borderColor: 'rgba(34,197,94,0.35)' },
   }
 
   function getPostTypeFromTags(tags: string[]): string | null {
@@ -274,7 +275,12 @@ export default function MemberProfilePage(props: PageProps) {
     const type = getPostTypeFromTags(post.tags || [])
     if (!type || !POST_TYPE_STYLES[type]) return null
     const s = POST_TYPE_STYLES[type]
-    return <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: s.bg, color: s.color, fontWeight: 600, marginLeft: 8 }}>{s.label}</span>
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, padding: '1px 7px', borderRadius: 4, background: s.bg, color: s.color, fontWeight: 600, marginLeft: 8 }}>
+        <i className={`bx ${s.icon}`} style={{ fontSize: 10 }} />
+        {s.label}
+      </span>
+    )
   }
 
   async function toggleComments(postId: number) {
@@ -408,16 +414,24 @@ export default function MemberProfilePage(props: PageProps) {
             /* ── Expanded: full composer ── */
             <form onSubmit={handlePublish} className="flex flex-col gap-2.5 px-6 pb-5 pt-4">
               {/* Post type selector */}
-              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                {(['post', 'skill', 'agent', 'workflow'] as const).map(type => (
-                  <button key={type} type="button" onClick={() => setPostType(type)} style={{
-                    padding: '4px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                    background: postType === type ? 'rgba(0,229,255,0.1)' : 'var(--color-bg-active)',
-                    border: `1px solid ${postType === type ? 'rgba(0,229,255,0.3)' : 'var(--color-border)'}`,
-                    color: postType === type ? '#00e5ff' : 'var(--color-fg-muted)',
-                    cursor: 'pointer', textTransform: 'capitalize',
-                  }}>{type}</button>
-                ))}
+              <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
+                {(['post', 'skill', 'agent', 'workflow'] as const).map(type => {
+                  const s = POST_TYPE_STYLES[type]
+                  const active = postType === type
+                  return (
+                    <button key={type} type="button" onClick={() => setPostType(type)} title={s.label} style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      padding: '5px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600,
+                      background: active ? s.bg : 'transparent',
+                      border: `1px solid ${active ? s.borderColor : 'var(--color-border, rgba(255,255,255,0.08))'}`,
+                      color: active ? s.color : 'var(--color-fg-muted, rgba(255,255,255,0.4))',
+                      cursor: 'pointer', transition: 'all 0.15s',
+                    }}>
+                      <i className={`bx ${s.icon}`} style={{ fontSize: 13 }} />
+                      {s.label}
+                    </button>
+                  )
+                })}
               </div>
 
 
@@ -628,50 +642,64 @@ export default function MemberProfilePage(props: PageProps) {
         </ProfileCard>
       )}
 
-      {/* ── View Toggle: Posts / Activity ── */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 12 }}>
-        <button type="button" onClick={() => setFeedView('posts')} style={{
-          padding: '7px 16px', borderRadius: '8px 0 0 8px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          background: feedView === 'posts' ? 'var(--color-bg-active, rgba(0,229,255,0.06))' : 'transparent',
-          border: `1px solid ${feedView === 'posts' ? 'rgba(0,229,255,0.3)' : 'var(--color-border)'}`,
-          color: feedView === 'posts' ? '#00e5ff' : 'var(--color-fg-muted)',
-        }}>
-          <i className="bx bx-grid-alt mr-1.5" style={{ fontSize: 14, verticalAlign: '-1px' }} />Posts
-        </button>
-        <button type="button" onClick={() => { setFeedView('activity'); if (activity.length === 0 && handle) fetchActivity(handle) }} style={{
-          padding: '7px 16px', borderRadius: '0 8px 8px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          background: feedView === 'activity' ? 'var(--color-bg-active, rgba(0,229,255,0.06))' : 'transparent',
-          border: `1px solid ${feedView === 'activity' ? 'rgba(0,229,255,0.3)' : 'var(--color-border)'}`,
-          borderLeft: 'none',
-          color: feedView === 'activity' ? '#00e5ff' : 'var(--color-fg-muted)',
-        }}>
-          <i className="bx bx-time-five mr-1.5" style={{ fontSize: 14, verticalAlign: '-1px' }} />Activity
-        </button>
+      {/* ── Feed header: view toggle + filter chips ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
+        {/* Left: Posts / Activity pill toggle */}
+        <div style={{ display: 'flex', background: 'var(--color-bg-active, rgba(255,255,255,0.05))', borderRadius: 9, padding: 3, gap: 2 }}>
+          {([
+            { view: 'posts', icon: 'bx-grid-alt', label: 'Posts' },
+            { view: 'activity', icon: 'bx-time-five', label: 'Activity' },
+          ] as const).map(({ view, icon, label }) => (
+            <button key={view} type="button" onClick={() => { setFeedView(view); if (view === 'activity' && activity.length === 0 && handle) fetchActivity(handle) }} style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '5px 12px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              border: 'none',
+              background: feedView === view ? 'var(--color-bg, rgba(0,0,0,0.4))' : 'transparent',
+              color: feedView === view ? 'var(--color-fg, rgba(255,255,255,0.9))' : 'var(--color-fg-muted, rgba(255,255,255,0.4))',
+              boxShadow: feedView === view ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
+              transition: 'all 0.15s',
+            }}>
+              <i className={`bx ${icon}`} style={{ fontSize: 13 }} />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Right: filter chips (only when viewing posts) */}
+        {feedView === 'posts' && (
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {(['all', 'post', 'skill', 'agent', 'workflow'] as const).map(f => {
+              const count = feedCounts[f]
+              const chipMeta: Record<string, { label: string; color: string; icon: string }> = {
+                all:      { label: 'All',       color: 'rgba(255,255,255,0.6)', icon: 'bx-grid-alt' },
+                post:     { label: 'Posts',     color: 'rgba(255,255,255,0.6)', icon: 'bx-edit' },
+                skill:    { label: 'Skills',    color: '#00e5ff',               icon: 'bx-code-alt' },
+                agent:    { label: 'Agents',    color: '#a900ff',               icon: 'bx-bot' },
+                workflow: { label: 'Workflows', color: '#22c55e',               icon: 'bx-git-merge' },
+              }
+              const { label, color, icon } = chipMeta[f]
+              const active = feedFilter === f
+              return (
+                <button key={f} type="button" onClick={() => setFeedFilter(f)} style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                  background: active ? `${color}15` : 'transparent',
+                  border: `1px solid ${active ? `${color}50` : 'var(--color-border, rgba(255,255,255,0.07))'}`,
+                  color: active ? color : 'var(--color-fg-muted, rgba(255,255,255,0.35))',
+                  transition: 'all 0.15s',
+                }}>
+                  <i className={`bx ${icon}`} style={{ fontSize: 11 }} />
+                  {label}
+                  {count > 0 && <span style={{ fontSize: 9, fontWeight: 700, opacity: active ? 0.8 : 0.5 }}>{count}</span>}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {feedView === 'posts' && (
       <>
-      {/* ── Post Type Filter Tabs ── */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-        {(['all', 'post', 'skill', 'agent', 'workflow'] as const).map(f => {
-          const count = feedCounts[f]
-          const labels: Record<string, string> = { all: 'All', post: 'Posts', skill: 'Skills', agent: 'Agents', workflow: 'Workflows' }
-          const typeColors: Record<string, string> = { all: '#00e5ff', post: '#00e5ff', skill: '#22c55e', agent: '#f59e0b', workflow: '#8b5cf6' }
-          const active = feedFilter === f
-          return (
-            <button key={f} type="button" onClick={() => setFeedFilter(f)} style={{
-              padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-              background: active ? `${typeColors[f]}12` : 'transparent',
-              border: `1px solid ${active ? `${typeColors[f]}40` : 'var(--color-border, rgba(255,255,255,0.07))'}`,
-              color: active ? typeColors[f] : 'var(--color-fg-muted, rgba(255,255,255,0.45))',
-              display: 'flex', alignItems: 'center', gap: 5,
-            }}>
-              {labels[f]}
-              {count > 0 && <span style={{ fontSize: 10, opacity: 0.7 }}>({count})</span>}
-            </button>
-          )
-        })}
-      </div>
 
       {/* ── Post Cards ── */}
       {displayPosts.length === 0 && !loading ? (
@@ -694,16 +722,24 @@ export default function MemberProfilePage(props: PageProps) {
                 /* ── Edit mode — matches create composer style ── */
                 <div className="flex flex-col gap-2.5">
                   {/* Post type selector */}
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {(['post', 'skill', 'agent', 'workflow'] as const).map(type => (
-                      <button key={type} type="button" onClick={() => setEditPostType(type)} style={{
-                        padding: '4px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                        background: editPostType === type ? (POST_TYPE_STYLES[type]?.bg || 'rgba(0,229,255,0.1)') : 'var(--color-bg-active)',
-                        border: `1px solid ${editPostType === type ? (POST_TYPE_STYLES[type]?.color || '#00e5ff') + '4d' : 'var(--color-border)'}`,
-                        color: editPostType === type ? (POST_TYPE_STYLES[type]?.color || '#00e5ff') : 'var(--color-fg-muted)',
-                        cursor: 'pointer', textTransform: 'capitalize',
-                      }}>{type}</button>
-                    ))}
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    {(['post', 'skill', 'agent', 'workflow'] as const).map(type => {
+                      const s = POST_TYPE_STYLES[type]
+                      const active = editPostType === type
+                      return (
+                        <button key={type} type="button" onClick={() => setEditPostType(type)} title={s.label} style={{
+                          display: 'flex', alignItems: 'center', gap: 5,
+                          padding: '5px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600,
+                          background: active ? s.bg : 'transparent',
+                          border: `1px solid ${active ? s.borderColor : 'var(--color-border, rgba(255,255,255,0.08))'}`,
+                          color: active ? s.color : 'var(--color-fg-muted, rgba(255,255,255,0.4))',
+                          cursor: 'pointer', transition: 'all 0.15s',
+                        }}>
+                          <i className={`bx ${s.icon}`} style={{ fontSize: 13 }} />
+                          {s.label}
+                        </button>
+                      )
+                    })}
                   </div>
                   {/* Icon picker + Title on same row */}
                   <div className="flex items-center gap-2">
