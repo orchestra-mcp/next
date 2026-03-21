@@ -8,82 +8,6 @@ import { uploadUrl } from '@/lib/api'
 import { useProfileTheme } from './use-profile-theme'
 import AvatarUploadModal from './avatar-upload-modal'
 import CoverUploadModal from './cover-upload-modal'
-import ReactMarkdownBase from 'react-markdown'
-
-// react-markdown exports React 19 types — cast for React 18 compat
-const ReactMarkdown = ReactMarkdownBase as unknown as React.FC<{
-  children: string
-  components?: Record<string, React.FC<{ children?: React.ReactNode; href?: string }>>
-}>
-
-function BioModal({ bio, name, onClose }: { bio: string; name: string; onClose: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '24px 16px',
-      }}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          width: '100%', maxWidth: 560,
-          background: 'var(--color-bg, #0a0a0f)',
-          border: '1px solid var(--color-border, rgba(255,255,255,0.08))',
-          borderRadius: 16, overflow: 'hidden',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
-          maxHeight: '80vh', display: 'flex', flexDirection: 'column',
-        }}
-      >
-        {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 20px', borderBottom: '1px solid var(--color-border, rgba(255,255,255,0.06))',
-          flexShrink: 0,
-        }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-fg)' }}>{name}&apos;s bio</span>
-          <button
-            onClick={onClose}
-            style={{
-              width: 28, height: 28, borderRadius: 7, border: 'none',
-              background: 'var(--color-bg-active, rgba(255,255,255,0.06))',
-              color: 'var(--color-fg-muted)', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
-            }}
-          ><i className="bx bx-x" /></button>
-        </div>
-
-        {/* Markdown body */}
-        <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => <p style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--color-fg-muted)', margin: '0 0 12px' }}>{children}</p>,
-              h1: ({ children }) => <h1 style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-fg)', margin: '0 0 12px', letterSpacing: '-0.03em' }}>{children}</h1>,
-              h2: ({ children }) => <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-fg)', margin: '16px 0 8px' }}>{children}</h2>,
-              h3: ({ children }) => <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-fg)', margin: '12px 0 6px' }}>{children}</h3>,
-              a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#00e5ff', textDecoration: 'none' }}>{children}</a>,
-              ul: ({ children }) => <ul style={{ paddingLeft: 20, margin: '0 0 12px', color: 'var(--color-fg-muted)', fontSize: 14, lineHeight: 1.75 }}>{children}</ul>,
-              ol: ({ children }) => <ol style={{ paddingLeft: 20, margin: '0 0 12px', color: 'var(--color-fg-muted)', fontSize: 14, lineHeight: 1.75 }}>{children}</ol>,
-              code: ({ children }) => <code style={{ fontSize: 12, padding: '1px 5px', borderRadius: 4, background: 'rgba(255,255,255,0.07)', color: '#a78bfa', fontFamily: 'monospace' }}>{children}</code>,
-              strong: ({ children }) => <strong style={{ color: 'var(--color-fg)', fontWeight: 700 }}>{children}</strong>,
-            }}
-          >
-            {bio}
-          </ReactMarkdown>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 const PLATFORM_ICONS: Record<string, string> = {
   website: 'bx-link', github: 'bxl-github', twitter: 'bxl-twitter',
@@ -111,7 +35,6 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
   const router = useRouter()
   const [showAvatarModal, setShowAvatarModal] = useState(false)
   const [showCoverModal, setShowCoverModal] = useState(false)
-  const [showBioModal, setShowBioModal] = useState(false)
 
   const isOwner = !!user && (
     user.username === handle || (user.settings?.handle as string) === handle
@@ -210,8 +133,8 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
             <div style={{ fontSize: 12, color: 'var(--color-fg-dim)', marginTop: 1, cursor: 'pointer' }} onClick={() => router.push(`/@${handle}`)}>@{profile.handle}</div>
             {profile.bio && (
               <p
-                onClick={() => setShowBioModal(true)}
-                title="Click to read full bio"
+                onClick={() => router.push(`/@${handle}/about`)}
+                title="Read full bio"
                 style={{
                   fontSize: 12, lineHeight: 1.5, margin: '8px 0 0', color: 'var(--color-fg-muted)',
                   display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
@@ -384,7 +307,6 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
 
       <AvatarUploadModal open={showAvatarModal} onClose={() => setShowAvatarModal(false)} currentAvatar={profile.avatar_url} onUploaded={() => { setShowAvatarModal(false); fetchMemberProfile(handle) }} />
       <CoverUploadModal open={showCoverModal} onClose={() => setShowCoverModal(false)} currentCover={profile.cover_url} onUploaded={() => { setShowCoverModal(false); fetchMemberProfile(handle) }} />
-      {showBioModal && profile.bio && <BioModal bio={profile.bio} name={profile.name} onClose={() => setShowBioModal(false)} />}
     </>
   )
 }
