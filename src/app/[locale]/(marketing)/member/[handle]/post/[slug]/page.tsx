@@ -102,15 +102,16 @@ export default function PostDetailPage(props: PageProps) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Post card */}
       <ProfileCard variant="default" style={{
-        padding: '24px',
+        padding: '16px',
+        overflow: 'hidden',
         ...((() => {
           const type = getPostType(currentPost.tags || [])
-          return type && POST_TYPE_STYLES[type] ? { borderLeft: `3px solid ${POST_TYPE_STYLES[type].color}` } : {}
+          return type && POST_TYPE_STYLES[type] ? { border: `1.5px solid ${POST_TYPE_STYLES[type].color}40` } : {}
         })()),
       }}>
         {/* Type badge + Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 12px' }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--color-fg)', margin: 0, letterSpacing: '-0.02em', flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, margin: '0 0 12px' }}>
+          <h1 style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-fg)', margin: 0, letterSpacing: '-0.02em', flex: 1, minWidth: 0, wordBreak: 'break-word' }}>
             {currentPost.title}
           </h1>
           {(() => {
@@ -139,7 +140,7 @@ export default function PostDetailPage(props: PageProps) {
         </div>
 
         {/* Content */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16, overflow: 'hidden', maxWidth: '100%' }}>
           <MarkdownRenderer content={currentPost.content} />
         </div>
 
@@ -186,7 +187,7 @@ export default function PostDetailPage(props: PageProps) {
       </ProfileCard>
 
       {/* Comments */}
-      <ProfileCard variant="default" style={{ padding: '20px 24px' }}>
+      <ProfileCard variant="default" style={{ padding: '16px', overflow: 'hidden' }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-fg)', margin: '0 0 16px' }}>
           Comments ({comments.length})
         </h3>
@@ -227,7 +228,7 @@ export default function PostDetailPage(props: PageProps) {
 
                 {/* Replies */}
                 {c.replies && c.replies.length > 0 && (
-                  <div style={{ marginLeft: 42, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ marginLeft: 32, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {c.replies.map((r: any) => (
                       <div key={r.id} style={{ display: 'flex', gap: 8 }}>
                         {r.user_avatar ? (
@@ -249,7 +250,7 @@ export default function PostDetailPage(props: PageProps) {
 
                 {/* Reply input */}
                 {replyingTo === c.id && (
-                  <div style={{ marginLeft: 42, marginTop: 8, display: 'flex', gap: 8 }}>
+                  <div style={{ marginLeft: 32, marginTop: 8, display: 'flex', gap: 8 }}>
                     <input
                       type="text"
                       value={replyText}
@@ -310,7 +311,7 @@ export default function PostDetailPage(props: PageProps) {
 
       {/* Related posts */}
       {relatedPosts.length > 0 && (
-        <ProfileCard variant="default" style={{ padding: '16px 20px' }}>
+        <ProfileCard variant="default" style={{ padding: '16px' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-fg)', marginBottom: 12 }}>Related Posts</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {relatedPosts.slice(0, 5).map((rp: any) => (
