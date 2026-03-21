@@ -3,6 +3,7 @@
 import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
+import { useAuthStore } from '@/store/auth'
 import { relativeTime } from '@/lib/mcp-parsers'
 
 interface DocShare {
@@ -11,6 +12,7 @@ interface DocShare {
   title: string
   description: string
   entity_type: string
+  visibility: string
   updated_at: string
 }
 
@@ -20,23 +22,34 @@ interface PageProps {
 
 export default function PublicDocsPage(props: PageProps) {
   const { handle } = use(props.params)
+  const { user } = useAuthStore()
   const [docs, setDocs] = useState<DocShare[]>([])
   const [loading, setLoading] = useState(true)
+
+  const isOwner = !!user && (user.username === handle || (user.settings?.handle as string) === handle)
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await apiFetch<{ shares: DocShare[] }>(
-          `/api/public/community/shares/${handle}?entity_type=doc`
-        )
-        setDocs(res.shares ?? [])
+        let shares: DocShare[] = []
+        if (isOwner) {
+          // Owner sees all their items (public + private)
+          const res = await apiFetch<{ shares: DocShare[] }>('/api/community/shares?entity_type=doc')
+          shares = res.shares ?? []
+        } else {
+          const res = await apiFetch<{ shares: DocShare[] }>(
+            `/api/public/community/shares/${handle}?entity_type=doc`, { skipAuth: true }
+          )
+          shares = res.shares ?? []
+        }
+        setDocs(shares)
       } catch {
         setDocs([])
       }
       setLoading(false)
     }
     load()
-  }, [handle])
+  }, [handle, isOwner])
 
   if (loading) {
     return (
@@ -95,9 +108,14 @@ export default function PublicDocsPage(props: PageProps) {
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-fg)' }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-fg)', flex: 1, minWidth: 0 }}>
                       {doc.title}
                     </span>
+                    {isOwner && doc.visibility === 'private' && (
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4, background: 'rgba(239,68,68,0.1)', color: '#ef4444', flexShrink: 0 }}>
+                        <i className="bx bx-lock-alt" style={{ fontSize: 10, marginRight: 2 }} />Private
+                      </span>
+                    )}
                   </div>
                   {doc.description && (
                     <p style={descriptionStyle}>{doc.description}</p>

@@ -8,6 +8,7 @@ import { uploadUrl } from '@/lib/api'
 import { useProfileTheme } from './use-profile-theme'
 import AvatarUploadModal from './avatar-upload-modal'
 import CoverUploadModal from './cover-upload-modal'
+import ProfileContentCard from './profile-content-card'
 
 const PLATFORM_ICONS: Record<string, string> = {
   website: 'bx-link', github: 'bxl-github', twitter: 'bxl-twitter',
@@ -313,6 +314,10 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
               ))}
             </div>
           </div>
+        )}
+        {/* ── Owner Content Card: Docs / APIs / Slides ── */}
+        {isOwner && (
+          <ProfileContentCard handle={handle} />
         )}
       </div>
 
