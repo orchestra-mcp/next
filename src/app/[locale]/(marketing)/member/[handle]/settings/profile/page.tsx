@@ -126,8 +126,13 @@ export default function ProfileSettingsPage() {
             <input style={inputSt} value={profileHandle} onChange={e => setProfileHandle(e.target.value)} placeholder="your-handle" />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
-            <label style={labelSt}>Bio</label>
-            <textarea style={{ ...inputSt, height: 70, resize: 'vertical' }} value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell others about yourself..." />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ ...labelSt, marginBottom: 0 }}>Bio</label>
+              <span style={{ fontSize: 10, color: 'var(--color-fg-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <i className="bx bxl-markdown" style={{ fontSize: 12 }} /> Markdown supported
+              </span>
+            </div>
+            <textarea style={{ ...inputSt, height: 100, resize: 'vertical' }} value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell others about yourself... (Markdown supported)" />
           </div>
         </div>
       </div>
