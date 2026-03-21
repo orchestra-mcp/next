@@ -382,237 +382,143 @@ export default function MemberProfilePage(props: PageProps) {
       {isOwner && (
         <ProfileCard style={{ marginBottom: 12 }}>
           {!composerOpen ? (
-            /* ── Collapsed: single-line prompt ── */
+            /* ── Collapsed ── */
             <button
               type="button"
               onClick={() => setComposerOpen(true)}
-              className="w-full flex items-center gap-3 px-5 py-3 bg-transparent border-none cursor-pointer text-left font-inherit"
+              className="w-full flex items-center gap-3 px-4 py-3 bg-transparent border-none cursor-pointer text-left font-inherit"
             >
               {profile?.avatar_url ? (
-                <img src={uploadUrl(profile.avatar_url)} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                <img src={uploadUrl(profile.avatar_url)} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
               ) : (
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
-                  style={{ background: colors.accent, color: '#fff' }}
-                >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold" style={{ background: colors.accent, color: '#fff' }}>
                   {(profile?.name || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
                 </div>
               )}
-              <div
-                className="flex-1 px-3 py-2 rounded-full text-sm"
-                style={{ background: 'var(--color-bg-active, rgba(255,255,255,0.06))', color: colors.textMuted }}
-              >
-                What are you thinking about?
-              </div>
-              <div className="flex gap-1.5 shrink-0">
-                <i className="bx bx-image text-lg" style={{ color: colors.textMuted, opacity: 0.5 }} />
-                <i className="bx bx-video text-lg" style={{ color: colors.textMuted, opacity: 0.5 }} />
-                <i className="bx bx-link text-lg" style={{ color: colors.textMuted, opacity: 0.5 }} />
+              <div className="flex-1 min-w-0 px-4 py-2 rounded-full text-sm" style={{ background: 'var(--color-bg-active, rgba(255,255,255,0.06))', color: colors.textMuted }}>
+                What&apos;s on your mind, {profile?.name?.split(' ')[0] || handle}?
               </div>
             </button>
           ) : (
-            /* ── Expanded: full composer ── */
-            <form onSubmit={handlePublish} className="flex flex-col gap-2.5 px-3 sm:px-6 pb-4 sm:pb-5 pt-3 sm:pt-4">
-              {/* Post type selector */}
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 4 }}>
-                {(['post', 'skill', 'agent', 'workflow'] as const).map(type => {
-                  const s = POST_TYPE_STYLES[type]
-                  const active = postType === type
-                  return (
-                    <button key={type} type="button" onClick={() => setPostType(type)} title={s.label} style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      padding: '5px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600,
-                      background: active ? s.bg : 'transparent',
-                      border: `1px solid ${active ? s.borderColor : 'var(--color-border, rgba(255,255,255,0.08))'}`,
-                      color: active ? s.color : 'var(--color-fg-muted, rgba(255,255,255,0.4))',
-                      cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
-                    }}>
-                      <i className={`bx ${s.icon}`} style={{ fontSize: 13 }} />
-                      {s.label}
-                    </button>
-                  )
-                })}
-              </div>
-
-
-              {/* Icon picker + Title on same row */}
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowIconPicker(!showIconPicker)}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center border cursor-pointer transition-colors shrink-0"
-                    style={{
-                      background: postIconColor ? `${postIconColor}15` : ('var(--color-bg-active, rgba(255,255,255,0.06))'),
-                      borderColor: colors.cardBorder,
-                      color: postIconColor || colors.textMuted,
-                    }}
-                    title="Pick icon & color"
-                  >
-                    <i className={`bx ${postIcon || 'bx-notepad'} text-lg`} />
-                  </button>
-                  {showIconPicker && (
-                    <div className="absolute top-full left-0 mt-1 p-3 rounded-xl border shadow-xl z-20" style={{ background: 'var(--color-bg)', borderColor: colors.cardBorder, width: 240 }}>
-                      {/* Colors row */}
-                      <div className="flex gap-1.5 mb-3 pb-2.5" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
-                        {['#a900ff', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#14b8a6'].map(c => (
-                          <button
-                            key={c} type="button"
-                            onClick={() => setPostIconColor(postIconColor === c ? '' : c)}
-                            className="w-5 h-5 rounded-full border-2 cursor-pointer transition-transform hover:scale-110"
-                            style={{ background: c, borderColor: postIconColor === c ? ('var(--color-fg, #fff)') : 'transparent' }}
-                          />
-                        ))}
-                      </div>
-                      {/* Icons grid */}
-                      <div className="grid grid-cols-7 gap-1">
-                        {['bx-notepad', 'bx-star', 'bx-bulb', 'bx-code-alt', 'bx-bug', 'bx-rocket', 'bx-heart', 'bx-book', 'bx-music', 'bx-camera', 'bx-trophy', 'bx-paint-roll', 'bx-world', 'bx-coffee', 'bx-flag', 'bx-zap', 'bx-bell', 'bx-shield', 'bx-wrench', 'bx-terminal', 'bx-chip'].map(icon => (
-                          <button
-                            key={icon} type="button"
-                            onClick={() => { setPostIcon(icon === 'bx-notepad' ? '' : icon); setShowIconPicker(false) }}
-                            className="w-7 h-7 flex items-center justify-center rounded-md border-none cursor-pointer transition-colors"
-                            style={{
-                              background: (postIcon || 'bx-notepad') === icon ? ('var(--color-bg-active, rgba(255,255,255,0.1))') : 'transparent',
-                              color: postIconColor || colors.textPrimary,
-                            }}
-                          >
-                            <i className={`bx ${icon} text-base`} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+            /* ── Expanded: FB-style ── */
+            <form onSubmit={handlePublish} className="flex flex-col">
+              {/* Header: avatar + name + close */}
+              <div className="flex items-center gap-3 px-4 pt-4 pb-3" style={{ borderBottom: `1px solid var(--color-border, rgba(255,255,255,0.07))` }}>
+                {profile?.avatar_url ? (
+                  <img src={uploadUrl(profile.avatar_url)} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-xs font-bold" style={{ background: colors.accent, color: '#fff' }}>
+                    {(profile?.name || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold" style={{ color: colors.textPrimary }}>{profile?.name || handle}</div>
+                  {/* Type selector inline under name */}
+                  <div style={{ display: 'flex', gap: 3, marginTop: 4, overflowX: 'auto' }}>
+                    {(['post', 'skill', 'agent', 'workflow'] as const).map(type => {
+                      const s = POST_TYPE_STYLES[type]
+                      const active = postType === type
+                      return (
+                        <button key={type} type="button" onClick={() => setPostType(type)} style={{
+                          display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0,
+                          padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600,
+                          background: active ? s.bg : 'transparent',
+                          border: `1px solid ${active ? s.borderColor : 'var(--color-border, rgba(255,255,255,0.08))'}`,
+                          color: active ? s.color : 'var(--color-fg-muted, rgba(255,255,255,0.35))',
+                          cursor: 'pointer', transition: 'all 0.12s', whiteSpace: 'nowrap',
+                        }}>
+                          <i className={`bx ${s.icon}`} style={{ fontSize: 10 }} />
+                          {s.label}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-                <input
-                  type="text"
-                  placeholder="Post title"
-                  value={postTitle}
-                  onChange={e => setPostTitle(e.target.value)}
-                  required
-                  autoFocus
-                  className="flex-1 min-w-0 px-3 py-2 rounded-lg border text-sm font-inherit outline-none transition-colors"
-                  style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
-                  onFocus={e => { e.currentTarget.style.borderColor = colors.inputFocusBorder }}
-                  onBlur={e => { e.currentTarget.style.borderColor = colors.inputBorder }}
-                />
-              </div>
-
-              {/* Toolbar + Textarea */}
-              <div className="rounded-lg border overflow-hidden" style={{ borderColor: colors.inputBorder }}>
-                {/* Formatting toolbar */}
-                <div className="flex items-center gap-0.5 px-2 py-1" style={{ background: 'var(--color-bg-alt, rgba(255,255,255,0.03))', borderBottom: `1px solid ${colors.cardBorder}`, overflowX: 'auto' }}>
-                  {[
-                    { icon: 'bx-bold', title: 'Bold', pre: '**', suf: '**' },
-                    { icon: 'bx-italic', title: 'Italic', pre: '_', suf: '_' },
-                    { icon: 'bx-strikethrough', title: 'Strike', pre: '~~', suf: '~~' },
-                    { icon: 'bx-heading', title: 'Heading', pre: '## ', suf: '' },
-                    { icon: 'bx-link', title: 'Link', pre: '[', suf: '](url)' },
-                    { icon: 'bx-code', title: 'Code', pre: '`', suf: '`' },
-                    { icon: 'bx-list-ul', title: 'List', pre: '- ', suf: '' },
-                    { icon: 'bx-code-block', title: 'Code Block', pre: '```\n', suf: '\n```' },
-                    { icon: 'bx-quote-left', title: 'Quote', pre: '> ', suf: '' },
-                  ].map(a => (
-                    <button
-                      key={a.icon} type="button" title={a.title}
-                      onClick={() => insertFormat(a.pre, a.suf)}
-                      className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer transition-colors shrink-0"
-                      style={{ color: 'var(--color-fg-muted, rgba(255,255,255,0.5))', fontSize: 15 }}
-                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-fg-bright, rgba(255,255,255,0.85))'; e.currentTarget.style.background = 'var(--color-bg-active, rgba(255,255,255,0.06))' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-fg-muted, rgba(255,255,255,0.5))'; e.currentTarget.style.background = 'transparent' }}
-                    >
-                      <i className={`bx ${a.icon}`} />
-                    </button>
-                  ))}
-                  {/* Media attachment buttons */}
-                  <div style={{ width: 1, height: 16, background: 'var(--color-border)', margin: '0 2px' }} />
-                  {[
-                    { icon: 'bx-image', title: 'Add image URL', placeholder: 'Image URL (.jpg, .png, .gif, .webp)' },
-                    { icon: 'bxl-youtube', title: 'Add video URL', placeholder: 'YouTube, Vimeo, Twitch URL' },
-                    { icon: 'bx-link', title: 'Add link', placeholder: 'Any URL' },
-                  ].map(btn => (
-                    <button
-                      key={btn.icon} type="button" title={btn.title}
-                      onClick={() => {
-                        const url = prompt(btn.placeholder)
-                        if (url?.trim()) setPostMedia(prev => [...prev, url.trim()])
-                      }}
-                      className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer transition-colors shrink-0"
-                      style={{ color: 'var(--color-fg-muted, rgba(255,255,255,0.5))', fontSize: 15 }}
-                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-fg-bright, rgba(255,255,255,0.85))'; e.currentTarget.style.background = 'var(--color-bg-active, rgba(255,255,255,0.06))' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-fg-muted, rgba(255,255,255,0.5))'; e.currentTarget.style.background = 'transparent' }}
-                    >
-                      <i className={`bx ${btn.icon}`} />
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  ref={contentRef}
-                  placeholder="What's on your mind?"
-                  value={postContent}
-                  onChange={e => setPostContent(e.target.value)}
-                  rows={4}
-                  className="w-full px-3.5 py-3 border-none text-sm font-inherit outline-none resize-y"
-                  style={{ background: colors.inputBg, color: colors.textPrimary, minHeight: 90 }}
-                />
-              </div>
-
-
-              {/* Media inline input */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Paste image, video, or link URL..."
-                  value={mediaInput}
-                  onChange={e => setMediaInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && mediaInput.trim()) {
-                      e.preventDefault()
-                      setPostMedia(prev => [...prev, mediaInput.trim()])
-                      setMediaInput('')
-                    }
-                  }}
-                  className="flex-1 min-w-0 px-3 py-1.5 rounded-lg border text-xs font-inherit outline-none transition-colors"
-                  style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
-                />
-                <button
-                  type="button"
-                  disabled={!mediaInput.trim()}
-                  onClick={() => { if (mediaInput.trim()) { setPostMedia(prev => [...prev, mediaInput.trim()]); setMediaInput('') } }}
-                  className="px-3 py-1.5 rounded-lg border-none text-xs font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: 'var(--color-bg-active)', color: 'var(--color-fg-muted)' }}
-                >
-                  <i className="bx bx-plus" /> Add
+                <button type="button" onClick={() => { setComposerOpen(false); setShowIconPicker(false) }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full border-none cursor-pointer shrink-0"
+                  style={{ background: 'var(--color-bg-active, rgba(255,255,255,0.08))', color: colors.textMuted, fontSize: 18 }}>
+                  <i className="bx bx-x" />
                 </button>
               </div>
 
-              {/* Media chips */}
-              {postMedia.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {postMedia.map((url, i) => {
-                    const isYt = /youtube\.com|youtu\.be/.test(url)
-                    const isImg = /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(url)
-                    return (
-                      <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs max-w-[300px]" style={{ background: 'var(--color-bg-active, rgba(255,255,255,0.05))', color: colors.textMuted }}>
-                        <i className={`bx ${isYt ? 'bxl-youtube' : isImg ? 'bx-image' : 'bx-link'} text-sm`} style={{ color: isYt ? '#ff0000' : colors.accent }} />
-                        <span className="truncate flex-1">{url}</span>
-                        <button type="button" onClick={() => setPostMedia(prev => prev.filter((_, j) => j !== i))} className="shrink-0 bg-transparent border-none cursor-pointer p-0" style={{ color: colors.textMuted }}>
-                          <i className="bx bx-x text-sm" />
-                        </button>
+              {/* Title input */}
+              <div className="px-4 pt-3">
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <button type="button" onClick={() => setShowIconPicker(!showIconPicker)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center border cursor-pointer shrink-0"
+                      style={{ background: postIconColor ? `${postIconColor}15` : 'var(--color-bg-active, rgba(255,255,255,0.06))', borderColor: colors.cardBorder, color: postIconColor || colors.textMuted }}
+                      title="Pick icon">
+                      <i className={`bx ${postIcon || 'bx-notepad'}`} style={{ fontSize: 16 }} />
+                    </button>
+                    {showIconPicker && (
+                      <div className="absolute top-full left-0 mt-1 p-3 rounded-xl border shadow-xl z-20" style={{ background: 'var(--color-bg)', borderColor: colors.cardBorder, width: 232 }}>
+                        <div className="flex gap-1.5 mb-3 pb-2.5 flex-wrap" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
+                          {['#a900ff','#3b82f6','#22c55e','#f59e0b','#ef4444','#ec4899','#8b5cf6','#06b6d4','#f97316','#14b8a6'].map(c => (
+                            <button key={c} type="button" onClick={() => setPostIconColor(postIconColor === c ? '' : c)}
+                              className="w-5 h-5 rounded-full border-2 cursor-pointer"
+                              style={{ background: c, borderColor: postIconColor === c ? 'var(--color-fg,#fff)' : 'transparent' }} />
+                          ))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1">
+                          {['bx-notepad','bx-star','bx-bulb','bx-code-alt','bx-bug','bx-rocket','bx-heart','bx-book','bx-music','bx-camera','bx-trophy','bx-paint-roll','bx-world','bx-coffee','bx-flag','bx-zap','bx-bell','bx-shield','bx-wrench','bx-terminal','bx-chip'].map(icon => (
+                            <button key={icon} type="button" onClick={() => { setPostIcon(icon === 'bx-notepad' ? '' : icon); setShowIconPicker(false) }}
+                              className="w-7 h-7 flex items-center justify-center rounded-md border-none cursor-pointer"
+                              style={{ background: (postIcon||'bx-notepad')===icon ? 'var(--color-bg-active,rgba(255,255,255,0.1))' : 'transparent', color: postIconColor||colors.textPrimary }}>
+                              <i className={`bx ${icon} text-base`} />
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    )
-                  })}
+                    )}
+                  </div>
+                  <input type="text" placeholder="Title (optional)" value={postTitle} onChange={e => setPostTitle(e.target.value)} autoFocus
+                    className="flex-1 min-w-0 px-3 py-1.5 rounded-lg border text-sm font-inherit outline-none"
+                    style={{ background: 'transparent', borderColor: colors.inputBorder, color: colors.textPrimary }} />
                 </div>
-              )}
+              </div>
+
+              {/* Large textarea — FB style */}
+              <div className="px-4 pt-2 pb-1">
+                <textarea ref={contentRef} placeholder={`What's on your mind, ${profile?.name?.split(' ')[0] || handle}?`}
+                  value={postContent} onChange={e => setPostContent(e.target.value)} rows={5} required
+                  className="w-full border-none text-base font-inherit outline-none resize-none"
+                  style={{ background: 'transparent', color: colors.textPrimary, minHeight: 100, lineHeight: 1.6 }} />
+              </div>
+
+              {/* Formatting toolbar */}
+              <div className="flex items-center gap-0.5 px-3 py-1 overflow-x-auto" style={{ borderTop: `1px solid var(--color-border, rgba(255,255,255,0.06))` }}>
+                {[
+                  { icon: 'bx-bold', title: 'Bold', pre: '**', suf: '**' },
+                  { icon: 'bx-italic', title: 'Italic', pre: '_', suf: '_' },
+                  { icon: 'bx-strikethrough', title: 'Strike', pre: '~~', suf: '~~' },
+                  { icon: 'bx-heading', title: 'Heading', pre: '## ', suf: '' },
+                  { icon: 'bx-link', title: 'Link', pre: '[', suf: '](url)' },
+                  { icon: 'bx-code', title: 'Code', pre: '`', suf: '`' },
+                  { icon: 'bx-list-ul', title: 'List', pre: '- ', suf: '' },
+                  { icon: 'bx-code-block', title: 'Code block', pre: '```\n', suf: '\n```' },
+                  { icon: 'bx-quote-left', title: 'Quote', pre: '> ', suf: '' },
+                ].map(a => (
+                  <button key={a.icon} type="button" title={a.title} onClick={() => insertFormat(a.pre, a.suf)}
+                    className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer shrink-0"
+                    style={{ color: 'var(--color-fg-muted,rgba(255,255,255,0.45))', fontSize: 15 }}
+                    onMouseEnter={e => { e.currentTarget.style.color='var(--color-fg-bright,rgba(255,255,255,0.85))'; e.currentTarget.style.background='var(--color-bg-active,rgba(255,255,255,0.06))' }}
+                    onMouseLeave={e => { e.currentTarget.style.color='var(--color-fg-muted,rgba(255,255,255,0.45))'; e.currentTarget.style.background='transparent' }}>
+                    <i className={`bx ${a.icon}`} />
+                  </button>
+                ))}
+              </div>
 
               {publishError && (
-                <div className="text-[13px] px-3 py-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>{publishError}</div>
+                <div className="mx-4 mb-2 text-[13px] px-3 py-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>{publishError}</div>
               )}
               {publishSuccess && (
-                <div className="text-[13px] px-3 py-2 rounded-lg" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>Post published!</div>
+                <div className="mx-4 mb-2 text-[13px] px-3 py-2 rounded-lg" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>Posted!</div>
               )}
-              {/* Marketplace toggle — only for skill/agent/workflow types */}
+
+              {/* Marketplace toggle */}
               {postType !== 'post' && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 8, background: 'var(--color-bg-active)', border: '1px solid var(--color-border)' }}>
+                <div className="mx-4 mb-2 flex items-center justify-between px-3 py-2 rounded-lg" style={{ background: 'var(--color-bg-active)', border: '1px solid var(--color-border)' }}>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-fg)' }}>Publish to Marketplace</div>
                     <div style={{ fontSize: 10, color: 'var(--color-fg-dim)' }}>Requires admin approval</div>
@@ -621,20 +527,17 @@ export default function MemberProfilePage(props: PageProps) {
                     width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s',
                     background: publishToMarketplace ? '#00e5ff' : 'var(--color-border)',
                   }}>
-                    <div style={{
-                      width: 16, height: 16, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, transition: 'left 0.2s',
-                      left: publishToMarketplace ? 18 : 2,
-                    }} />
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, transition: 'left 0.2s', left: publishToMarketplace ? 18 : 2 }} />
                   </button>
                 </div>
               )}
 
-              <div className="flex items-center justify-between">
-                <button type="button" onClick={() => { setComposerOpen(false); setShowIconPicker(false) }} className="text-xs bg-transparent border-none cursor-pointer font-inherit" style={{ color: colors.textMuted }}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={publishing} className="px-5 py-2 rounded-lg border-none text-[13px] font-semibold text-white font-inherit transition-opacity disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer" style={{ background: colors.accent }}>
-                  {publishing ? 'Publishing...' : 'Publish'}
+              {/* Publish button — full width like FB */}
+              <div className="px-4 pb-4 pt-1">
+                <button type="submit" disabled={publishing || !postContent.trim()}
+                  className="w-full py-2.5 rounded-lg border-none text-sm font-semibold font-inherit transition-opacity disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  style={{ background: colors.accent, color: '#fff' }}>
+                  {publishing ? 'Publishing...' : 'Post'}
                 </button>
               </div>
             </form>
@@ -721,52 +624,49 @@ export default function MemberProfilePage(props: PageProps) {
               {editingId === post.id ? (
                 /* ── Edit mode — matches create composer style ── */
                 <div className="flex flex-col gap-2.5">
-                  {/* Post type selector */}
-                  <div style={{ display: 'flex', gap: 5 }}>
+                  {/* Type selector */}
+                  <div style={{ display: 'flex', gap: 3, overflowX: 'auto', paddingBottom: 2 }}>
                     {(['post', 'skill', 'agent', 'workflow'] as const).map(type => {
                       const s = POST_TYPE_STYLES[type]
                       const active = editPostType === type
                       return (
-                        <button key={type} type="button" onClick={() => setEditPostType(type)} title={s.label} style={{
-                          display: 'flex', alignItems: 'center', gap: 5,
-                          padding: '5px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600,
+                        <button key={type} type="button" onClick={() => setEditPostType(type)} style={{
+                          display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0,
+                          padding: '3px 9px', borderRadius: 5, fontSize: 10, fontWeight: 600,
                           background: active ? s.bg : 'transparent',
                           border: `1px solid ${active ? s.borderColor : 'var(--color-border, rgba(255,255,255,0.08))'}`,
-                          color: active ? s.color : 'var(--color-fg-muted, rgba(255,255,255,0.4))',
-                          cursor: 'pointer', transition: 'all 0.15s',
+                          color: active ? s.color : 'var(--color-fg-muted, rgba(255,255,255,0.35))',
+                          cursor: 'pointer', transition: 'all 0.12s', whiteSpace: 'nowrap',
                         }}>
-                          <i className={`bx ${s.icon}`} style={{ fontSize: 13 }} />
+                          <i className={`bx ${s.icon}`} style={{ fontSize: 10 }} />
                           {s.label}
                         </button>
                       )
                     })}
                   </div>
-                  {/* Icon picker + Title on same row */}
+
+                  {/* Icon + title row */}
                   <div className="flex items-center gap-2">
                     <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setEditIconPickerOpen(!editIconPickerOpen)}
-                        className="w-9 h-9 rounded-lg flex items-center justify-center border cursor-pointer transition-colors shrink-0"
-                        style={{
-                          background: editIconColor ? `${editIconColor}15` : ('var(--color-bg-active, rgba(255,255,255,0.06))'),
-                          borderColor: colors.cardBorder,
-                          color: editIconColor || colors.textMuted,
-                        }}
-                        title="Pick icon & color"
-                      >
-                        <i className={`bx ${editIcon || 'bx-notepad'} text-lg`} />
+                      <button type="button" onClick={() => setEditIconPickerOpen(!editIconPickerOpen)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center border cursor-pointer shrink-0"
+                        style={{ background: editIconColor ? `${editIconColor}15` : 'var(--color-bg-active,rgba(255,255,255,0.06))', borderColor: colors.cardBorder, color: editIconColor || colors.textMuted }}>
+                        <i className={`bx ${editIcon || 'bx-notepad'}`} style={{ fontSize: 15 }} />
                       </button>
                       {editIconPickerOpen && (
-                        <div className="absolute top-full left-0 mt-1 p-3 rounded-xl border shadow-xl z-20" style={{ background: 'var(--color-bg)', borderColor: colors.cardBorder, width: 240 }}>
-                          <div className="flex gap-1.5 mb-3 pb-2.5" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
-                            {['#a900ff', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#14b8a6'].map(c => (
-                              <button key={c} type="button" onClick={() => setEditIconColor(editIconColor === c ? '' : c)} className="w-5 h-5 rounded-full border-2 cursor-pointer transition-transform hover:scale-110" style={{ background: c, borderColor: editIconColor === c ? ('var(--color-fg, #fff)') : 'transparent' }} />
+                        <div className="absolute top-full left-0 mt-1 p-3 rounded-xl border shadow-xl z-20" style={{ background: 'var(--color-bg)', borderColor: colors.cardBorder, width: 232 }}>
+                          <div className="flex gap-1.5 mb-3 pb-2.5 flex-wrap" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
+                            {['#a900ff','#3b82f6','#22c55e','#f59e0b','#ef4444','#ec4899','#8b5cf6','#06b6d4','#f97316','#14b8a6'].map(c => (
+                              <button key={c} type="button" onClick={() => setEditIconColor(editIconColor === c ? '' : c)}
+                                className="w-5 h-5 rounded-full border-2 cursor-pointer"
+                                style={{ background: c, borderColor: editIconColor === c ? 'var(--color-fg,#fff)' : 'transparent' }} />
                             ))}
                           </div>
                           <div className="grid grid-cols-7 gap-1">
-                            {['bx-notepad', 'bx-star', 'bx-bulb', 'bx-code-alt', 'bx-bug', 'bx-rocket', 'bx-heart', 'bx-book', 'bx-music', 'bx-camera', 'bx-trophy', 'bx-paint-roll', 'bx-world', 'bx-coffee', 'bx-flag', 'bx-zap', 'bx-bell', 'bx-shield', 'bx-wrench', 'bx-terminal', 'bx-chip'].map(icon => (
-                              <button key={icon} type="button" onClick={() => { setEditIcon(icon === 'bx-notepad' ? '' : icon); setEditIconPickerOpen(false) }} className="w-7 h-7 flex items-center justify-center rounded-md border-none cursor-pointer transition-colors" style={{ background: (editIcon || 'bx-notepad') === icon ? ('var(--color-bg-active, rgba(255,255,255,0.1))') : 'transparent', color: editIconColor || colors.textPrimary }}>
+                            {['bx-notepad','bx-star','bx-bulb','bx-code-alt','bx-bug','bx-rocket','bx-heart','bx-book','bx-music','bx-camera','bx-trophy','bx-paint-roll','bx-world','bx-coffee','bx-flag','bx-zap','bx-bell','bx-shield','bx-wrench','bx-terminal','bx-chip'].map(icon => (
+                              <button key={icon} type="button" onClick={() => { setEditIcon(icon === 'bx-notepad' ? '' : icon); setEditIconPickerOpen(false) }}
+                                className="w-7 h-7 flex items-center justify-center rounded-md border-none cursor-pointer"
+                                style={{ background: (editIcon||'bx-notepad')===icon ? 'var(--color-bg-active,rgba(255,255,255,0.1))' : 'transparent', color: editIconColor||colors.textPrimary }}>
                                 <i className={`bx ${icon} text-base`} />
                               </button>
                             ))}
@@ -774,63 +674,52 @@ export default function MemberProfilePage(props: PageProps) {
                         </div>
                       )}
                     </div>
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={e => setEditTitle(e.target.value)}
-                      autoFocus
-                      className="flex-1 min-w-0 px-3 py-2 rounded-lg border text-sm font-inherit outline-none transition-colors"
-                      style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.textPrimary }}
-                      onFocus={e => { e.currentTarget.style.borderColor = colors.inputFocusBorder }}
-                      onBlur={e => { e.currentTarget.style.borderColor = colors.inputBorder }}
-                    />
+                    <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus placeholder="Title"
+                      className="flex-1 min-w-0 px-3 py-1.5 rounded-lg border text-sm font-inherit outline-none"
+                      style={{ background: 'transparent', borderColor: colors.inputBorder, color: colors.textPrimary }} />
                   </div>
 
-                  {/* Toolbar + Textarea */}
-                  <div className="rounded-lg border overflow-hidden" style={{ borderColor: colors.inputBorder }}>
-                    <div className="flex items-center gap-0.5 px-2 py-1" style={{ background: 'var(--color-bg-alt, rgba(255,255,255,0.03))', borderBottom: `1px solid ${colors.cardBorder}`, overflowX: 'auto' }}>
-                      {[
-                        { icon: 'bx-bold', title: 'Bold', pre: '**', suf: '**' },
-                        { icon: 'bx-italic', title: 'Italic', pre: '_', suf: '_' },
-                        { icon: 'bx-strikethrough', title: 'Strike', pre: '~~', suf: '~~' },
-                        { icon: 'bx-heading', title: 'Heading', pre: '## ', suf: '' },
-                        { icon: 'bx-link', title: 'Link', pre: '[', suf: '](url)' },
-                        { icon: 'bx-code', title: 'Code', pre: '`', suf: '`' },
-                        { icon: 'bx-list-ul', title: 'List', pre: '- ', suf: '' },
-                        { icon: 'bx-code-block', title: 'Code Block', pre: '```\n', suf: '\n```' },
-                        { icon: 'bx-quote-left', title: 'Quote', pre: '> ', suf: '' },
-                      ].map(a => (
-                        <button
-                          key={a.icon} type="button" title={a.title}
-                          onClick={() => insertEditFormat(a.pre, a.suf)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer transition-colors"
-                          style={{ color: 'var(--color-fg-muted, rgba(255,255,255,0.5))', fontSize: 15 }}
-                          onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-fg-bright, rgba(255,255,255,0.85))'; e.currentTarget.style.background = 'var(--color-bg-active, rgba(255,255,255,0.06))' }}
-                          onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-fg-muted, rgba(255,255,255,0.5))'; e.currentTarget.style.background = 'transparent' }}
-                        >
-                          <i className={`bx ${a.icon}`} />
-                        </button>
-                      ))}
-                    </div>
-                    <textarea
-                      ref={editContentRef}
-                      value={editContent}
-                      onChange={e => setEditContent(e.target.value)}
-                      rows={4}
-                      className="w-full px-3.5 py-3 border-none text-sm font-inherit outline-none resize-y"
-                      style={{ background: colors.inputBg, color: colors.textPrimary, minHeight: 90 }}
-                      placeholder="Edit your post..."
-                    />
+                  {/* Textarea */}
+                  <textarea ref={editContentRef} value={editContent} onChange={e => setEditContent(e.target.value)}
+                    rows={4} placeholder="Edit your post..."
+                    className="w-full px-0 py-2 border-none text-sm font-inherit outline-none resize-none"
+                    style={{ background: 'transparent', color: colors.textPrimary, minHeight: 90, lineHeight: 1.6 }} />
+
+                  {/* Toolbar */}
+                  <div className="flex items-center gap-0.5 overflow-x-auto py-1" style={{ borderTop: `1px solid var(--color-border,rgba(255,255,255,0.06))` }}>
+                    {[
+                      { icon: 'bx-bold', title: 'Bold', pre: '**', suf: '**' },
+                      { icon: 'bx-italic', title: 'Italic', pre: '_', suf: '_' },
+                      { icon: 'bx-strikethrough', title: 'Strike', pre: '~~', suf: '~~' },
+                      { icon: 'bx-heading', title: 'Heading', pre: '## ', suf: '' },
+                      { icon: 'bx-link', title: 'Link', pre: '[', suf: '](url)' },
+                      { icon: 'bx-code', title: 'Code', pre: '`', suf: '`' },
+                      { icon: 'bx-list-ul', title: 'List', pre: '- ', suf: '' },
+                      { icon: 'bx-code-block', title: 'Code block', pre: '```\n', suf: '\n```' },
+                      { icon: 'bx-quote-left', title: 'Quote', pre: '> ', suf: '' },
+                    ].map(a => (
+                      <button key={a.icon} type="button" title={a.title} onClick={() => insertEditFormat(a.pre, a.suf)}
+                        className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer shrink-0"
+                        style={{ color: 'var(--color-fg-muted,rgba(255,255,255,0.45))', fontSize: 15 }}
+                        onMouseEnter={e => { e.currentTarget.style.color='var(--color-fg-bright,rgba(255,255,255,0.85))'; e.currentTarget.style.background='var(--color-bg-active,rgba(255,255,255,0.06))' }}
+                        onMouseLeave={e => { e.currentTarget.style.color='var(--color-fg-muted,rgba(255,255,255,0.45))'; e.currentTarget.style.background='transparent' }}>
+                        <i className={`bx ${a.icon}`} />
+                      </button>
+                    ))}
                   </div>
 
                   {editError && (
                     <div className="text-[13px] px-3 py-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>{editError}</div>
                   )}
-                  <div className="flex items-center justify-between">
-                    <button type="button" onClick={cancelEdit} disabled={editSaving} className="text-xs bg-transparent border-none cursor-pointer font-inherit" style={{ color: colors.textMuted }}>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={cancelEdit} disabled={editSaving}
+                      className="flex-1 py-2 rounded-lg border text-[13px] font-semibold font-inherit cursor-pointer disabled:opacity-40"
+                      style={{ background: 'transparent', borderColor: colors.cardBorder, color: colors.textMuted }}>
                       Cancel
                     </button>
-                    <button type="button" onClick={handleSaveEdit} disabled={editSaving || !editTitle.trim() || !editContent.trim()} className="px-5 py-2 rounded-lg border-none text-[13px] font-semibold text-white font-inherit transition-opacity disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer" style={{ background: colors.accent }}>
+                    <button type="button" onClick={handleSaveEdit} disabled={editSaving || !editContent.trim()}
+                      className="flex-1 py-2 rounded-lg border-none text-[13px] font-semibold text-white font-inherit cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      style={{ background: colors.accent }}>
                       {editSaving ? 'Saving...' : 'Save'}
                     </button>
                   </div>
