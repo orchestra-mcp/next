@@ -724,13 +724,13 @@ export default function MemberProfilePage(props: PageProps) {
                             className="no-underline text-inherit"
                             style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}
                           >
-                            {getPostTypeBadge(post)}
                             <h4
                               className="text-[15px] font-bold leading-snug m-0 mb-1"
                               style={{ color: colors.textPrimary, flex: 1, minWidth: 0 }}
                             >
                               {post.title}
                             </h4>
+                            {getPostTypeBadge(post)}
                           </Link>
                         ) : (
                           getPostTypeBadge(post)
