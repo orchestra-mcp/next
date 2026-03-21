@@ -40,6 +40,7 @@ export default function ProfileSettingsPage() {
   const [publicEnabled, setPublicEnabled] = useState(false)
   const [profileHandle, setProfileHandle] = useState('')
   const [bio, setBio] = useState('')
+  const [about, setAbout] = useState('')
 
   // Social links
   const [socialLinks, setSocialLinks] = useState<{ platform: string; url: string }[]>([])
@@ -62,6 +63,7 @@ export default function ProfileSettingsPage() {
     setPublicEnabled(!!(s.public_profile_enabled))
     setProfileHandle((s.handle as string) ?? profile?.handle ?? user.username ?? '')
     setBio((s.bio as string) ?? profile?.bio ?? user.bio ?? '')
+    setAbout((s.about as string) ?? '')
     // Social links: user.settings is source of truth
     const settingsLinks = s.social_links
     const profileLinks = profile?.social_links
@@ -93,6 +95,7 @@ export default function ProfileSettingsPage() {
           public_profile_enabled: publicEnabled,
           ...(profileHandle.trim() ? { handle: profileHandle.trim() } : {}),
           bio,
+          about,
           social_links: socialLinks.filter(l => l.url.trim()),
         }),
       })
@@ -132,7 +135,19 @@ export default function ProfileSettingsPage() {
                 <i className="bx bxl-markdown" style={{ fontSize: 12 }} /> Markdown supported
               </span>
             </div>
-            <textarea style={{ ...inputSt, height: 100, resize: 'vertical' }} value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell others about yourself... (Markdown supported)" />
+            <textarea style={{ ...inputSt, height: 100, resize: 'vertical' }} value={bio} onChange={e => setBio(e.target.value)} placeholder="Short bio shown on your profile card... (Markdown supported)" />
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div>
+                <label style={{ ...labelSt, marginBottom: 0 }}>About</label>
+                <div style={{ fontSize: 10, color: 'var(--color-fg-dim)', marginTop: 2 }}>Full page shown at /@{profileHandle || 'you'}/about</div>
+              </div>
+              <span style={{ fontSize: 10, color: 'var(--color-fg-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <i className="bx bxl-markdown" style={{ fontSize: 12 }} /> Markdown supported
+              </span>
+            </div>
+            <textarea style={{ ...inputSt, height: 240, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }} value={about} onChange={e => setAbout(e.target.value)} placeholder={'# About me\n\nWrite your full about page in Markdown...\n\n## What I do\n\n- ...'} />
           </div>
         </div>
       </div>

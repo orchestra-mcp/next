@@ -76,6 +76,7 @@ export interface PublicProfile {
   avatar_url: string
   cover_url: string
   bio: string
+  about?: string
   role: string
   location: string
   joined_at: string

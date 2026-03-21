@@ -70,14 +70,14 @@ export default function AboutPage(props: PageProps) {
     ),
   }
 
-  if (!profile?.bio) {
+  if (!profile?.about) {
     return (
       <ProfileSection title="About" icon="bx-user">
         <ProfileCard variant="default" className="px-8 py-12 text-center mt-6">
           <i className="bx bx-user block mb-4 text-5xl" style={{ color: colors.textMuted }} />
-          <h2 style={{ fontSize: 17, fontWeight: 600, color: colors.textPrimary, marginBottom: 8 }}>No bio yet</h2>
+          <h2 style={{ fontSize: 17, fontWeight: 600, color: colors.textPrimary, marginBottom: 8 }}>No about page yet</h2>
           <p style={{ fontSize: 14, color: colors.textMuted }}>
-            {profile?.name || handle} hasn&apos;t written a bio yet.
+            {profile?.name || handle} hasn&apos;t written an about page yet.
           </p>
         </ProfileCard>
       </ProfileSection>
@@ -88,7 +88,7 @@ export default function AboutPage(props: PageProps) {
     <ProfileSection title="About" icon="bx-user">
       <ProfileCard variant="default" className="p-8">
         <ReactMarkdown components={mdComponents}>
-          {profile.bio}
+          {profile.about}
         </ReactMarkdown>
       </ProfileCard>
     </ProfileSection>
