@@ -123,7 +123,7 @@ export default function SettingsLayout({ children, params }: LayoutProps) {
     <div>
       {/* Header with dropdown navigation */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <div ref={dropdownRef} style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
+        <div ref={dropdownRef} style={{ position: 'relative', flex: 1 }}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
             style={{
@@ -144,8 +144,8 @@ export default function SettingsLayout({ children, params }: LayoutProps) {
 
           {dropdownOpen && (
             <div style={{
-              position: 'absolute', top: '100%', left: 0, zIndex: 50,
-              marginTop: 4, width: 280,
+              position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+              marginTop: 4,
               borderRadius: 12, overflow: 'hidden',
               background: 'var(--color-bg, #0f0f12)',
               border: '1px solid var(--color-border, rgba(255,255,255,0.1))',

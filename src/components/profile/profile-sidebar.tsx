@@ -72,12 +72,23 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
               : 'linear-gradient(135deg, var(--color-bg-active, rgba(255,255,255,0.06)), var(--color-bg-alt, rgba(255,255,255,0.03)))',
           }}>
             {isOwner && (
-              <button onClick={() => setShowCoverModal(true)} style={{
-                position: 'absolute', top: 6, right: 6, width: 26, height: 26, borderRadius: 7,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', fontSize: 12, padding: 0,
-              }}><i className="bx bx-camera" /></button>
+              <div style={{ position: 'absolute', top: 6, right: 6, display: 'flex', gap: 5 }}>
+                <button onClick={() => router.push(`/@${handle}/settings/profile`)} style={{
+                  height: 26, padding: '0 8px', borderRadius: 7,
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                }}>
+                  <i className="bx bx-pencil" style={{ fontSize: 12 }} />
+                  Edit
+                </button>
+                <button onClick={() => setShowCoverModal(true)} style={{
+                  width: 26, height: 26, borderRadius: 7,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', fontSize: 12, padding: 0,
+                }}><i className="bx bx-camera" /></button>
+              </div>
             )}
           </div>
 

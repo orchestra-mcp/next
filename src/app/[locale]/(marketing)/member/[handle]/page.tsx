@@ -11,6 +11,7 @@ import ProfileCard from '@/components/profile/profile-card'
 import PostEmbed from '@/components/profile/post-embed'
 import { MarkdownRenderer } from '@orchestra-mcp/editor'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import IconPicker from '@/components/profile/icon-picker'
 
 function postSlug(post: { id: number; title?: string; slug?: string }): string {
   if (post.slug) return post.slug
@@ -265,10 +266,8 @@ export default function MemberProfilePage(props: PageProps) {
     return null
   }
 
-  function getPostTypeBorderStyle(post: typeof posts[0]): React.CSSProperties {
-    const type = getPostTypeFromTags(post.tags || [])
-    if (!type || !POST_TYPE_STYLES[type]) return {}
-    return { border: `1.5px solid ${POST_TYPE_STYLES[type].borderColor}` }
+  function getPostTypeBorderStyle(_post: typeof posts[0]): React.CSSProperties {
+    return {}
   }
 
   function getPostTypeBadge(post: typeof posts[0]) {
@@ -276,7 +275,7 @@ export default function MemberProfilePage(props: PageProps) {
     if (!type || !POST_TYPE_STYLES[type]) return null
     const s = POST_TYPE_STYLES[type]
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, padding: '1px 7px', borderRadius: 4, background: s.bg, color: s.color, fontWeight: 600, marginLeft: 8 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, padding: '1px 7px', borderRadius: 4, background: s.bg, color: s.color, fontWeight: 600, flexShrink: 0 }}>
         <i className={`bx ${s.icon}`} style={{ fontSize: 10 }} />
         {s.label}
       </span>
@@ -451,24 +450,15 @@ export default function MemberProfilePage(props: PageProps) {
                       <i className={`bx ${postIcon || 'bx-notepad'}`} style={{ fontSize: 16 }} />
                     </button>
                     {showIconPicker && (
-                      <div className="absolute top-full left-0 mt-1 p-3 rounded-xl border shadow-xl z-20" style={{ background: 'var(--color-bg)', borderColor: colors.cardBorder, width: 232 }}>
-                        <div className="flex gap-1.5 mb-3 pb-2.5 flex-wrap" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
-                          {['#a900ff','#3b82f6','#22c55e','#f59e0b','#ef4444','#ec4899','#8b5cf6','#06b6d4','#f97316','#14b8a6'].map(c => (
-                            <button key={c} type="button" onClick={() => setPostIconColor(postIconColor === c ? '' : c)}
-                              className="w-5 h-5 rounded-full border-2 cursor-pointer"
-                              style={{ background: c, borderColor: postIconColor === c ? 'var(--color-fg,#fff)' : 'transparent' }} />
-                          ))}
-                        </div>
-                        <div className="grid grid-cols-7 gap-1">
-                          {['bx-notepad','bx-star','bx-bulb','bx-code-alt','bx-bug','bx-rocket','bx-heart','bx-book','bx-music','bx-camera','bx-trophy','bx-paint-roll','bx-world','bx-coffee','bx-flag','bx-zap','bx-bell','bx-shield','bx-wrench','bx-terminal','bx-chip'].map(icon => (
-                            <button key={icon} type="button" onClick={() => { setPostIcon(icon === 'bx-notepad' ? '' : icon); setShowIconPicker(false) }}
-                              className="w-7 h-7 flex items-center justify-center rounded-md border-none cursor-pointer"
-                              style={{ background: (postIcon||'bx-notepad')===icon ? 'var(--color-bg-active,rgba(255,255,255,0.1))' : 'transparent', color: postIconColor||colors.textPrimary }}>
-                              <i className={`bx ${icon} text-base`} />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <IconPicker
+                        icon={postIcon || 'bx-notepad'}
+                        color={postIconColor}
+                        onIconChange={ic => setPostIcon(ic === 'bx-notepad' ? '' : ic)}
+                        onColorChange={c => setPostIconColor(c)}
+                        onClose={() => setShowIconPicker(false)}
+                        cardBorder={colors.cardBorder}
+                        textPrimary={colors.textPrimary}
+                      />
                     )}
                   </div>
                   <input type="text" placeholder="Title (optional)" value={postTitle} onChange={e => setPostTitle(e.target.value)} autoFocus
@@ -649,24 +639,15 @@ export default function MemberProfilePage(props: PageProps) {
                         <i className={`bx ${editIcon || 'bx-notepad'}`} style={{ fontSize: 15 }} />
                       </button>
                       {editIconPickerOpen && (
-                        <div className="absolute top-full left-0 mt-1 p-3 rounded-xl border shadow-xl z-20" style={{ background: 'var(--color-bg)', borderColor: colors.cardBorder, width: 232 }}>
-                          <div className="flex gap-1.5 mb-3 pb-2.5 flex-wrap" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
-                            {['#a900ff','#3b82f6','#22c55e','#f59e0b','#ef4444','#ec4899','#8b5cf6','#06b6d4','#f97316','#14b8a6'].map(c => (
-                              <button key={c} type="button" onClick={() => setEditIconColor(editIconColor === c ? '' : c)}
-                                className="w-5 h-5 rounded-full border-2 cursor-pointer"
-                                style={{ background: c, borderColor: editIconColor === c ? 'var(--color-fg,#fff)' : 'transparent' }} />
-                            ))}
-                          </div>
-                          <div className="grid grid-cols-7 gap-1">
-                            {['bx-notepad','bx-star','bx-bulb','bx-code-alt','bx-bug','bx-rocket','bx-heart','bx-book','bx-music','bx-camera','bx-trophy','bx-paint-roll','bx-world','bx-coffee','bx-flag','bx-zap','bx-bell','bx-shield','bx-wrench','bx-terminal','bx-chip'].map(icon => (
-                              <button key={icon} type="button" onClick={() => { setEditIcon(icon === 'bx-notepad' ? '' : icon); setEditIconPickerOpen(false) }}
-                                className="w-7 h-7 flex items-center justify-center rounded-md border-none cursor-pointer"
-                                style={{ background: (editIcon||'bx-notepad')===icon ? 'var(--color-bg-active,rgba(255,255,255,0.1))' : 'transparent', color: editIconColor||colors.textPrimary }}>
-                                <i className={`bx ${icon} text-base`} />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+                        <IconPicker
+                          icon={editIcon || 'bx-notepad'}
+                          color={editIconColor}
+                          onIconChange={ic => setEditIcon(ic === 'bx-notepad' ? '' : ic)}
+                          onColorChange={c => setEditIconColor(c)}
+                          onClose={() => setEditIconPickerOpen(false)}
+                          cardBorder={colors.cardBorder}
+                          textPrimary={colors.textPrimary}
+                        />
                       )}
                     </div>
                     <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus placeholder="Title"
@@ -741,14 +722,15 @@ export default function MemberProfilePage(props: PageProps) {
                           <Link
                             href={`/@${handle}/post/${postSlug(post)}`}
                             className="no-underline text-inherit"
+                            style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}
                           >
+                            {getPostTypeBadge(post)}
                             <h4
-                              className="text-[15px] font-bold leading-snug m-0 mb-1 inline"
-                              style={{ color: colors.textPrimary }}
+                              className="text-[15px] font-bold leading-snug m-0 mb-1"
+                              style={{ color: colors.textPrimary, flex: 1, minWidth: 0 }}
                             >
                               {post.title}
                             </h4>
-                            {getPostTypeBadge(post)}
                           </Link>
                         ) : (
                           getPostTypeBadge(post)

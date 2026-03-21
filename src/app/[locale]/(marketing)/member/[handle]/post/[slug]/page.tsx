@@ -119,17 +119,19 @@ export default function PostDetailPage(props: PageProps) {
         </div>
 
         {/* Author + date */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--color-border)' }}>
-          {currentPost.author_avatar ? (
-            <img src={currentPost.author_avatar} alt={currentPost.author_name} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', fontSize: 13, fontWeight: 700 }}>
-              {(currentPost.author_name || '').split(' ').filter(Boolean).map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)}
-            </div>
-          )}
-          <div>
-            <Link href={`/@${currentPost.author_handle}`} style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)', textDecoration: 'none' }}>{currentPost.author_name}</Link>
-            <div style={{ fontSize: 11, color: 'var(--color-fg-dim)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--color-border)', minWidth: 0, overflow: 'hidden' }}>
+          <div style={{ flexShrink: 0 }}>
+            {currentPost.author_avatar ? (
+              <img src={currentPost.author_avatar} alt={currentPost.author_name} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
+            ) : (
+              <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff', fontSize: 13, fontWeight: 700 }}>
+                {(currentPost.author_name || '').split(' ').filter(Boolean).map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)}
+              </div>
+            )}
+          </div>
+          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <Link href={`/@${currentPost.author_handle}`} style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentPost.author_name}</Link>
+            <div style={{ fontSize: 11, color: 'var(--color-fg-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <Link href={`/@${currentPost.author_handle}`} style={{ color: 'var(--color-fg-dim)', textDecoration: 'none' }}>@{currentPost.author_handle}</Link> · {new Date(currentPost.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </div>
           </div>
@@ -208,7 +210,7 @@ export default function PostDetailPage(props: PageProps) {
                       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)' }}>{c.user_name}</span>
                       <span style={{ fontSize: 11, color: 'var(--color-fg-dim)' }}>{new Date(c.created_at).toLocaleDateString()}</span>
                     </div>
-                    <p style={{ fontSize: 13, color: 'var(--color-fg-muted)', margin: 0, lineHeight: 1.5 }}>{c.content}</p>
+                    <p style={{ fontSize: 13, color: 'var(--color-fg-muted)', margin: 0, lineHeight: 1.5, wordBreak: 'break-word', overflowWrap: 'break-word' }}>{c.content}</p>
                     {user && (
                       <button
                         onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
@@ -235,7 +237,7 @@ export default function PostDetailPage(props: PageProps) {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-fg)' }}>{r.user_name}</span>
                           <span style={{ fontSize: 10, color: 'var(--color-fg-dim)', marginLeft: 6 }}>{new Date(r.created_at).toLocaleDateString()}</span>
-                          <p style={{ fontSize: 12, color: 'var(--color-fg-muted)', margin: '2px 0 0', lineHeight: 1.4 }}>{r.content}</p>
+                          <p style={{ fontSize: 12, color: 'var(--color-fg-muted)', margin: '2px 0 0', lineHeight: 1.4, wordBreak: 'break-word', overflowWrap: 'break-word' }}>{r.content}</p>
                         </div>
                       </div>
                     ))}
@@ -244,25 +246,25 @@ export default function PostDetailPage(props: PageProps) {
 
                 {/* Reply input */}
                 {replyingTo === c.id && (
-                  <div style={{ marginLeft: 32, marginTop: 8, display: 'flex', gap: 8 }}>
+                  <div style={{ marginLeft: 42, marginTop: 8, display: 'flex', gap: 6, minWidth: 0 }}>
                     <input
                       type="text"
                       value={replyText}
                       onChange={e => setReplyText(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleReply(c.id) } }}
-                      placeholder={`Reply to ${c.user_name}...`}
+                      placeholder={`Reply...`}
                       autoFocus
                       style={{
-                        flex: 1, padding: '6px 12px', borderRadius: 20, fontSize: 12,
+                        flex: 1, minWidth: 0, padding: '6px 10px', borderRadius: 20, fontSize: 12,
                         border: '1px solid var(--color-border)', background: 'var(--color-bg-alt)',
-                        color: 'var(--color-fg)', outline: 'none',
+                        color: 'var(--color-fg)', outline: 'none', boxSizing: 'border-box',
                       }}
                     />
                     <button
                       onClick={() => handleReply(c.id)}
                       disabled={submitting || !replyText.trim()}
                       style={{
-                        padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                        flexShrink: 0, padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
                         background: '#00e5ff', color: '#000', border: 'none', cursor: 'pointer',
                         opacity: submitting || !replyText.trim() ? 0.4 : 1,
                       }}
