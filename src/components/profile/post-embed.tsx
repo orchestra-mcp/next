@@ -77,6 +77,10 @@ const iframeSt: React.CSSProperties = {
   width: '100%', height: '100%', border: 'none',
 }
 
+const videoWrap: React.CSSProperties = {
+  width: '100%', maxWidth: 480, borderRadius: 8, overflow: 'hidden', aspectRatio: '16/9',
+}
+
 // ── Script loader (deduplicates across multiple embeds) ──
 
 const loadedScripts = new Set<string>()
@@ -128,7 +132,7 @@ function TwitterEmbed({ url }: { url: string }) {
   }, [url])
 
   return (
-    <div ref={ref} style={{ maxWidth: 480, minHeight: loaded ? undefined : 200 }}>
+    <div ref={ref} style={{ width: '100%', maxWidth: 480, minHeight: loaded ? undefined : 200 }}>
       {!loaded && <EmbedSkeleton icon="bxl-twitter" color="#1da1f2" label="Loading tweet..." />}
     </div>
   )
@@ -159,7 +163,7 @@ function InstagramEmbed({ url }: { url: string }) {
   }, [url])
 
   return (
-    <div ref={ref} style={{ maxWidth: 480, minHeight: loaded ? undefined : 400 }}>
+    <div ref={ref} style={{ width: '100%', maxWidth: 480, minHeight: loaded ? undefined : 400 }}>
       {!loaded && <EmbedSkeleton icon="bxl-instagram" color="#e4405f" label="Loading post..." />}
       <iframe
         src={embedUrl}
@@ -189,7 +193,7 @@ function FacebookEmbed({ url }: { url: string }) {
   const onLoad = useCallback(() => setLoaded(true), [])
 
   return (
-    <div style={{ maxWidth: 480, minHeight: loaded ? undefined : (isVideo ? 270 : 300) }}>
+    <div style={{ width: '100%', maxWidth: 480, minHeight: loaded ? undefined : (isVideo ? 270 : 300) }}>
       {!loaded && <EmbedSkeleton icon="bxl-facebook" color="#1877f2" label={isVideo ? 'Loading video...' : 'Loading post...'} />}
       <iframe
         src={embedSrc}
@@ -288,7 +292,7 @@ function LinkPreview({ url }: { url: string }) {
       rel="noopener noreferrer"
       className="flex rounded-lg overflow-hidden no-underline transition-colors"
       style={{
-        maxWidth: 480,
+        width: '100%', maxWidth: 480,
         background: 'var(--color-bg-alt, rgba(255,255,255,0.04))',
         border: '1px solid var(--color-border, rgba(255,255,255,0.08))',
         color: 'var(--color-fg-muted)',
@@ -355,7 +359,7 @@ export default function PostEmbed({ url }: PostEmbedProps) {
   switch (embed.type) {
     case 'youtube':
       return (
-        <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9', maxWidth: 480 }}>
+        <div style={videoWrap}>
           <iframe
             src={`https://www.youtube-nocookie.com/embed/${embed.id}`}
             style={iframeSt}
@@ -369,7 +373,7 @@ export default function PostEmbed({ url }: PostEmbedProps) {
 
     case 'vimeo':
       return (
-        <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9', maxWidth: 480 }}>
+        <div style={videoWrap}>
           <iframe
             src={`https://player.vimeo.com/video/${embed.id}?dnt=1`}
             style={iframeSt}
@@ -383,7 +387,7 @@ export default function PostEmbed({ url }: PostEmbedProps) {
 
     case 'dailymotion':
       return (
-        <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9', maxWidth: 480 }}>
+        <div style={videoWrap}>
           <iframe
             src={`https://www.dailymotion.com/embed/video/${embed.id}`}
             style={iframeSt}
@@ -397,7 +401,7 @@ export default function PostEmbed({ url }: PostEmbedProps) {
 
     case 'twitch':
       return (
-        <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9', maxWidth: 480 }}>
+        <div style={videoWrap}>
           <iframe
             src={`https://player.twitch.tv/?${embed.id}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}`}
             style={iframeSt}
@@ -410,7 +414,7 @@ export default function PostEmbed({ url }: PostEmbedProps) {
 
     case 'tiktok':
       return (
-        <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '9/16', maxWidth: 325, maxHeight: 580 }}>
+        <div style={{ width: '100%', maxWidth: 325, borderRadius: 8, overflow: 'hidden', aspectRatio: '9/16', maxHeight: 580 }}>
           <iframe
             src={`https://www.tiktok.com/embed/v2/${embed.id}`}
             style={iframeSt}
@@ -424,7 +428,7 @@ export default function PostEmbed({ url }: PostEmbedProps) {
 
     case 'loom':
       return (
-        <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9', maxWidth: 480 }}>
+        <div style={videoWrap}>
           <iframe
             src={`https://www.loom.com/embed/${embed.id}`}
             style={iframeSt}
@@ -438,7 +442,7 @@ export default function PostEmbed({ url }: PostEmbedProps) {
 
     case 'wistia':
       return (
-        <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9', maxWidth: 480 }}>
+        <div style={videoWrap}>
           <iframe
             src={`https://fast.wistia.net/embed/iframe/${embed.id}`}
             style={iframeSt}
@@ -452,7 +456,7 @@ export default function PostEmbed({ url }: PostEmbedProps) {
 
     case 'rumble':
       return (
-        <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9', maxWidth: 480 }}>
+        <div style={videoWrap}>
           <iframe
             src={`https://rumble.com/embed/${embed.id}/`}
             style={iframeSt}
