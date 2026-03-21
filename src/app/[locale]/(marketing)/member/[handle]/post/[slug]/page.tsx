@@ -22,10 +22,6 @@ function getPostType(tags: string[]): string | null {
   return null
 }
 
-function extractUrls(text: string): string[] {
-  const urlRegex = /https?:\/\/[^\s<>"{}|\\^`[\]()]+/g
-  return [...new Set(text.match(urlRegex) || [])]
-}
 
 interface PageProps {
   params: Promise<{ handle: string; slug: string }>
@@ -144,15 +140,13 @@ export default function PostDetailPage(props: PageProps) {
           <MarkdownRenderer content={currentPost.content} />
         </div>
 
-        {/* Media embeds */}
+        {/* Media embeds — only from explicit media field, not content URLs */}
         {(() => {
-          const mediaUrls = currentPost.media ? JSON.parse(currentPost.media || '[]') : []
-          const contentUrls = extractUrls(currentPost.content || '')
-          const allUrls = [...new Set([...mediaUrls, ...contentUrls])]
-          if (allUrls.length === 0) return null
+          const mediaUrls: string[] = currentPost.media ? (() => { try { return JSON.parse(currentPost.media) } catch { return [] } })() : []
+          if (mediaUrls.length === 0) return null
           return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-              {allUrls.map((url: string, i: number) => (
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16, overflow: 'hidden' }}>
+              {mediaUrls.map((url: string, i: number) => (
                 <PostEmbed key={i} url={url} />
               ))}
             </div>
