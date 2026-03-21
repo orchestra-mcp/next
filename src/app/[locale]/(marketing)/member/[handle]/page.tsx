@@ -412,20 +412,20 @@ export default function MemberProfilePage(props: PageProps) {
             </button>
           ) : (
             /* ── Expanded: full composer ── */
-            <form onSubmit={handlePublish} className="flex flex-col gap-2.5 px-6 pb-5 pt-4">
+            <form onSubmit={handlePublish} className="flex flex-col gap-2.5 px-3 sm:px-6 pb-4 sm:pb-5 pt-3 sm:pt-4">
               {/* Post type selector */}
-              <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 4 }}>
                 {(['post', 'skill', 'agent', 'workflow'] as const).map(type => {
                   const s = POST_TYPE_STYLES[type]
                   const active = postType === type
                   return (
                     <button key={type} type="button" onClick={() => setPostType(type)} title={s.label} style={{
-                      display: 'flex', alignItems: 'center', gap: 5,
+                      display: 'flex', alignItems: 'center', gap: 4,
                       padding: '5px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600,
                       background: active ? s.bg : 'transparent',
                       border: `1px solid ${active ? s.borderColor : 'var(--color-border, rgba(255,255,255,0.08))'}`,
                       color: active ? s.color : 'var(--color-fg-muted, rgba(255,255,255,0.4))',
-                      cursor: 'pointer', transition: 'all 0.15s',
+                      cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
                     }}>
                       <i className={`bx ${s.icon}`} style={{ fontSize: 13 }} />
                       {s.label}
@@ -500,7 +500,7 @@ export default function MemberProfilePage(props: PageProps) {
               {/* Toolbar + Textarea */}
               <div className="rounded-lg border overflow-hidden" style={{ borderColor: colors.inputBorder }}>
                 {/* Formatting toolbar */}
-                <div className="flex items-center gap-0.5 px-2 py-1" style={{ background: 'var(--color-bg-alt, rgba(255,255,255,0.03))', borderBottom: `1px solid ${colors.cardBorder}` }}>
+                <div className="flex items-center gap-0.5 px-2 py-1" style={{ background: 'var(--color-bg-alt, rgba(255,255,255,0.03))', borderBottom: `1px solid ${colors.cardBorder}`, overflowX: 'auto' }}>
                   {[
                     { icon: 'bx-bold', title: 'Bold', pre: '**', suf: '**' },
                     { icon: 'bx-italic', title: 'Italic', pre: '_', suf: '_' },
@@ -515,7 +515,7 @@ export default function MemberProfilePage(props: PageProps) {
                     <button
                       key={a.icon} type="button" title={a.title}
                       onClick={() => insertFormat(a.pre, a.suf)}
-                      className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer transition-colors"
+                      className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer transition-colors shrink-0"
                       style={{ color: 'var(--color-fg-muted, rgba(255,255,255,0.5))', fontSize: 15 }}
                       onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-fg-bright, rgba(255,255,255,0.85))'; e.currentTarget.style.background = 'var(--color-bg-active, rgba(255,255,255,0.06))' }}
                       onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-fg-muted, rgba(255,255,255,0.5))'; e.currentTarget.style.background = 'transparent' }}
@@ -536,7 +536,7 @@ export default function MemberProfilePage(props: PageProps) {
                         const url = prompt(btn.placeholder)
                         if (url?.trim()) setPostMedia(prev => [...prev, url.trim()])
                       }}
-                      className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer transition-colors"
+                      className="w-7 h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer transition-colors shrink-0"
                       style={{ color: 'var(--color-fg-muted, rgba(255,255,255,0.5))', fontSize: 15 }}
                       onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-fg-bright, rgba(255,255,255,0.85))'; e.currentTarget.style.background = 'var(--color-bg-active, rgba(255,255,255,0.06))' }}
                       onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-fg-muted, rgba(255,255,255,0.5))'; e.currentTarget.style.background = 'transparent' }}
@@ -788,7 +788,7 @@ export default function MemberProfilePage(props: PageProps) {
 
                   {/* Toolbar + Textarea */}
                   <div className="rounded-lg border overflow-hidden" style={{ borderColor: colors.inputBorder }}>
-                    <div className="flex items-center gap-0.5 px-2 py-1" style={{ background: 'var(--color-bg-alt, rgba(255,255,255,0.03))', borderBottom: `1px solid ${colors.cardBorder}` }}>
+                    <div className="flex items-center gap-0.5 px-2 py-1" style={{ background: 'var(--color-bg-alt, rgba(255,255,255,0.03))', borderBottom: `1px solid ${colors.cardBorder}`, overflowX: 'auto' }}>
                       {[
                         { icon: 'bx-bold', title: 'Bold', pre: '**', suf: '**' },
                         { icon: 'bx-italic', title: 'Italic', pre: '_', suf: '_' },
