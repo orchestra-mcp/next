@@ -604,8 +604,8 @@ export default function MemberProfilePage(props: PageProps) {
           </div>
         </ProfileCard>
       ) : (
-        displayPosts.filter(Boolean).map((post) => (
-          <ProfileCard key={post.id} className="profile-enter-post" style={{ marginBottom: 12, ...getPostTypeBorderStyle(post) }}>
+        displayPosts.filter(Boolean).map((post, idx) => (
+          <ProfileCard key={post.id} className="profile-enter-post fade-up" style={{ marginBottom: 12, animationDelay: `${Math.min(idx, 5) * 60}ms`, ...getPostTypeBorderStyle(post) }}>
             <div style={{ padding: '16px', overflow: 'hidden' }}>
               {editingId === post.id ? (
                 /* ── Edit mode — matches create composer style ── */

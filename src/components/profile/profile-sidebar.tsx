@@ -4,11 +4,16 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { useCommunityStore } from '@/store/community'
-import { uploadUrl } from '@/lib/api'
+import { uploadUrl, apiFetch } from '@/lib/api'
 import { useProfileTheme } from './use-profile-theme'
 import AvatarUploadModal from './avatar-upload-modal'
 import CoverUploadModal from './cover-upload-modal'
-import ProfileContentCard from './profile-content-card'
+
+const CONTENT_SECTIONS = [
+  { type: 'doc',            label: 'Docs',   icon: 'bx-file',       color: '#00c853', path: 'docs' },
+  { type: 'api_collection', label: 'APIs',   icon: 'bx-collection', color: '#3b82f6', path: 'apis' },
+  { type: 'presentation',   label: 'Slides', icon: 'bx-slideshow',  color: '#a900ff', path: 'slides' },
+]
 
 const PLATFORM_ICONS: Record<string, string> = {
   website: 'bx-link', github: 'bxl-github', twitter: 'bxl-twitter',
@@ -36,10 +41,25 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
   const router = useRouter()
   const [showAvatarModal, setShowAvatarModal] = useState(false)
   const [showCoverModal, setShowCoverModal] = useState(false)
-
+  const [contentShares, setContentShares] = useState<{ entity_type: string; visibility: string }[]>([])
   const isOwner = !!user && (
     user.username === handle || (user.settings?.handle as string) === handle
   )
+
+  useEffect(() => {
+    async function loadShares() {
+      try {
+        const endpoint = isOwner
+          ? '/api/community/shares'
+          : `/api/public/community/shares/${handle}`
+        const res = await apiFetch<{ shares: { entity_type: string; visibility: string }[] }>(
+          endpoint, isOwner ? undefined : { skipAuth: true }
+        )
+        setContentShares(res.shares ?? [])
+      } catch { setContentShares([]) }
+    }
+    loadShares()
+  }, [handle, isOwner])
 
   useEffect(() => {
     if (!profile) return
@@ -56,8 +76,6 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
   const coverSrc = uploadUrl(profile.cover_url)
   const verification = (profile.verifications ?? [])[0]
   const badges = profile.badges ?? []
-  const rawStats = profile.stats ?? {}
-  const stats = { ...rawStats, points: rawStats.points ?? profile.wallet?.balance ?? 0 }
 
   return (
     <>
@@ -159,45 +177,77 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
               {profile.location && profile.joined_at && <span style={{ opacity: 0.4 }}>·</span>}
               {profile.joined_at && (<><i className="bx bx-calendar" style={{ fontSize: 13 }} /><span>Joined {new Date(profile.joined_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span></>)}
             </div>
-            {isOwner && (
-              <button onClick={() => router.push(`/@${handle}/settings`)} style={{
-                marginTop: 10, width: '100%', padding: '6px 0', borderRadius: 7,
-                border: '1px solid var(--color-border)', background: 'transparent',
-                color: 'var(--color-fg-muted)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-              }}><i className="bx bx-cog" style={{ fontSize: 14 }} />Edit profile</button>
-            )}
           </div>
         </div>
 
-        {/* ── Card 2: Stats ── */}
-        <div className="sb-card" style={{ ...cardSt, padding: '14px 16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-fg)' }}>{(stats.posts ?? 0).toLocaleString()}</div>
-              <div style={{ fontSize: 10, color: 'var(--color-fg-dim)', fontWeight: 500 }}>Posts</div>
-            </div>
-            <div style={{ width: 1, height: 24, background: 'var(--color-border)' }} />
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-fg)' }}>{(stats.contributions ?? 0).toLocaleString()}</div>
-              <div style={{ fontSize: 10, color: 'var(--color-fg-dim)', fontWeight: 500 }}>Contributions</div>
+        {/* ── Content shortcuts: Docs / APIs / Slides ── */}
+        <div className="sb-card" style={{ ...cardSt, padding: '14px 12px', display: 'flex', justifyContent: 'space-around', gap: 8 }}>
+          {CONTENT_SECTIONS.map(sec => {
+            const items = contentShares.filter(s => s.entity_type === sec.type)
+            const count = isOwner ? items.length : items.filter(s => s.visibility === 'public').length
+            return (
+              <button
+                key={sec.type}
+                onClick={() => router.push(`/@${handle}/${sec.path}`)}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                  border: 'none', background: 'transparent', cursor: 'pointer', padding: 0,
+                }}
+              >
+                <div style={{
+                  width: 48, height: 48, borderRadius: 12,
+                  background: `${sec.color}20`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${sec.color}35` }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = `${sec.color}20` }}
+                >
+                  <i className={`bx ${sec.icon}`} style={{ fontSize: 22, color: sec.color }} />
+                </div>
+                <span style={{ fontSize: 10, color: 'var(--color-fg-dim)' }}>{sec.label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* ── Card 2: Badges ── */}
+        {profile.show_badges !== false && badges.length > 0 && (
+          <div className="sb-card" style={{ ...cardSt, padding: '14px 16px' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-fg-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Badges</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {badges.slice(0, 12).map((badge: { id: number; name: string; icon?: string; color?: string }) => (
+                <div key={badge.id} className="group" style={{ position: 'relative', cursor: 'pointer' }} onClick={() => router.push(`/@${handle}/badges`)}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 8,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: `${badge.color ?? '#a900ff'}20`,
+                    color: badge.color ?? '#a900ff', fontSize: 16,
+                  }}>
+                    <i className={`bx ${badge.icon ?? 'bx-medal'}`} />
+                  </div>
+                  <span className="group-hover:!opacity-100" style={{
+                    position: 'absolute', bottom: -20, left: '50%', transform: 'translateX(-50%)',
+                    whiteSpace: 'nowrap', borderRadius: 4, padding: '1px 5px', fontSize: 9, fontWeight: 600,
+                    pointerEvents: 'none', opacity: 0, transition: 'opacity 0.15s',
+                    background: 'var(--color-bg)', color: 'var(--color-fg)', border: '1px solid var(--color-border)', zIndex: 10,
+                  }}>{badge.name}</span>
+                </div>
+              ))}
+              {badges.length > 12 && (
+                <div
+                  onClick={() => router.push(`/@${handle}/badges`)}
+                  style={{
+                    width: 32, height: 32, borderRadius: 8, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'var(--color-bg-active, rgba(255,255,255,0.06))',
+                    color: 'var(--color-fg-dim)', fontSize: 10, fontWeight: 700,
+                  }}
+                >+{badges.length - 12}</div>
+              )}
             </div>
           </div>
-          {profile.show_wallet !== false && stats.points != null && stats.points > 0 && (
-            <div
-              onClick={() => { if (isOwner) router.push(`/@${handle}/wallet`) }}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                width: '100%', marginTop: 10, padding: '5px 0', borderRadius: 7,
-                background: 'rgba(249,168,37,0.06)', border: '1px solid rgba(249,168,37,0.12)',
-                cursor: isOwner ? 'pointer' : 'default',
-              }}
-            >
-              <i className="bx bx-star" style={{ fontSize: 14, color: '#f9a825' }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#f9a825' }}>{stats.points.toLocaleString()} points</span>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* ── Card 3: Social Links ── */}
         {socialLinks.length > 0 && (
@@ -219,40 +269,8 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
           </div>
         )}
 
-        {/* ── Card 4: Achievements ── */}
-        {profile.show_badges !== false && badges.length > 0 && (
-          <div className="sb-card" style={{ ...cardSt, padding: '14px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-fg-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Achievements</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {badges.map(badge => (
-                <div key={badge.slug} className="group" style={{
-                  position: 'relative', width: 36, height: 36, borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: `${badge.color}15`, border: `1.5px solid ${badge.color}25`,
-                  cursor: 'pointer', transition: 'transform 0.2s',
-                }}
-                onClick={() => router.push(`/@${handle}/badges/${badge.slug}`)}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.12)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)' }}
-                >
-                  <i className={`bx ${badge.icon}`} style={{ fontSize: 16, color: badge.color }} />
-                  <span className="group-hover:!opacity-100" style={{
-                    position: 'absolute', bottom: -20, left: '50%', transform: 'translateX(-50%)',
-                    whiteSpace: 'nowrap', borderRadius: 4, padding: '1px 5px', fontSize: 9, fontWeight: 600,
-                    pointerEvents: 'none', opacity: 0, transition: 'opacity 0.15s',
-                    background: 'var(--color-bg)', color: 'var(--color-fg)', border: '1px solid var(--color-border)', zIndex: 10,
-                  }}>{badge.name}</span>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => router.push(`/@${handle}/badges`)} style={{
-              marginTop: 8, fontSize: 11, fontWeight: 500, cursor: 'pointer',
-              background: 'none', border: 'none', padding: 0, color: 'var(--color-fg-dim)',
-            }}>{badges.length} badges earned</button>
-          </div>
-        )}
+        {/* ── Card 4: Teams ── */}
 
-        {/* ── Card 5: Teams ── */}
         {profile.teams && profile.teams.length > 0 && (
           <div className="sb-card" style={{ ...cardSt, padding: '14px 16px' }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-fg-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Teams</div>
@@ -314,10 +332,6 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
               ))}
             </div>
           </div>
-        )}
-        {/* ── Owner Content Card: Docs / APIs / Slides ── */}
-        {isOwner && (
-          <ProfileContentCard handle={handle} />
         )}
       </div>
 

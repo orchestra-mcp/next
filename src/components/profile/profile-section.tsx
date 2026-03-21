@@ -16,8 +16,8 @@ export default function ProfileSection({
   const { colors } = useProfileTheme()
 
   return (
-    <div className="px-4 py-10 sm:px-8 fade-up">
-      <div className="mb-8">
+    <div className="fade-up">
+      <div className="mb-6">
         <h1
           className="text-2xl font-bold tracking-tight mb-2"
           style={{ color: colors.textPrimary, letterSpacing: '-0.02em' }}

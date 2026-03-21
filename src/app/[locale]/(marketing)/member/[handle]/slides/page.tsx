@@ -4,6 +4,7 @@ import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import { relativeTime } from '@/lib/mcp-parsers'
+import ProfileSection from '@/components/profile/profile-section'
 
 interface Presentation {
   id: string
@@ -41,38 +42,25 @@ export default function PublicSlidesPage(props: PageProps) {
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
-        <p style={{ fontSize: 13, color: 'var(--color-fg-dim)' }}>Loading presentations...</p>
-      </div>
+      <ProfileSection title="Presentations" icon="bx-slideshow">
+        <p style={{ fontSize: 13, color: 'var(--color-fg-dim)' }}>Loading...</p>
+      </ProfileSection>
     )
   }
 
   if (presentations.length === 0) {
     return (
-      <div style={{ padding: 60, textAlign: 'center' }}>
-        <i
-          className="bx bx-slideshow"
-          style={{ fontSize: 40, color: 'var(--color-fg-dim)', display: 'block', marginBottom: 12 }}
-        />
-        <p style={{ fontSize: 14, color: 'var(--color-fg-dim)', margin: 0 }}>
-          No public presentations
-        </p>
-      </div>
+      <ProfileSection title="Presentations" icon="bx-slideshow">
+        <div style={{ padding: '40px 0', textAlign: 'center' }}>
+          <i className="bx bx-slideshow" style={{ fontSize: 40, color: 'var(--color-fg-dim)', display: 'block', marginBottom: 12 }} />
+          <p style={{ fontSize: 14, color: 'var(--color-fg-dim)', margin: 0 }}>No public presentations</p>
+        </div>
+      </ProfileSection>
     )
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <i className="bx bx-slideshow" style={{ fontSize: 22, color: 'var(--color-fg)' }} />
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-fg)', margin: 0 }}>
-          Presentations
-        </h2>
-        <span style={countBadgeStyle}>{presentations.length}</span>
-      </div>
-
-      {/* Grid */}
+    <ProfileSection title="Presentations" icon="bx-slideshow">
       <div className="slides-grid" style={gridStyle}>
         {presentations.map((pres) => (
           <Link
@@ -123,17 +111,8 @@ export default function PublicSlidesPage(props: PageProps) {
           }
         }
       `}</style>
-    </div>
+    </ProfileSection>
   )
-}
-
-const countBadgeStyle: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 600,
-  color: 'var(--color-fg-dim)',
-  background: 'var(--color-bg-alt)',
-  borderRadius: 20,
-  padding: '2px 8px',
 }
 
 const gridStyle: React.CSSProperties = {

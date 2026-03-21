@@ -3,6 +3,7 @@
 import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
+import ProfileSection from '@/components/profile/profile-section'
 
 interface ApiCollection {
   id: number
@@ -50,37 +51,25 @@ export default function PublicApiCollectionsPage(props: PageProps) {
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
-        <p style={{ fontSize: 13, color: 'var(--color-fg-dim)' }}>Loading API collections...</p>
-      </div>
+      <ProfileSection title="API Collections" icon="bx-collection">
+        <p style={{ fontSize: 13, color: 'var(--color-fg-dim)' }}>Loading...</p>
+      </ProfileSection>
     )
   }
 
   if (collections.length === 0) {
     return (
-      <div style={{ padding: 60, textAlign: 'center' }}>
-        <i
-          className="bx bx-collection"
-          style={{ fontSize: 40, color: 'var(--color-fg-dim)', display: 'block', marginBottom: 12 }}
-        />
-        <p style={{ fontSize: 14, color: 'var(--color-fg-dim)', margin: 0 }}>
-          No public API collections
-        </p>
-      </div>
+      <ProfileSection title="API Collections" icon="bx-collection">
+        <div style={{ padding: '40px 0', textAlign: 'center' }}>
+          <i className="bx bx-collection" style={{ fontSize: 40, color: 'var(--color-fg-dim)', display: 'block', marginBottom: 12 }} />
+          <p style={{ fontSize: 14, color: 'var(--color-fg-dim)', margin: 0 }}>No public API collections</p>
+        </div>
+      </ProfileSection>
     )
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <i className="bx bx-collection" style={{ fontSize: 22, color: 'var(--color-fg)' }} />
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-fg)', margin: 0 }}>
-          API Collections
-        </h2>
-      </div>
-
-      {/* Grid */}
+    <ProfileSection title="API Collections" icon="bx-collection">
       <div className="api-col-grid" style={gridStyle}>
         {collections.map((col) => {
           const authColor = AUTH_COLORS[col.auth_type] ?? AUTH_COLORS.none
@@ -154,7 +143,7 @@ export default function PublicApiCollectionsPage(props: PageProps) {
           }
         }
       `}</style>
-    </div>
+    </ProfileSection>
   )
 }
 
