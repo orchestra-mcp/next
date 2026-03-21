@@ -268,7 +268,7 @@ export default function MemberProfilePage(props: PageProps) {
   function getPostTypeBorderStyle(post: typeof posts[0]): React.CSSProperties {
     const type = getPostTypeFromTags(post.tags || [])
     if (!type || !POST_TYPE_STYLES[type]) return {}
-    return { borderLeft: `3px solid ${POST_TYPE_STYLES[type].color}` }
+    return { border: `1.5px solid ${POST_TYPE_STYLES[type].borderColor}` }
   }
 
   function getPostTypeBadge(post: typeof posts[0]) {
