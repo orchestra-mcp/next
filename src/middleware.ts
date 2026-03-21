@@ -17,7 +17,7 @@ const BYPASS_PATHS = [
   '/cli-auth',
 ]
 
-const PUBLIC_PREFIXES = ['/_next', '/api', '/favicon', '/logo', '/og-image', '/icons']
+const PUBLIC_PREFIXES = ['/_next', '/api', '/uploads', '/favicon', '/logo', '/og-image', '/icons']
 
 // Public routes under [locale]/ that use intl middleware (URL-based locale)
 // Everything else is an app route (cookie-based locale, no URL prefix)
