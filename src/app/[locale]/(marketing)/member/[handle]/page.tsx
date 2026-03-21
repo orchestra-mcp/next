@@ -413,22 +413,21 @@ export default function MemberProfilePage(props: PageProps) {
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold" style={{ color: colors.textPrimary }}>{profile?.name || handle}</div>
-                  {/* Type selector inline under name */}
-                  <div style={{ display: 'flex', gap: 3, marginTop: 4, overflowX: 'auto' }}>
+                  {/* Type selector — icon-only circles with tooltip */}
+                  <div style={{ display: 'flex', gap: 4, marginTop: 5 }}>
                     {(['post', 'skill', 'agent', 'workflow'] as const).map(type => {
                       const s = POST_TYPE_STYLES[type]
                       const active = postType === type
                       return (
-                        <button key={type} type="button" onClick={() => setPostType(type)} style={{
-                          display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0,
-                          padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600,
+                        <button key={type} type="button" onClick={() => setPostType(type)} title={s.label} style={{
+                          width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
                           background: active ? s.bg : 'transparent',
-                          border: `1px solid ${active ? s.borderColor : 'var(--color-border, rgba(255,255,255,0.08))'}`,
+                          border: `1.5px solid ${active ? s.color : 'var(--color-border, rgba(255,255,255,0.12))'}`,
                           color: active ? s.color : 'var(--color-fg-muted, rgba(255,255,255,0.35))',
-                          cursor: 'pointer', transition: 'all 0.12s', whiteSpace: 'nowrap',
+                          cursor: 'pointer', transition: 'all 0.12s',
                         }}>
-                          <i className={`bx ${s.icon}`} style={{ fontSize: 10 }} />
-                          {s.label}
+                          <i className={`bx ${s.icon}`} style={{ fontSize: 12 }} />
                         </button>
                       )
                     })}
@@ -624,22 +623,21 @@ export default function MemberProfilePage(props: PageProps) {
               {editingId === post.id ? (
                 /* ── Edit mode — matches create composer style ── */
                 <div className="flex flex-col gap-2.5">
-                  {/* Type selector */}
-                  <div style={{ display: 'flex', gap: 3, overflowX: 'auto', paddingBottom: 2 }}>
+                  {/* Type selector — icon-only circles with tooltip */}
+                  <div style={{ display: 'flex', gap: 4 }}>
                     {(['post', 'skill', 'agent', 'workflow'] as const).map(type => {
                       const s = POST_TYPE_STYLES[type]
                       const active = editPostType === type
                       return (
-                        <button key={type} type="button" onClick={() => setEditPostType(type)} style={{
-                          display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0,
-                          padding: '3px 9px', borderRadius: 5, fontSize: 10, fontWeight: 600,
+                        <button key={type} type="button" onClick={() => setEditPostType(type)} title={s.label} style={{
+                          width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
                           background: active ? s.bg : 'transparent',
-                          border: `1px solid ${active ? s.borderColor : 'var(--color-border, rgba(255,255,255,0.08))'}`,
+                          border: `1.5px solid ${active ? s.color : 'var(--color-border, rgba(255,255,255,0.12))'}`,
                           color: active ? s.color : 'var(--color-fg-muted, rgba(255,255,255,0.35))',
-                          cursor: 'pointer', transition: 'all 0.12s', whiteSpace: 'nowrap',
+                          cursor: 'pointer', transition: 'all 0.12s',
                         }}>
-                          <i className={`bx ${s.icon}`} style={{ fontSize: 10 }} />
-                          {s.label}
+                          <i className={`bx ${s.icon}`} style={{ fontSize: 12 }} />
                         </button>
                       )
                     })}
