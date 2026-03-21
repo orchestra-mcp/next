@@ -217,8 +217,10 @@ function slideTitleStyle(fullscreen: boolean, isTitleSlide: boolean): React.CSSP
   return {
     fontSize: isTitleSlide ? (fullscreen ? 42 : 28) : (fullscreen ? 28 : 20),
     fontWeight: 700,
+    marginTop: 0,
+    marginRight: 0,
     marginBottom: isTitleSlide ? 8 : 16,
-    margin: 0,
+    marginLeft: 0,
     lineHeight: 1.3,
   }
 }
