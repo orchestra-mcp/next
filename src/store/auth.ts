@@ -291,7 +291,10 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           const sb = createClient()
           const { error } = await sb.auth.signInWithOtp({
             email,
-            options: { shouldCreateUser: false },
+            options: {
+              shouldCreateUser: false,
+              emailRedirectTo: `${window.location.origin}/auth/callback`,
+            },
           })
           if (error) throw error
           set({ loading: false })
