@@ -47,7 +47,6 @@ jobs:
           command_timeout: 600s
           script: |
             set -e
-            export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin:$HOME/.local/share/pnpm:$HOME/.local/bin
 
             DEPLOY_DIR="$HOME/orchestra-next"
 
@@ -63,41 +62,26 @@ jobs:
             git reset --hard origin/master
             echo "Commit: $(git rev-parse --short HEAD)"
 
-            echo "--- Installing pnpm ---"
-            export COREPACK_ENABLE_STRICT=0
-            export COREPACK_HOME="$HOME/.corepack"
-            corepack enable --install-directory "$HOME/.local/bin" 2>/dev/null || true
-            corepack prepare pnpm@latest --activate 2>/dev/null || true
-
             echo "--- Installing dependencies ---"
-            npx --yes pnpm install --no-frozen-lockfile
+            pnpm install --no-frozen-lockfile
 
             echo "--- Copying env ---"
             [ -f /opt/orchestra/env/next.env ] && cp /opt/orchestra/env/next.env .env.local
-            [ -f "$HOME/orchestra-next.env" ] && cp "$HOME/orchestra-next.env" .env.local
 
             echo "--- Building ---"
             rm -rf .next
-            npx --yes next build
+            npx next build
 
             echo "--- Restarting with PM2 ---"
-            export PM2_HOME="$HOME/.pm2"
-            export PATH="$HOME/.local/bin:$HOME/.local/lib/node_modules/.bin:$PATH"
-            npm list -g pm2 >/dev/null 2>&1 || npm install -g pm2 --prefix "$HOME/.local"
-            # Kill any existing process on port 3000 first
-            fuser -k 3000/tcp 2>/dev/null || true
-            # Clean up all pm2 instances with this name across any pm2_home
             pm2 delete orchestra-next 2>/dev/null || true
-            pm2 kill 2>/dev/null || true
-            sleep 2
             pm2 start "npx next start -p 3000" --name orchestra-next --cwd "$DEPLOY_DIR"
             pm2 save --force
 
             echo "--- Health check ---"
-            sleep 8
+            sleep 5
             for i in $(seq 1 15); do
               curl -sf http://localhost:3000 > /dev/null 2>&1 && echo "Next.js: healthy (attempt $i)" && break
-              [ "$i" -eq 15 ] && echo "FATAL: Next.js health check failed" && PM2_HOME="$HOME/.pm2" pm2 logs orchestra-next --lines 30 --nostream && exit 1
+              [ "$i" -eq 15 ] && echo "FATAL: Next.js health check failed" && pm2 logs orchestra-next --lines 30 --nostream && exit 1
               sleep 3
             done
 
