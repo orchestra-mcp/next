@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 
 function getPostLoginRedirect(): string {
   const user = useAuthStore.getState().user
-  const username = user?.username || (user?.settings?.handle as string | undefined)
+  const username = user?.handle || user?.username || (user?.settings?.handle as string | undefined)
   return username ? `/@${username}` : '/dashboard'
 }
 

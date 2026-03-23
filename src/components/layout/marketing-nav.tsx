@@ -61,7 +61,7 @@ interface NavGroup {
 
 export function MarketingNav() {
   const t = useTranslations()
-  const { token, user, logout } = useAuthStore()
+  const { mcpToken: token, user, logout } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
   const { notifications, fetchNotifications, markNotificationRead, markAllRead } = useSettingsStore()

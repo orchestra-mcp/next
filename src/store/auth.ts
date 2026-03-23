@@ -26,6 +26,7 @@ export interface User {
   id: number
   name: string
   username?: string
+  handle?: string
   email: string
   bio?: string
   avatar_url?: string | null
