@@ -434,7 +434,7 @@ export function MarketingNav() {
                     </div>
                   </div>
                   <DropdownMenuItem onClick={() => {
-                    const handle = user.username || (user.settings?.handle as string)
+                    const handle = user.handle || user.username
                     router.push(handle ? `/@${handle}` : '/dashboard')
                   }}>
                     <i className="bx bx-user" style={{ marginInlineEnd: 8 }} /> {t('nav.profile')}
@@ -614,7 +614,7 @@ export function MarketingNav() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {token && user ? (
                   <>
-                    <Link href={`/@${user.username || (user.settings?.handle as string) || ''}`} onClick={() => toggleMenu()} style={{
+                    <Link href={`/@${user.handle || user.username || ''}`} onClick={() => toggleMenu()} style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       padding: '10px 20px', borderRadius: 10,
                       background: 'var(--color-bg-active)',

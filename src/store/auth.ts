@@ -96,10 +96,12 @@ function extractErrorMessage(e: unknown): string {
   return msg
 }
 
-/** Fetch the public.users profile for a Supabase auth user. */
+/** Fetch the public.users profile for the currently authenticated Supabase user. */
 async function fetchUserProfile(): Promise<User | null> {
   const sb = createClient()
-  const { data } = await sb.from('users').select('*').single()
+  const { data: { user: authUser } } = await sb.auth.getUser()
+  if (!authUser) return null
+  const { data } = await sb.from('users').select('*').eq('auth_uid', authUser.id).single()
   return data as User | null
 }
 

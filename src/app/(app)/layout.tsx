@@ -12,12 +12,18 @@ import { MarketingFooter } from '@/components/layout/marketing-footer'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const { mcpToken, user, fetchMe, impersonating, exitImpersonation } = useAuthStore()
+  const { mcpToken, user, fetchMe, initAuthListener, impersonating, exitImpersonation } = useAuthStore()
   const { fetchMyRole } = useRoleStore()
   const { fetchNotifications } = useSettingsStore()
 
   // Connect WebSocket for realtime sync + notifications
   useRealtimeSync()
+
+  // Subscribe to Supabase auth state changes (token refresh, sign-out, etc.)
+  useEffect(() => {
+    const unsub = initAuthListener()
+    return unsub
+  }, [])
 
   // Auth + initial data loading
   useEffect(() => {

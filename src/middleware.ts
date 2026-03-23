@@ -150,7 +150,7 @@ async function handleComingSoon(req: NextRequest): Promise<NextResponse> {
   if (supabaseUrl && anonKey) {
     try {
       const res = await fetch(
-        `${supabaseUrl}/rest/v1/settings?key=eq.coming_soon&select=value`,
+        `${supabaseUrl}/rest/v1/system_settings?key=eq.coming_soon&select=value`,
         {
           headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
           next: { revalidate: 30 },
