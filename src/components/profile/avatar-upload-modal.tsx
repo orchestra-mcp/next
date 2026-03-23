@@ -3,7 +3,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuthStore } from '@/store/auth'
-import { apiFetch, uploadUrl } from '@/lib/api'
+import { uploadUrl } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useProfileTheme } from './use-profile-theme'
 
 // ── Types ────────────────────────────────────────────────
@@ -230,24 +231,27 @@ export default function AvatarUploadModal({
         )
       })
 
-      // Build form data
-      const formData = new FormData()
-      formData.append('avatar', blob, 'avatar.jpg')
+      // Upload via Supabase Storage
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
 
-      // Upload via API
-      const result = await apiFetch<{ ok: boolean; avatar_url: string }>(
-        '/api/settings/avatar',
-        {
-          method: 'POST',
-          body: formData,
-        },
-      )
+      const filePath = `avatars/${authUser.id}-${Date.now()}.jpg`
+      const { error: uploadError } = await sb.storage.from('uploads').upload(filePath, blob, { contentType: 'image/jpeg', upsert: true })
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = sb.storage.from('uploads').getPublicUrl(filePath)
+      const avatarUrl = urlData.publicUrl
+
+      // Update user profile with new avatar URL
+      const { error: updateError } = await sb.from('users').update({ avatar_url: avatarUrl }).eq('auth_uid', authUser.id)
+      if (updateError) throw updateError
 
       // Update auth store
-      updateAvatarUrl(result.avatar_url)
+      updateAvatarUrl(avatarUrl)
 
       // Notify parent
-      onUploaded(result.avatar_url)
+      onUploaded(avatarUrl)
 
       // Close modal
       onClose()

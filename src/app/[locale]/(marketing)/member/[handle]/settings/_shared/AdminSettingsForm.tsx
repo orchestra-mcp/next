@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAdminStore } from '@/store/admin'
 import { useRoleStore } from '@/store/roles'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { ContentLocaleTabs } from '@/components/ui/content-locale-tabs'
 import ProfileCard from '@/components/profile/profile-card'
 import { Switch } from '@orchestra-mcp/ui'
@@ -53,16 +53,29 @@ export default function AdminSettingsForm({ settingKey, title, fields, showLocal
   const save = async () => {
     setSaving(true)
     try {
-      await apiFetch(`/api/admin/settings/${settingKey}?locale=${contentLocale}`, {
-        method: 'PATCH',
-        body: JSON.stringify(values),
-      })
+      const sb = createClient()
+
+      // Upsert the setting into the settings table
+      const { error } = await sb
+        .from('settings')
+        .upsert(
+          { key: `${settingKey}:${contentLocale}`, value: values },
+          { onConflict: 'key' }
+        )
+      if (error) throw new Error(error.message)
+
       // Sync standalone settings that have their own keys
       if (settingKey === 'general' && 'coming_soon' in values) {
-        await apiFetch(`/api/admin/settings/coming_soon?locale=${contentLocale}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ enabled: !!(values.coming_soon), title: 'Coming Soon', message: "We're putting the finishing touches on something amazing. Stay tuned!" }),
-        })
+        const { error: csError } = await sb
+          .from('settings')
+          .upsert(
+            {
+              key: `coming_soon:${contentLocale}`,
+              value: { enabled: !!(values.coming_soon), title: 'Coming Soon', message: "We're putting the finishing touches on something amazing. Stay tuned!" },
+            },
+            { onConflict: 'key' }
+          )
+        if (csError) throw new Error(csError.message)
       }
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)

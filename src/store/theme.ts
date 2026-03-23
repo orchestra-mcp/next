@@ -107,8 +107,8 @@ export const useThemeStore = create<ThemeState>()(
         set({ colorTheme: themeId, theme: darkLight })
         applyColorTheme(themeId)
         bridgeLegacyCssVars(themeId)
-        // Sync to PowerSync for cross-device.
-        syncThemeToPowerSync(themeId)
+        // Sync to Supabase for cross-device.
+        syncThemeToSupabase(themeId)
       },
 
       setVariant: (variant) => {
@@ -146,22 +146,12 @@ export function applyTheme(theme: Theme) {
   useThemeStore.getState().set(theme)
 }
 
-/** Write theme_id to PowerSync user_settings for cross-device sync. */
-async function syncThemeToPowerSync(themeId: string) {
+/** Write theme_id to Supabase user_settings for cross-device sync. */
+async function syncThemeToSupabase(themeId: string) {
   try {
-    // Check if key exists.
-    const { getPowerSyncDatabase } = await import('@/lib/powersync')
-    const db = getPowerSyncDatabase()
-    const existing = await db.getOptional('SELECT id FROM user_settings WHERE key = ?', ['theme_id'])
-    if (existing) {
-      await db.execute('UPDATE user_settings SET value = ?, updated_at = ? WHERE key = ?',
-        [themeId, new Date().toISOString(), 'theme_id'])
-    } else {
-      await db.execute(
-        'INSERT INTO user_settings (id, key, value, updated_at) VALUES (?, ?, ?, ?)',
-        [crypto.randomUUID(), 'theme_id', themeId, new Date().toISOString()])
-    }
+    const { upsertUserSetting } = await import('@/lib/supabase/queries')
+    await upsertUserSetting('theme_id', themeId)
   } catch {
-    // PowerSync may not be connected yet.
+    // Supabase may not be connected yet.
   }
 }

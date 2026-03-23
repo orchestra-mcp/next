@@ -10,15 +10,38 @@ interface PageProps {
   params: Promise<{ handle: string; slug: string }>
 }
 
+const SHARE_PLATFORMS = [
+  { key: 'x',         label: 'X (Twitter)',  icon: 'bxl-twitter',   color: '#000',    url: (text: string, url: string) => `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}` },
+  { key: 'facebook',  label: 'Facebook',     icon: 'bxl-facebook',  color: '#1877f2', url: (_: string, url: string) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}` },
+  { key: 'linkedin',  label: 'LinkedIn',     icon: 'bxl-linkedin',  color: '#0a66c2', url: (text: string, url: string) => `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}` },
+  { key: 'whatsapp',  label: 'WhatsApp',     icon: 'bxl-whatsapp',  color: '#25d366', url: (text: string, url: string) => `https://api.whatsapp.com/send?text=${encodeURIComponent(`${text} ${url}`)}` },
+  { key: 'telegram',  label: 'Telegram',     icon: 'bxl-telegram',  color: '#2aabee', url: (text: string, url: string) => `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}` },
+  { key: 'reddit',    label: 'Reddit',       icon: 'bxl-reddit',    color: '#ff4500', url: (text: string, url: string) => `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}` },
+  { key: 'copy',      label: 'Copy Link',    icon: 'bx-link',       color: '#6b7280', url: null },
+]
+
 export default function BadgeCelebrationPage(props: PageProps) {
   const { handle, slug } = use(props.params)
   const { profile } = useCommunityStore()
   const { colors } = useProfileTheme()
   const [showConfetti, setShowConfetti] = useState(true)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
+  const shareRef = useRef<HTMLDivElement>(null)
 
   const badge = (profile?.badges ?? []).find(b => b.slug === slug)
+
+  // Close share dropdown on outside click
+  useEffect(() => {
+    if (!shareOpen) return
+    function handleClick(e: MouseEvent) {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) setShareOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [shareOpen])
 
   // Confetti
   useEffect(() => {
@@ -69,6 +92,17 @@ export default function BadgeCelebrationPage(props: PageProps) {
     }
   }
 
+  function handleShare(platform: typeof SHARE_PLATFORMS[number]) {
+    if (platform.key === 'copy') {
+      navigator.clipboard?.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } else if (platform.url) {
+      window.open(platform.url(shareText, shareUrl), '_blank', 'noopener')
+    }
+    setShareOpen(false)
+  }
+
   return (
     <div style={{ position: 'relative' }}>
       {showConfetti && (
@@ -79,13 +113,12 @@ export default function BadgeCelebrationPage(props: PageProps) {
         <i className="bx bx-left-arrow-alt" /> All badges
       </Link>
 
-      {/* Badge card — this is what gets captured for download */}
+      {/* Badge card */}
       <div ref={cardRef}>
         <ProfileCard variant="default" style={{ padding: '48px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 30%, ${badge.color}10 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
           <div style={{ position: 'relative' }}>
-            {/* Badge icon */}
             <div style={{
               width: 100, height: 100, borderRadius: '50%', margin: '0 auto 20px',
               background: `${badge.color}15`, border: `2.5px solid ${badge.color}35`,
@@ -95,22 +128,18 @@ export default function BadgeCelebrationPage(props: PageProps) {
               <i className={`bx ${badge.icon}`} style={{ fontSize: 46, color: badge.color }} />
             </div>
 
-            {/* Name */}
             <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--color-fg)', margin: '0 0 8px', letterSpacing: '-0.03em' }}>
               {badge.name}
             </h1>
 
-            {/* Description */}
             <p style={{ fontSize: 15, color: 'var(--color-fg-muted)', margin: '0 0 10px', maxWidth: 400, marginInline: 'auto', lineHeight: 1.5 }}>
               {badge.description}
             </p>
 
-            {/* Category */}
             <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: `${badge.color}15`, color: badge.color, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
               {badge.category}
             </span>
 
-            {/* Earned date */}
             {earnedDate && (
               <div style={{ fontSize: 13, color: 'var(--color-fg-dim)', marginBottom: 6 }}>
                 <i className="bx bx-calendar" style={{ marginInlineEnd: 4, fontSize: 14, verticalAlign: '-1px' }} />
@@ -118,12 +147,10 @@ export default function BadgeCelebrationPage(props: PageProps) {
               </div>
             )}
 
-            {/* Earned by */}
             <div style={{ fontSize: 13, color: 'var(--color-fg-dim)', marginBottom: 24 }}>
               Earned by <Link href={`/@${handle}`} style={{ color: '#00e5ff', textDecoration: 'none', fontWeight: 600 }}>@{handle}</Link>
             </div>
 
-            {/* Orchestra logo */}
             <div style={{ opacity: 0.35, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <img src="/logo.svg" alt="Orchestra" width={22} height={22} />
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-fg)' }}>Orchestra</span>
@@ -134,8 +161,9 @@ export default function BadgeCelebrationPage(props: PageProps) {
         </ProfileCard>
       </div>
 
-      {/* Actions — outside cardRef so they don't appear in exported image */}
+      {/* Actions */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginTop: 16 }}>
+        {/* Download */}
         <button onClick={downloadImage} style={{
           padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
           background: 'linear-gradient(135deg, #00e5ff, #a900ff)', color: '#fff',
@@ -143,21 +171,67 @@ export default function BadgeCelebrationPage(props: PageProps) {
         }}>
           <i className="bx bx-download" /> Download
         </button>
-        <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener" style={{
-          padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-          background: 'var(--color-bg-active)', color: 'var(--color-fg)',
-          border: '1px solid var(--color-border)', textDecoration: 'none',
-          display: 'flex', alignItems: 'center', gap: 5,
-        }}>
-          <i className="bx bxl-twitter" /> Share
-        </a>
-        <button onClick={() => navigator.clipboard?.writeText(shareUrl)} style={{
+
+        {/* Share dropdown */}
+        <div ref={shareRef} style={{ position: 'relative' }}>
+          <button onClick={() => setShareOpen(o => !o)} style={{
+            padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+            background: 'var(--color-bg-active)', color: 'var(--color-fg)',
+            border: '1px solid var(--color-border)', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 5,
+          }}>
+            <i className="bx bx-share-alt" /> Share
+            <i className={`bx bx-chevron-${shareOpen ? 'up' : 'down'}`} style={{ fontSize: 14, marginLeft: 2 }} />
+          </button>
+
+          {shareOpen && (
+            <div style={{
+              position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
+              background: 'var(--color-bg)', border: '1px solid var(--color-border)',
+              borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              minWidth: 180, zIndex: 100, overflow: 'hidden',
+              padding: '6px',
+            }}>
+              {SHARE_PLATFORMS.map(p => (
+                <button key={p.key} onClick={() => handleShare(p)} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  width: '100%', padding: '8px 10px', borderRadius: 8,
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  textAlign: 'left', transition: 'background 0.1s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-bg-active)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                >
+                  <span style={{
+                    width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: p.key === 'copy' ? 'var(--color-bg-alt)' : `${p.color}20`,
+                    color: p.key === 'copy' ? 'var(--color-fg-dim)' : p.color,
+                    fontSize: 15,
+                  }}>
+                    {p.key === 'x'
+                      ? <svg width="13" height="13" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.213 5.567zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      : <i className={`bx ${p.icon}`} />
+                    }
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-fg)' }}>
+                    {p.key === 'copy' && copied ? 'Copied!' : p.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Copy Link */}
+        <button onClick={() => { navigator.clipboard?.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 1500) }} style={{
           padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
           background: 'var(--color-bg-active)', color: 'var(--color-fg)',
           border: '1px solid var(--color-border)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: 5,
         }}>
-          <i className="bx bx-link" /> Copy Link
+          <i className={`bx ${copied ? 'bx-check' : 'bx-link'}`} style={{ color: copied ? '#22c55e' : undefined }} />
+          {copied ? 'Copied!' : 'Copy Link'}
         </button>
       </div>
     </div>

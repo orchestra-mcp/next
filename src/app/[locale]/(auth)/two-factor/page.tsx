@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useAuthStore } from '@/store/auth'
@@ -10,8 +10,6 @@ import { useTranslations } from 'next-intl'
 export default function TwoFactorPage() {
   const t = useTranslations()
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const tempTokenParam = searchParams.get('temp_token') ?? ''
   const { verify2FA, loading, error, clearError } = useAuthStore()
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
@@ -19,16 +17,24 @@ export default function TwoFactorPage() {
   const [digits, setDigits] = useState(['', '', '', '', '', ''])
   const [useRecovery, setUseRecovery] = useState(false)
   const [recoveryCode, setRecoveryCode] = useState('')
+  const [factorId, setFactorId] = useState('')
   const refs = useRef<(HTMLInputElement | null)[]>([])
 
-  // Read temp token from URL param or sessionStorage
-  const tempToken = tempTokenParam || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('orchestra_2fa_token') ?? '' : '')
-  const savedEmail = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('orchestra_2fa_email') ?? '' : ''
-
   useEffect(() => {
-    if (!tempToken) router.replace('/login')
+    // Get the MFA factor from the current Supabase session
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      const sb = createClient()
+      sb.auth.mfa.listFactors().then(({ data }) => {
+        const totpFactor = data?.totp?.[0]
+        if (totpFactor) {
+          setFactorId(totpFactor.id)
+        } else {
+          router.replace('/login')
+        }
+      })
+    })
     refs.current[0]?.focus()
-  }, [tempToken, router])
+  }, [router])
 
   const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
   const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
@@ -73,8 +79,9 @@ export default function TwoFactorPage() {
   }
 
   const submitCode = async (code: string) => {
+    if (!factorId) return
     try {
-      await verify2FA(code, tempToken)
+      await verify2FA(factorId, code)
       const currentUser = useAuthStore.getState().user
       const username = currentUser?.username || (currentUser?.settings?.handle as string | undefined)
       router.replace(username ? `/@${username}` : '/dashboard')
@@ -99,10 +106,7 @@ export default function TwoFactorPage() {
         </div>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: textPrimary, margin: 0, letterSpacing: '-0.02em' }}>{t('auth.twoFactorAuth')}</h1>
         <p style={{ fontSize: 14, color: textMuted, marginTop: 8 }}>
-          {savedEmail
-            ? <>{t('auth.signingInAs')} <strong style={{ color: textPrimary }}>{savedEmail}</strong></>
-            : t('auth.enter2faCode')
-          }
+          {t('auth.enter2faCode')}
         </p>
       </div>
 

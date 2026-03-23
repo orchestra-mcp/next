@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/auth'
 import { useProfileTheme } from '@/components/profile/use-profile-theme'
 import ProfileSection from '@/components/profile/profile-section'
 import ProfileCard from '@/components/profile/profile-card'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 interface Transaction {
   id: number
@@ -68,10 +68,16 @@ export default function PublicWalletPage(props: PageProps) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await apiFetch<{ balance: number; lifetime_earned: number; transactions: Transaction[] }>(`/api/public/member/${handle}/wallet`)
-        setBalance(res.balance ?? 0)
-        setLifetime(res.lifetime_earned ?? 0)
-        setTransactions(res.transactions ?? [])
+        const sb = createClient()
+        // Fetch wallet balance from user_wallets table
+        const { data: walletData, error: walletError } = await sb.from('user_wallets').select('balance, lifetime_earned').eq('username', handle).single()
+        if (walletError) throw walletError
+        setBalance(walletData?.balance ?? 0)
+        setLifetime(walletData?.lifetime_earned ?? 0)
+        // Fetch transactions
+        const { data: txData, error: txError } = await sb.from('wallet_transactions').select('*').eq('username', handle).order('created_at', { ascending: false })
+        if (txError) throw txError
+        setTransactions(txData ?? [])
       } catch {
         setBalance(285)
         setLifetime(340)

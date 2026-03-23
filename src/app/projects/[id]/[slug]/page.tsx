@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/store/auth'
 import { ProjectSmartActionsBar } from '@/components/projects/ProjectSmartActionsBar'
 
@@ -75,9 +75,10 @@ export default function PublicProjectPage() {
   useEffect(() => {
     if (!user || !slug) return
     setLoading(true)
-    apiFetch<PublicProject>(`/api/public/projects/${user}/${slug}`, { skipAuth: true })
-      .then(setData)
-      .catch(err => setError(err.message || 'Failed to load project'))
+    const sb = createClient()
+    sb.from('projects').select('*').eq('slug', slug).single()
+      .then(({ data, error }) => { if (error) throw error; setData(data as PublicProject) })
+      .catch((err: any) => setError(err.message || 'Failed to load project'))
       .finally(() => setLoading(false))
   }, [user, slug])
 

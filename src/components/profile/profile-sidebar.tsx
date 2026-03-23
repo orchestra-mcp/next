@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { useCommunityStore } from '@/store/community'
-import { uploadUrl, apiFetch } from '@/lib/api'
+import { uploadUrl } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useProfileTheme } from './use-profile-theme'
 import AvatarUploadModal from './avatar-upload-modal'
 import CoverUploadModal from './cover-upload-modal'
@@ -16,11 +17,15 @@ const CONTENT_SECTIONS = [
 ]
 
 const PLATFORM_ICONS: Record<string, string> = {
-  website: 'bx-link', github: 'bxl-github', twitter: 'bxl-twitter',
-  linkedin: 'bxl-linkedin', youtube: 'bxl-youtube', discord: 'bxl-discord-alt',
-  mastodon: 'bxl-mastodon', bluesky: 'bx-hash', instagram: 'bxl-instagram',
+  website: 'bx-globe', github: 'bxl-github', twitter: 'bxl-twitter',
+  x: 'bxl-twitter', linkedin: 'bxl-linkedin', youtube: 'bxl-youtube',
+  discord: 'bxl-discord-alt', mastodon: 'bxl-mastodon', bluesky: 'bx-hash',
+  instagram: 'bxl-instagram', facebook: 'bxl-facebook', tiktok: 'bxl-tiktok',
   other: 'bx-link-external',
 }
+
+// Platforms that render an SVG X logo instead of a boxicon
+const PLATFORM_X_SVG = new Set(['twitter', 'x'])
 
 const VERIFICATION_COLORS: Record<string, string> = {
   verified: '#00e5ff', contributor: '#22c55e', sponsor: '#f59e0b', enterprise: '#a900ff',
@@ -49,13 +54,17 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
   useEffect(() => {
     async function loadShares() {
       try {
-        const endpoint = isOwner
-          ? '/api/community/shares'
-          : `/api/public/community/shares/${handle}`
-        const res = await apiFetch<{ shares: { entity_type: string; visibility: string }[] }>(
-          endpoint, isOwner ? undefined : { skipAuth: true }
-        )
-        setContentShares(res.shares ?? [])
+        const sb = createClient()
+        let query = sb.from('community_shares').select('entity_type, visibility')
+        if (isOwner) {
+          const { data: { user: authUser } } = await sb.auth.getUser()
+          if (authUser) query = query.eq('user_id', authUser.id)
+        } else {
+          query = query.eq('handle', handle).eq('visibility', 'public')
+        }
+        const { data, error } = await query
+        if (error) throw error
+        setContentShares(data ?? [])
       } catch { setContentShares([]) }
     }
     loadShares()
@@ -211,13 +220,48 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
           })}
         </div>
 
-        {/* ── Card 2: Badges ── */}
+        {/* ── Card 2: Social Links ── */}
+        {socialLinks.length > 0 && (
+          <div className="sb-card" style={{ ...cardSt, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {socialLinks.map((link: { url: string; platform: string; username?: string }, i: number) => {
+              const display = link.username
+                ? (link.username.startsWith('@') ? link.username : `@${link.username}`)
+                : link.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')
+              return (
+                <a
+                  key={i}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '5px 4px', borderRadius: 7,
+                    color: 'var(--color-fg-dim)', textDecoration: 'none',
+                    transition: 'background 0.12s, color 0.12s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-bg-active, rgba(255,255,255,0.05))'; (e.currentTarget as HTMLElement).style.color = 'var(--color-fg)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--color-fg-dim)' }}
+                >
+                  <span style={{ width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {PLATFORM_X_SVG.has(link.platform)
+                      ? <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.213 5.567zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      : <i className={`bx ${PLATFORM_ICONS[link.platform] || 'bx-globe'}`} style={{ fontSize: 15 }} />
+                    }
+                  </span>
+                  <span style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{display}</span>
+                </a>
+              )
+            })}
+          </div>
+        )}
+
+        {/* ── Card 3: Badges ── */}
         {profile.show_badges !== false && badges.length > 0 && (
           <div className="sb-card" style={{ ...cardSt, padding: '14px 16px' }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-fg-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Badges</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {badges.slice(0, 12).map((badge: { id: number; name: string; icon?: string; color?: string }) => (
-                <div key={badge.id} className="group" style={{ position: 'relative', cursor: 'pointer' }} onClick={() => router.push(`/@${handle}/badges`)}>
+              {badges.slice(0, 12).map((badge: { id: number; slug?: string; name: string; icon?: string; color?: string }) => (
+                <div key={badge.id} className="group" style={{ position: 'relative', cursor: 'pointer' }} onClick={() => router.push(badge.slug ? `/@${handle}/badges/${badge.slug}` : `/@${handle}/badges`)}>
                   <div style={{
                     width: 32, height: 32, borderRadius: 8,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -246,26 +290,6 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
                 >+{badges.length - 12}</div>
               )}
             </div>
-          </div>
-        )}
-
-        {/* ── Card 3: Social Links ── */}
-        {socialLinks.length > 0 && (
-          <div className="sb-card" style={{ ...cardSt, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {socialLinks.map((link: { url: string; platform: string }, i: number) => (
-              <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" style={{
-                display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, padding: '5px 6px', margin: '0 -6px', borderRadius: 6,
-                color: 'var(--color-fg-muted)', textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-bg-active)'; (e.currentTarget as HTMLElement).style.color = 'var(--color-fg)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--color-fg-muted)' }}
-              >
-                <i className={`bx ${PLATFORM_ICONS[link.platform] || 'bx-link'}`} style={{ fontSize: 15, width: 16, textAlign: 'center', color: 'var(--color-fg-dim)', flexShrink: 0 }} />
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {link.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
-                </span>
-              </a>
-            ))}
           </div>
         )}
 

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRoleStore } from '@/store/roles'
-import { apiFetch, isDevSeed } from '@/lib/api'
+import { isDevSeed } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 interface TeamMember {
   id: string
@@ -34,8 +35,12 @@ export function TeamMembersWidget() {
       setLoading(false)
       return
     }
-    apiFetch<{ members: TeamMember[] }>(`/api/teams/${team.id}/members`)
-      .then(res => setMembers(res.members ?? []))
+    const sb = createClient()
+    sb.from('team_members').select('id, name, email, avatar_url, role, status').eq('team_id', team.id)
+      .then(({ data, error }) => {
+        if (error) throw error
+        setMembers(data ?? [])
+      })
       .catch(() => setMembers([]))
       .finally(() => setLoading(false))
   }, [team?.id])

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 interface ShareControlPanelProps {
   shareId: number
@@ -51,11 +51,9 @@ export function ShareControlPanel({
     if (newVisibility === visibility) return
     setSaving(true)
     try {
-      await apiFetch(`/api/community/shares/${shareId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visibility: newVisibility }),
-      })
+      const sb = createClient()
+      const { error } = await sb.from('community_shares').update({ visibility: newVisibility }).eq('id', shareId)
+      if (error) throw error
       setVisibility(newVisibility)
       onVisibilityChange?.(newVisibility)
     } catch {

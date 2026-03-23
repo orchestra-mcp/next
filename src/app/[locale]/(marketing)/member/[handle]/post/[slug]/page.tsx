@@ -1,5 +1,5 @@
 'use client'
-import { use, useState, useEffect } from 'react'
+import { use, useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useFeatureFlagsStore } from '@/store/feature-flags'
 import { useCommunityStore } from '@/store/community'
@@ -8,6 +8,16 @@ import { useProfileTheme } from '@/components/profile/use-profile-theme'
 import ProfileCard from '@/components/profile/profile-card'
 import PostEmbed from '@/components/profile/post-embed'
 import { MarkdownRenderer } from '@orchestra-mcp/editor'
+
+const SHARE_PLATFORMS = [
+  { key: 'x',        label: 'X (Twitter)', color: '#000',    url: (text: string, url: string) => `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}` },
+  { key: 'facebook', label: 'Facebook',    color: '#1877f2', url: (_: string, url: string) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}` },
+  { key: 'linkedin', label: 'LinkedIn',    color: '#0a66c2', url: (text: string, url: string) => `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}` },
+  { key: 'whatsapp', label: 'WhatsApp',    color: '#25d366', icon: 'bxl-whatsapp', url: (text: string, url: string) => `https://api.whatsapp.com/send?text=${encodeURIComponent(`${text} ${url}`)}` },
+  { key: 'telegram', label: 'Telegram',    color: '#2aabee', icon: 'bxl-telegram', url: (text: string, url: string) => `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}` },
+  { key: 'reddit',   label: 'Reddit',      color: '#ff4500', icon: 'bxl-reddit',   url: (text: string, url: string) => `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}` },
+  { key: 'copy',     label: 'Copy Link',   color: '#6b7280', icon: 'bx-link',      url: null },
+]
 
 const POST_TYPE_STYLES: Record<string, { color: string; bg: string; label: string }> = {
   skill: { color: '#00e5ff', bg: 'rgba(0,229,255,0.1)', label: 'Skill' },
@@ -44,6 +54,31 @@ export default function PostDetailPage(props: PageProps) {
   const [submitting, setSubmitting] = useState(false)
   const [replyingTo, setReplyingTo] = useState<number | null>(null)
   const [replyText, setReplyText] = useState('')
+  const [shareOpen, setShareOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const shareRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!shareOpen) return
+    function handleClick(e: MouseEvent) {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) setShareOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [shareOpen])
+
+  function handleShare(platform: typeof SHARE_PLATFORMS[number]) {
+    const shareUrl = window.location.href
+    const shareText = currentPost ? `"${currentPost.title}" by @${currentPost.author_handle}` : ''
+    if (platform.key === 'copy') {
+      navigator.clipboard?.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } else if (platform.url) {
+      window.open(platform.url(shareText, shareUrl), '_blank', 'noopener')
+    }
+    setShareOpen(false)
+  }
 
   useEffect(() => {
     fetchPost(postIdNum)
@@ -179,6 +214,53 @@ export default function PostDetailPage(props: PageProps) {
             <i className="bx bx-chat" style={{ fontSize: 18 }} />
             {currentPost.comments_count} Comments
           </span>
+
+          {/* Share */}
+          <div ref={shareRef} style={{ position: 'relative', marginLeft: 'auto' }}>
+            <button onClick={() => setShareOpen(o => !o)} style={{
+              display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none',
+              padding: 0, fontSize: 13, color: 'var(--color-fg-muted)', cursor: 'pointer',
+            }}>
+              <i className="bx bx-share-alt" style={{ fontSize: 18 }} />
+              Share
+            </button>
+            {shareOpen && (
+              <div style={{
+                position: 'absolute', bottom: 'calc(100% + 8px)', right: 0,
+                background: 'var(--color-bg)', border: '1px solid var(--color-border)',
+                borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                minWidth: 180, zIndex: 100, padding: '6px',
+              }}>
+                {SHARE_PLATFORMS.map(p => (
+                  <button key={p.key} onClick={() => handleShare(p)} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    width: '100%', padding: '8px 10px', borderRadius: 8,
+                    background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-bg-active)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                  >
+                    <span style={{
+                      width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: p.key === 'copy' ? 'var(--color-bg-alt)' : `${p.color}20`,
+                      color: p.key === 'copy' ? 'var(--color-fg-dim)' : p.color, fontSize: 15,
+                    }}>
+                      {p.key === 'x'
+                        ? <svg width="13" height="13" viewBox="0 0 24 24" fill="#fff" style={{ background: '#000', borderRadius: 3, padding: 1 }}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.213 5.567zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        : p.key === 'facebook' ? <i className="bx bxl-facebook" />
+                        : p.key === 'linkedin' ? <i className="bx bxl-linkedin" />
+                        : <i className={`bx ${(p as any).icon ?? 'bx-link'}`} />
+                      }
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-fg)' }}>
+                      {p.key === 'copy' && copied ? 'Copied!' : p.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </ProfileCard>
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
+import { createServerClient } from '@supabase/ssr'
 import { routing } from './i18n/routing'
+import { updateSession } from '@/lib/supabase/middleware'
 
 // next-intl middleware for locale-prefixed public routes
 const intlMiddleware = createMiddleware(routing)
@@ -39,12 +41,41 @@ function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some(p => pathname === p || pathname.startsWith(p + '/'))
 }
 
+/**
+ * Copy Supabase auth cookies from the session-refresh response onto
+ * the final response produced by the rest of our middleware chain.
+ * This ensures the refreshed Supabase tokens are always sent back
+ * to the browser regardless of which code path produces the response.
+ */
+function mergeSupabaseCookies(
+  supabaseResponse: NextResponse,
+  finalResponse: NextResponse
+): NextResponse {
+  supabaseResponse.cookies.getAll().forEach(cookie => {
+    finalResponse.cookies.set(cookie.name, cookie.value, {
+      // Preserve attributes Supabase set on the cookie
+      ...(cookie as any),
+    })
+  })
+  return finalResponse
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // Always allow static assets and API routes
   if (PUBLIC_PREFIXES.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
+  }
+
+  // Refresh Supabase auth session (sets updated cookies).
+  // We capture the response so we can merge its cookies into
+  // whatever final response the rest of the middleware produces.
+  let supabaseResponse: NextResponse | null = null
+  try {
+    supabaseResponse = await updateSession(req)
+  } catch {
+    // Supabase not configured yet — silently continue
   }
 
   // Fast bypass — never block auth pages or coming-soon itself, even when
@@ -67,33 +98,37 @@ export async function middleware(req: NextRequest) {
     url.pathname = `/${locale}/member/${handle}${rest}`
     // Settings pages are always accessible to the owner (no coming-soon block)
     if (rest.startsWith('/settings')) {
-      return NextResponse.rewrite(url)
+      const res = NextResponse.rewrite(url)
+      return supabaseResponse ? mergeSupabaseCookies(supabaseResponse, res) : res
     }
     // For other @handle pages, apply coming-soon check after rewrite
     if (!isBypass) {
       const comingSoonResponse = await handleComingSoon(req)
       if (comingSoonResponse.status === 307 || comingSoonResponse.status === 308) {
-        return comingSoonResponse
+        return supabaseResponse ? mergeSupabaseCookies(supabaseResponse, comingSoonResponse) : comingSoonResponse
       }
     }
-    return NextResponse.rewrite(url)
+    const res = NextResponse.rewrite(url)
+    return supabaseResponse ? mergeSupabaseCookies(supabaseResponse, res) : res
   }
 
   // Coming soon check for all other non-bypass routes
   if (!isBypass) {
     const comingSoonResponse = await handleComingSoon(req)
     if (comingSoonResponse.status === 307 || comingSoonResponse.status === 308) {
-      return comingSoonResponse
+      return supabaseResponse ? mergeSupabaseCookies(supabaseResponse, comingSoonResponse) : comingSoonResponse
     }
   }
 
   // Public routes — use intl middleware for locale-prefixed URLs
   if (isPublicRoute(pathname)) {
-    return intlMiddleware(req)
+    const res = intlMiddleware(req)
+    return supabaseResponse ? mergeSupabaseCookies(supabaseResponse, res) : res
   }
 
   // App routes (settings, subscription, etc.)
-  return NextResponse.next()
+  const res = NextResponse.next()
+  return supabaseResponse ? mergeSupabaseCookies(supabaseResponse, res) : res
 }
 
 async function handleComingSoon(req: NextRequest): Promise<NextResponse> {
@@ -106,52 +141,59 @@ async function handleComingSoon(req: NextRequest): Promise<NextResponse> {
     return NextResponse.next()
   }
 
-  // Fetch coming soon setting from backend
-  const apiBase = process.env.INTERNAL_API_URL || 'http://localhost:8080'
+  // Fetch coming soon setting from Supabase PostgREST (anon key, public read)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   let comingSoon = false
 
-  try {
-    const res = await fetch(`${apiBase}/api/public/settings/coming_soon`, {
-      next: { revalidate: 30 },
-    })
-    if (res.ok) {
-      const data = await res.json()
-      comingSoon = data?.value?.enabled === true
+  if (supabaseUrl && anonKey) {
+    try {
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/settings?key=eq.coming_soon&select=value`,
+        {
+          headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+          next: { revalidate: 30 },
+        }
+      )
+      if (res.ok) {
+        const rows = await res.json()
+        comingSoon = rows?.[0]?.value?.enabled === true
+      }
+    } catch {
+      comingSoon = false
     }
-  } catch {
-    comingSoon = false
   }
 
   if (!comingSoon) {
     return NextResponse.next()
   }
 
-  // Coming soon is enabled — check if the user is authenticated
-  const token = req.cookies.get('orchestra_token')?.value ||
-    req.headers.get('authorization')?.replace('Bearer ', '')
-
-  if (token) {
-    // dev_seed_token always bypasses (development mode)
-    if (token === 'dev_seed_token') {
-      return NextResponse.next()
-    }
-    // Only admins can bypass coming soon — regular users see coming soon too
-    try {
-      const parts = token.split('.')
-      if (parts.length === 3) {
-        const meRes = await fetch(`${apiBase}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (meRes.ok) {
-          const user = await meRes.json()
-          if (user.role === 'admin') {
-            return NextResponse.next()
-          }
-        }
+  // Coming soon is enabled — check if user is an admin via Supabase auth
+  try {
+    const supabase = createServerClient(
+      supabaseUrl!,
+      anonKey!,
+      {
+        cookies: {
+          getAll() { return req.cookies.getAll() },
+          setAll() { /* read-only in this check */ },
+        },
       }
-    } catch {
-      // Invalid token — treat as unauthenticated
+    )
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      // Query public.users for admin role check
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('auth_uid', user.id)
+        .single()
+      if (profile?.role === 'admin') {
+        return NextResponse.next()
+      }
     }
+  } catch {
+    // Auth check failed — treat as unauthenticated
   }
 
   // Redirect to the locale-prefixed coming-soon page to avoid an extra
@@ -164,6 +206,6 @@ async function handleComingSoon(req: NextRequest): Promise<NextResponse> {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

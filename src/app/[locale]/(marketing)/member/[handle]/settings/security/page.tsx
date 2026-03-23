@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/store/auth'
 import ProfileCard from '@/components/profile/profile-card'
 
@@ -248,10 +248,18 @@ function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
     setDeleting(true)
     setError('')
     try {
-      await apiFetch('/api/auth/account', {
-        method: 'DELETE',
-        body: JSON.stringify({ password }),
+      const sb = createClient()
+      // Verify password by re-authenticating, then delete via RPC or admin function
+      const { error: signInError } = await sb.auth.signInWithPassword({
+        email: (await sb.auth.getUser()).data.user?.email ?? '',
+        password,
       })
+      if (signInError) throw new Error('Invalid password')
+
+      // Call the delete account RPC function
+      const { error: deleteError } = await sb.rpc('delete_user_account')
+      if (deleteError) throw new Error(deleteError.message)
+
       onDeleted()
     } catch (err) {
       setError((err as Error).message || 'Failed to delete account')

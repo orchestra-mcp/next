@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Switch } from '@orchestra-mcp/ui'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/store/auth'
 import { useCommunityStore } from '@/store/community'
 import ProfileCard from '@/components/profile/profile-card'
@@ -31,16 +31,27 @@ export default function PrivacySettingsPage() {
     setSaving(true)
     setSaved(false)
     try {
-      await apiFetch('/api/settings/profile', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          show_badges: showBadges,
-          show_wallet: showWallet,
-          show_comments_on_profile: showComments,
-          show_teams: showTeams,
-          show_sponsors: showSponsors,
-        }),
-      })
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+
+      const currentSettings = (user?.settings ?? {}) as Record<string, unknown>
+      const updatedSettings = {
+        ...currentSettings,
+        show_badges: showBadges,
+        show_wallet: showWallet,
+        show_comments_on_profile: showComments,
+        show_teams: showTeams,
+        show_sponsors: showSponsors,
+      }
+
+      const { error } = await sb
+        .from('users')
+        .update({ settings: updatedSettings })
+        .eq('auth_id', authUser.id)
+
+      if (error) throw new Error(error.message)
+
       await fetchMe()
       const handle = profile?.handle || user?.username
       if (handle) fetchMemberProfile(handle)

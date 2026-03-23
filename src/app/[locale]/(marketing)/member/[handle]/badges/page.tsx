@@ -6,7 +6,7 @@ import type { BadgeItem } from '@/store/community'
 import { useProfileTheme } from '@/components/profile/use-profile-theme'
 import ProfileSection from '@/components/profile/profile-section'
 import ProfileCard from '@/components/profile/profile-card'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 interface FullBadge extends BadgeItem {
   earned: boolean
@@ -43,8 +43,27 @@ export default function PublicBadgesPage(props: PageProps) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await apiFetch<{ badges: FullBadge[] }>(`/api/public/member/${handle}/badges`)
-        setBadges(res.badges ?? [])
+        const sb = createClient()
+        // Fetch user's badges with badge details via join
+        const { data: userData, error: userError } = await sb.from('users').select('id').eq('username', handle).single()
+        if (userError) throw userError
+        const userId = userData.id
+        const { data, error } = await sb.from('user_badges').select('*, badge:badges(*)').eq('user_id', userId)
+        if (error) throw error
+        // Map the joined data to FullBadge format
+        const mapped: FullBadge[] = (data ?? []).map((ub: any) => ({
+          id: ub.badge?.id ?? ub.id,
+          slug: ub.badge?.slug ?? '',
+          name: ub.badge?.name ?? '',
+          description: ub.badge?.description ?? '',
+          icon: ub.badge?.icon ?? '',
+          color: ub.badge?.color ?? '',
+          category: ub.badge?.category ?? '',
+          awarded_at: ub.awarded_at ?? '',
+          earned: true,
+          points_required: ub.badge?.points_required,
+        }))
+        setBadges(mapped)
       } catch {
         setBadges(SEED_ALL)
       }

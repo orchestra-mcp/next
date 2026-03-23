@@ -402,7 +402,8 @@ export function getDevGateUrl(): string | null {
 export function buildTunnelWSUrl(tunnelId: string): string | null {
   if (typeof window === 'undefined') return null
 
-  const token = localStorage.getItem('orchestra_token')
+  let token: string | null = null
+  try { const s = JSON.parse(localStorage.getItem('orchestra-auth') ?? '{}'); token = s?.state?.mcpToken ?? null } catch {}
   if (!token || token === 'dev_seed_token') return null
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''

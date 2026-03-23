@@ -15,7 +15,7 @@ export interface SyncConflict {
 
 interface SyncState {
   syncStatus: 'idle' | 'syncing' | 'error'
-  powerSyncState: 'connected' | 'connecting' | 'disconnected' | 'uploading' | 'downloading'
+  realtimeState: 'connected' | 'connecting' | 'disconnected'
   lastSyncAt: string | null
   connectedTunnels: ConnectedTunnel[]
   recentEvents: SyncEvent[]
@@ -30,7 +30,7 @@ interface SyncActions {
   handleSyncEvent: (event: SyncEvent) => void
   updateTunnels: (tunnels: ConnectedTunnel[]) => void
   setSyncStatus: (status: 'idle' | 'syncing' | 'error') => void
-  setPowerSyncState: (state: SyncState['powerSyncState']) => void
+  setRealtimeState: (state: SyncState['realtimeState']) => void
   setPendingWrites: (count: number) => void
   addConflict: (conflict: SyncConflict) => void
   resolveConflict: (id: string, resolution: SyncConflict['resolution']) => void
@@ -42,7 +42,7 @@ interface SyncActions {
 export const useSyncStore = create<SyncState & SyncActions>(
   (set) => ({
     syncStatus: 'idle',
-    powerSyncState: 'disconnected',
+    realtimeState: 'disconnected',
     lastSyncAt: null,
     connectedTunnels: [],
     recentEvents: [],
@@ -63,7 +63,7 @@ export const useSyncStore = create<SyncState & SyncActions>(
 
     setSyncStatus: (status) => set({ syncStatus: status }),
 
-    setPowerSyncState: (powerSyncState) => set({ powerSyncState }),
+    setRealtimeState: (realtimeState) => set({ realtimeState }),
 
     setPendingWrites: (pendingWrites) => set({ pendingWrites }),
 

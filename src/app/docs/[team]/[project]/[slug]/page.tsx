@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useParams } from 'next/navigation'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { MarkdownRenderer } from '@orchestra-mcp/editor'
 import Link from 'next/link'
 
@@ -72,14 +72,12 @@ export default function DocDetailPage() {
     if (!team || !project || !slug) return
     setLoading(true)
     setError(null)
-    apiFetch<PublicDoc | { doc: PublicDoc; data: PublicDoc }>(`/api/public/docs/${team}/${project}/${slug}`, { skipAuth: true })
-      .then(raw => {
-        // Handle both direct response and envelope formats
-        const data = (raw as { doc?: PublicDoc }).doc
-          || (raw as { data?: PublicDoc }).data
-          || (raw as PublicDoc)
-        if (data && data.title) {
-          setDoc(data)
+    const sb = createClient()
+    sb.from('docs').select('*').eq('team_slug', team).eq('project_slug', project).eq('slug', slug).single()
+      .then(({ data, error: fetchErr }) => {
+        if (fetchErr) throw fetchErr
+        if (data && (data as any).title) {
+          setDoc(data as PublicDoc)
         } else {
           setError('Document not found or not published.')
         }
@@ -251,7 +249,7 @@ export default function DocDetailPage() {
           <div style={{ fontSize: 13, marginBottom: 20 }}>{error || 'This document does not exist or is not published.'}</div>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
             <button
-              onClick={() => { setError(null); setLoading(true); apiFetch<PublicDoc | { doc: PublicDoc; data: PublicDoc }>(`/api/public/docs/${team}/${project}/${slug}`, { skipAuth: true }).then(raw => { const d = (raw as { doc?: PublicDoc }).doc || (raw as { data?: PublicDoc }).data || (raw as PublicDoc); if (d?.title) setDoc(d); else setError('Document not found.'); }).catch(e => setError(e.message)).finally(() => setLoading(false)) }}
+              onClick={() => { setError(null); setLoading(true); const sb = createClient(); sb.from('docs').select('*').eq('team_slug', team).eq('project_slug', project).eq('slug', slug).single().then(({ data: d, error: e }) => { if (e) throw e; if (d && (d as any).title) setDoc(d as PublicDoc); else setError('Document not found.'); }).catch((e: any) => setError(e.message)).finally(() => setLoading(false)) }}
               style={{ fontSize: 13, color: colors.accent, background: 'none', border: `1px solid ${colors.accent}`, borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontWeight: 600 }}
             >
               Retry

@@ -1,8 +1,10 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { apiFetch } from '@/lib/api'
-import { connectPowerSync, disconnectPowerSync } from '@/lib/powersync'
+import { createClient } from '@/lib/supabase/client'
+import { connectRealtime, disconnectRealtime } from '@/lib/supabase/realtime'
+
+const EDGE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 
 function base64urlToBuffer(b64: string): ArrayBuffer {
   const s = b64.replace(/-/g, '+').replace(/_/g, '/')
@@ -37,11 +39,11 @@ export interface ImpersonatingUser {
   id: number
   name: string
   email: string
-  originalToken: string
+  originalMcpToken: string
 }
 
 interface AuthState {
-  token: string | null
+  mcpToken: string | null
   user: User | null
   loading: boolean
   error: string | null
@@ -51,21 +53,21 @@ interface AuthState {
 interface AuthActions {
   login: (email: string, password: string) => Promise<void>
   register: (name: string, email: string, password: string) => Promise<void>
-  logout: () => void
+  loginWithOAuth: (provider: 'github' | 'google') => Promise<void>
+  logout: () => Promise<void>
   fetchMe: () => Promise<void>
   clearError: () => void
-  // Forgot password / OTP / reset
+  // Forgot password (link-based)
   forgotPassword: (email: string) => Promise<void>
-  verifyOtp: (email: string, otp: string, purpose: 'reset' | 'magic') => Promise<{ token?: string }>
-  resetPassword: (token: string, password: string) => Promise<void>
-  // Magic link login
+  resetPassword: (password: string) => Promise<void>
+  // Magic link login (link-based)
   requestMagicLink: (email: string) => Promise<void>
-  // 2FA
-  setup2FA: () => Promise<{ qr_url: string; secret: string }>
-  confirm2FA: (code: string) => Promise<void>
-  disable2FA: (code: string) => Promise<void>
-  verify2FA: (code: string, tempToken: string) => Promise<void>
-  // Passkeys
+  // 2FA (Supabase MFA)
+  setup2FA: () => Promise<{ qr_url: string; secret: string; factorId: string }>
+  confirm2FA: (factorId: string, code: string) => Promise<void>
+  disable2FA: (factorId: string) => Promise<void>
+  verify2FA: (factorId: string, code: string) => Promise<void>
+  // Passkeys (via edge function)
   beginPasskeyRegistration: () => Promise<PublicKeyCredentialCreationOptions>
   finishPasskeyRegistration: (credential: Credential, name?: string) => Promise<void>
   loginWithPasskey: () => Promise<void>
@@ -74,14 +76,16 @@ interface AuthActions {
   // Impersonation
   startImpersonation: (targetUser: User, impersonationToken: string) => void
   exitImpersonation: () => void
+  // MCP token exchange
+  exchangeMcpToken: () => Promise<string | null>
+  // Auth state listener
+  initAuthListener: () => () => void
 }
 
 /** Extract a human-readable message from any error shape */
 function extractErrorMessage(e: unknown): string {
   if (!e) return 'Unknown error'
-  // Standard Error
   let msg = (e as any).message ?? String(e)
-  // If the message looks like raw JSON, parse it
   if (typeof msg === 'string' && msg.startsWith('{')) {
     try {
       const parsed = JSON.parse(msg)
@@ -91,10 +95,56 @@ function extractErrorMessage(e: unknown): string {
   return msg
 }
 
+/** Fetch the public.users profile for a Supabase auth user. */
+async function fetchUserProfile(): Promise<User | null> {
+  const sb = createClient()
+  const { data } = await sb.from('users').select('*').single()
+  return data as User | null
+}
+
+/** Call the mcp-token edge function to exchange Supabase JWT for MCP token. */
+async function exchangeForMcpToken(): Promise<string | null> {
+  const sb = createClient()
+  const { data: { session } } = await sb.auth.getSession()
+  if (!session?.access_token) return null
+
+  try {
+    const res = await fetch(`${EDGE_URL}/functions/v1/mcp-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ supabase_token: session.access_token }),
+    })
+    if (!res.ok) return null
+    const { mcp_token } = await res.json()
+    return mcp_token ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Call the passkey edge function. */
+async function passkeyEdgeFetch<T>(action: string, body: Record<string, unknown>, authToken?: string): Promise<T> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`
+
+  const res = await fetch(`${EDGE_URL}/functions/v1/passkey`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ action, ...body }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+    throw new Error(err.error || err.message || `Passkey request failed`)
+  }
+
+  return res.json()
+}
+
 export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
     (set, get) => ({
-      token: null,
+      mcpToken: null,
       user: null,
       loading: false,
       error: null,
@@ -103,22 +153,20 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       login: async (email, password) => {
         set({ loading: true, error: null })
         try {
-          const res = await apiFetch<{ token: string; user: User; requires_2fa?: boolean; temp_token?: string }>('/api/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password }),
-            skipAuth: true,
-          })
-          if (res.requires_2fa && res.temp_token) {
-            // Signal the caller that 2FA is needed — store temp token in session
-            sessionStorage.setItem('orchestra_2fa_token', res.temp_token)
-            sessionStorage.setItem('orchestra_2fa_email', email)
+          const sb = createClient()
+          const { data, error } = await sb.auth.signInWithPassword({ email, password })
+          if (error) throw error
+
+          // Check if MFA is required
+          if (data.session === null && data.user) {
             set({ loading: false })
-            throw Object.assign(new Error('2FA_REQUIRED'), { requires2fa: true, tempToken: res.temp_token })
+            throw Object.assign(new Error('2FA_REQUIRED'), { requires2fa: true })
           }
-          localStorage.setItem('orchestra_token', res.token)
-          document.cookie = `orchestra_token=${res.token};path=/;max-age=86400;SameSite=Lax`
-          set({ token: res.token, user: res.user, loading: false })
-          connectPowerSync().catch(() => {})
+
+          const user = await fetchUserProfile()
+          const mcpToken = await exchangeForMcpToken()
+          set({ mcpToken, user, loading: false })
+          connectRealtime()
         } catch (e) {
           if ((e as any).requires2fa) throw e
           set({ error: extractErrorMessage(e), loading: false })
@@ -129,29 +177,42 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       register: async (name, email, password) => {
         set({ loading: true, error: null })
         try {
-          const res = await apiFetch<{ token: string; user: User }>('/api/auth/register', {
-            method: 'POST',
-            body: JSON.stringify({ name, email, password }),
-            skipAuth: true,
+          const sb = createClient()
+          const { error } = await sb.auth.signUp({
+            email,
+            password,
+            options: { data: { name } },
           })
-          localStorage.setItem('orchestra_token', res.token)
+          if (error) throw error
+
+          const user = await fetchUserProfile()
+          const mcpToken = await exchangeForMcpToken()
           localStorage.setItem('orchestra_is_new_user', '1')
-          document.cookie = `orchestra_token=${res.token};path=/;max-age=86400;SameSite=Lax`
-          set({ token: res.token, user: res.user, loading: false })
-          connectPowerSync().catch(() => {})
+          set({ mcpToken, user, loading: false })
+          connectRealtime()
         } catch (e) {
           set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
 
-      logout: () => {
-        disconnectPowerSync().catch(() => {})
-        localStorage.removeItem('orchestra_token')
-        document.cookie = 'orchestra_token=;path=/;max-age=0'
-        sessionStorage.removeItem('orchestra_2fa_token')
-        sessionStorage.removeItem('orchestra_2fa_email')
-        set({ token: null, user: null, impersonating: null })
+      loginWithOAuth: async (provider) => {
+        const sb = createClient()
+        const { error } = await sb.auth.signInWithOAuth({
+          provider,
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+          },
+        })
+        if (error) throw error
+        // Browser redirects — no further action needed
+      },
+
+      logout: async () => {
+        disconnectRealtime()
+        const sb = createClient()
+        await sb.auth.signOut()
+        set({ mcpToken: null, user: null, impersonating: null })
       },
 
       updateAvatarUrl: (avatarUrl) => {
@@ -160,36 +221,35 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
 
       startImpersonation: (targetUser, impersonationToken) => {
-        const currentToken = localStorage.getItem('orchestra_token') ?? ''
+        const currentMcpToken = get().mcpToken ?? ''
         const impersonatingData: ImpersonatingUser = {
           id: targetUser.id,
           name: targetUser.name,
           email: targetUser.email,
-          originalToken: currentToken,
+          originalMcpToken: currentMcpToken,
         }
-        localStorage.setItem('orchestra_token', impersonationToken)
-        document.cookie = `orchestra_token=${impersonationToken};path=/;max-age=86400;SameSite=Lax`
-        set({ token: impersonationToken, user: targetUser, impersonating: impersonatingData })
+        set({ mcpToken: impersonationToken, user: targetUser, impersonating: impersonatingData })
       },
 
       exitImpersonation: () => {
         const { impersonating } = get()
         if (!impersonating) return
-        localStorage.setItem('orchestra_token', impersonating.originalToken)
-        set({ token: impersonating.originalToken, impersonating: null })
-        // Re-fetch the real user
+        set({ mcpToken: impersonating.originalMcpToken, impersonating: null })
         get().fetchMe()
       },
 
       fetchMe: async () => {
-        // Skip API call for dev seed sessions — user is already set in store
-        const token = typeof window !== 'undefined' ? localStorage.getItem('orchestra_token') : null
-        if (token === 'dev_seed_token') return
         try {
-          const user = await apiFetch<User>('/api/auth/me')
-          set({ user })
-          // Connect PowerSync for cross-device sync.
-          connectPowerSync().catch(() => {})
+          const sb = createClient()
+          const { data: { user: authUser } } = await sb.auth.getUser()
+          if (!authUser) { get().logout(); return }
+
+          const user = await fetchUserProfile()
+          if (!user) { get().logout(); return }
+
+          const mcpToken = get().mcpToken || await exchangeForMcpToken()
+          set({ user, mcpToken })
+          connectRealtime()
         } catch {
           get().logout()
         }
@@ -200,11 +260,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       forgotPassword: async (email) => {
         set({ loading: true, error: null })
         try {
-          await apiFetch('/api/auth/forgot-password', {
-            method: 'POST',
-            body: JSON.stringify({ email }),
-            skipAuth: true,
+          const sb = createClient()
+          const { error } = await sb.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
           })
+          if (error) throw error
           set({ loading: false })
         } catch (e) {
           set({ error: extractErrorMessage(e), loading: false })
@@ -212,38 +272,12 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      verifyOtp: async (email, otp, purpose) => {
+      resetPassword: async (password) => {
         set({ loading: true, error: null })
         try {
-          const res = await apiFetch<{ token?: string; reset_token?: string }>('/api/auth/verify-otp', {
-            method: 'POST',
-            body: JSON.stringify({ email, otp, purpose }),
-            skipAuth: true,
-          })
-          set({ loading: false })
-          if (purpose === 'magic' && res.token) {
-            localStorage.setItem('orchestra_token', res.token)
-            const user = await apiFetch<User>('/api/auth/me', {
-              headers: { Authorization: `Bearer ${res.token}` },
-              skipAuth: true,
-            })
-            set({ token: res.token, user })
-          }
-          return { token: res.reset_token ?? res.token }
-        } catch (e) {
-          set({ error: extractErrorMessage(e), loading: false })
-          throw e
-        }
-      },
-
-      resetPassword: async (token, password) => {
-        set({ loading: true, error: null })
-        try {
-          await apiFetch('/api/auth/reset-password', {
-            method: 'POST',
-            body: JSON.stringify({ token, password }),
-            skipAuth: true,
-          })
+          const sb = createClient()
+          const { error } = await sb.auth.updateUser({ password })
+          if (error) throw error
           set({ loading: false })
         } catch (e) {
           set({ error: extractErrorMessage(e), loading: false })
@@ -254,11 +288,12 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       requestMagicLink: async (email) => {
         set({ loading: true, error: null })
         try {
-          await apiFetch('/api/auth/magic-link', {
-            method: 'POST',
-            body: JSON.stringify({ email }),
-            skipAuth: true,
+          const sb = createClient()
+          const { error } = await sb.auth.signInWithOtp({
+            email,
+            options: { shouldCreateUser: false },
           })
+          if (error) throw error
           set({ loading: false })
         } catch (e) {
           set({ error: extractErrorMessage(e), loading: false })
@@ -269,22 +304,33 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       setup2FA: async () => {
         set({ loading: true, error: null })
         try {
-          const res = await apiFetch<{ qr_url: string; secret: string }>('/api/auth/2fa/setup')
+          const sb = createClient()
+          const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp' })
+          if (error) throw error
           set({ loading: false })
-          return res
+          return {
+            qr_url: data.totp.qr_code,
+            secret: data.totp.secret,
+            factorId: data.id,
+          }
         } catch (e) {
           set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
 
-      confirm2FA: async (code) => {
+      confirm2FA: async (factorId, code) => {
         set({ loading: true, error: null })
         try {
-          await apiFetch('/api/auth/2fa/confirm', {
-            method: 'POST',
-            body: JSON.stringify({ code }),
+          const sb = createClient()
+          const { data: challenge, error: challengeError } = await sb.auth.mfa.challenge({ factorId })
+          if (challengeError) throw challengeError
+          const { error: verifyError } = await sb.auth.mfa.verify({
+            factorId,
+            challengeId: challenge.id,
+            code,
           })
+          if (verifyError) throw verifyError
           set({ loading: false, user: get().user ? { ...get().user!, two_factor_enabled: true } : null })
         } catch (e) {
           set({ error: extractErrorMessage(e), loading: false })
@@ -292,13 +338,12 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      disable2FA: async (code) => {
+      disable2FA: async (factorId) => {
         set({ loading: true, error: null })
         try {
-          await apiFetch('/api/auth/2fa/disable', {
-            method: 'POST',
-            body: JSON.stringify({ code }),
-          })
+          const sb = createClient()
+          const { error } = await sb.auth.mfa.unenroll({ factorId })
+          if (error) throw error
           set({ loading: false, user: get().user ? { ...get().user!, two_factor_enabled: false } : null })
         } catch (e) {
           set({ error: extractErrorMessage(e), loading: false })
@@ -306,18 +351,23 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      verify2FA: async (code, tempToken) => {
+      verify2FA: async (factorId, code) => {
         set({ loading: true, error: null })
         try {
-          const res = await apiFetch<{ token: string; user: User }>('/api/auth/2fa/verify', {
-            method: 'POST',
-            body: JSON.stringify({ code, temp_token: tempToken }),
-            skipAuth: true,
+          const sb = createClient()
+          const { data: challenge, error: challengeError } = await sb.auth.mfa.challenge({ factorId })
+          if (challengeError) throw challengeError
+          const { error: verifyError } = await sb.auth.mfa.verify({
+            factorId,
+            challengeId: challenge.id,
+            code,
           })
-          localStorage.setItem('orchestra_token', res.token)
-          sessionStorage.removeItem('orchestra_2fa_token')
-          sessionStorage.removeItem('orchestra_2fa_email')
-          set({ token: res.token, user: res.user, loading: false })
+          if (verifyError) throw verifyError
+
+          const user = await fetchUserProfile()
+          const mcpToken = await exchangeForMcpToken()
+          set({ mcpToken, user, loading: false })
+          connectRealtime()
         } catch (e) {
           set({ error: extractErrorMessage(e), loading: false })
           throw e
@@ -325,51 +375,54 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
 
       beginPasskeyRegistration: async () => {
-        const res = await apiFetch<{ publicKey: PublicKeyCredentialCreationOptions }>('/api/auth/passkey/register/begin', { method: 'POST', body: JSON.stringify({}) })
-        // Decode base64url fields for the Web Credentials API
+        const sb = createClient()
+        const { data: { session } } = await sb.auth.getSession()
+        if (!session) throw new Error('Not authenticated')
+
+        const res = await passkeyEdgeFetch<{ publicKey: any }>('register_begin', {}, session.access_token)
         const opts = res.publicKey
-        opts.challenge = base64urlToBuffer(opts.challenge as unknown as string)
-        opts.user.id = base64urlToBuffer(opts.user.id as unknown as string)
+        opts.challenge = base64urlToBuffer(opts.challenge)
+        opts.user.id = base64urlToBuffer(opts.user.id)
         if (opts.excludeCredentials) {
-          opts.excludeCredentials = opts.excludeCredentials.map(c => ({
+          opts.excludeCredentials = opts.excludeCredentials.map((c: any) => ({
             ...c,
-            id: base64urlToBuffer(c.id as unknown as string),
+            id: base64urlToBuffer(c.id),
           }))
         }
-        return opts
+        return opts as PublicKeyCredentialCreationOptions
       },
 
       finishPasskeyRegistration: async (credential, name) => {
+        const sb = createClient()
+        const { data: { session } } = await sb.auth.getSession()
+        if (!session) throw new Error('Not authenticated')
+
         const cred = credential as PublicKeyCredential
         const attestation = cred.response as AuthenticatorAttestationResponse
-        await apiFetch('/api/auth/passkey/register/finish', {
-          method: 'POST',
-          body: JSON.stringify({
-            id: cred.id,
-            rawId: bufferToBase64url(cred.rawId),
-            type: cred.type,
-            name: name || undefined,
-            response: {
-              attestationObject: bufferToBase64url(attestation.attestationObject),
-              clientDataJSON: bufferToBase64url(attestation.clientDataJSON),
-              transports: attestation.getTransports?.() ?? [],
-            },
-          }),
-        })
+        await passkeyEdgeFetch('register_finish', {
+          id: cred.id,
+          rawId: bufferToBase64url(cred.rawId),
+          type: cred.type,
+          name: name || undefined,
+          response: {
+            attestationObject: bufferToBase64url(attestation.attestationObject),
+            clientDataJSON: bufferToBase64url(attestation.clientDataJSON),
+            transports: attestation.getTransports?.() ?? [],
+          },
+        }, session.access_token)
       },
 
       loginWithPasskey: async () => {
         set({ loading: true, error: null })
         try {
-          // Step 1: Get challenge from server
-          const beginRes = await apiFetch<{
+          // Step 1: Get challenge from edge function
+          const beginRes = await passkeyEdgeFetch<{
             publicKey?: { challenge: string; rpId: string; timeout: number; userVerification: string; allowCredentials?: Array<{ id: string; type: string; transports?: string[] }> }
             session_id?: string
-            error?: string
-          }>('/api/auth/passkey/authenticate/begin', { method: 'POST', body: JSON.stringify({}), skipAuth: true })
+          }>('authenticate_begin', {})
 
           if (!beginRes.publicKey) {
-            throw new Error(beginRes.error || 'Server returned invalid passkey challenge. Check that passkeys are configured.')
+            throw new Error('Server returned invalid passkey challenge.')
           }
 
           const opts: PublicKeyCredentialRequestOptions = {
@@ -392,36 +445,62 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
           const assertion = credential.response as AuthenticatorAssertionResponse
 
-          // Step 3: Send to server for verification
-          const res = await apiFetch<{ token: string; user: User }>('/api/auth/passkey/authenticate/finish', {
-            method: 'POST',
-            body: JSON.stringify({
-              id: credential.id,
-              rawId: bufferToBase64url(credential.rawId),
-              type: credential.type,
-              session_id: beginRes.session_id,
-              response: {
-                authenticatorData: bufferToBase64url(assertion.authenticatorData),
-                clientDataJSON: bufferToBase64url(assertion.clientDataJSON),
-                signature: bufferToBase64url(assertion.signature),
-                userHandle: assertion.userHandle ? bufferToBase64url(assertion.userHandle) : undefined,
-              },
-            }),
-            skipAuth: true,
+          // Step 3: Send to edge function for verification — returns a Supabase session
+          const finishRes = await passkeyEdgeFetch<{ access_token: string; refresh_token: string }>('authenticate_finish', {
+            id: credential.id,
+            rawId: bufferToBase64url(credential.rawId),
+            type: credential.type,
+            session_id: beginRes.session_id,
+            response: {
+              authenticatorData: bufferToBase64url(assertion.authenticatorData),
+              clientDataJSON: bufferToBase64url(assertion.clientDataJSON),
+              signature: bufferToBase64url(assertion.signature),
+              userHandle: assertion.userHandle ? bufferToBase64url(assertion.userHandle) : undefined,
+            },
           })
 
-          localStorage.setItem('orchestra_token', res.token)
-          document.cookie = `orchestra_token=${res.token};path=/;max-age=86400;SameSite=Lax`
-          set({ token: res.token, user: res.user, loading: false })
+          // Set the Supabase session from the passkey edge function response
+          const sb = createClient()
+          await sb.auth.setSession({
+            access_token: finishRes.access_token,
+            refresh_token: finishRes.refresh_token,
+          })
+
+          const user = await fetchUserProfile()
+          const mcpToken = await exchangeForMcpToken()
+          set({ mcpToken, user, loading: false })
+          connectRealtime()
         } catch (e) {
           set({ error: extractErrorMessage(e), loading: false })
           throw e
         }
       },
+
+      exchangeMcpToken: async () => {
+        const token = await exchangeForMcpToken()
+        if (token) set({ mcpToken: token })
+        return token
+      },
+
+      initAuthListener: () => {
+        const sb = createClient()
+        const { data: { subscription } } = sb.auth.onAuthStateChange(async (event) => {
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            const user = await fetchUserProfile()
+            const mcpToken = await exchangeForMcpToken()
+            set({ user, mcpToken })
+            connectRealtime()
+          } else if (event === 'SIGNED_OUT') {
+            disconnectRealtime()
+            set({ mcpToken: null, user: null, impersonating: null })
+          }
+        })
+        return () => subscription.unsubscribe()
+      },
     }),
     {
       name: 'orchestra-auth',
-      partialize: (state) => ({ token: state.token, user: state.user }),
+      partialize: (state) => ({ mcpToken: state.mcpToken, user: state.user }),
     }
   )
 )

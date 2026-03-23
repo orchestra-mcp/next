@@ -1,6 +1,14 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 
+/**
+ * WebSocket hook for tunnel-specific events from the Go gateway.
+ *
+ * Data events (notifications, feature_update, project_update) are now
+ * handled by Supabase Realtime subscriptions (see lib/supabase/realtime.ts).
+ * This hook is only needed for tunnel_activity and other gateway-specific events.
+ */
+
 export interface WSEvent {
   type: string
   entity_type: string
@@ -73,9 +81,10 @@ export function useWebSocket(options?: UseWebSocketOptions): { status: WSStatus 
     function connect() {
       if (stopped) return
 
-      const token = typeof window !== 'undefined'
-        ? localStorage.getItem('orchestra_token')
-        : null
+      let token: string | null = null
+      if (typeof window !== 'undefined') {
+        try { const s = JSON.parse(localStorage.getItem('orchestra-auth') ?? '{}'); token = s?.state?.mcpToken ?? null } catch {}
+      }
 
       if (!token || token === 'dev_seed_token' || !enabledRef.current) {
         setStatus('disconnected')

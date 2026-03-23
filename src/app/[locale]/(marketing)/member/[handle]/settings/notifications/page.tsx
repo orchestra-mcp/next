@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Switch } from '@orchestra-mcp/ui'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/store/auth'
 import ProfileCard from '@/components/profile/profile-card'
 
@@ -19,10 +19,20 @@ export default function NotificationsSettingsPage() {
     setPushEnabled(val)
     setSaving(true)
     try {
-      await apiFetch('/api/settings/profile', {
-        method: 'PATCH',
-        body: JSON.stringify({ push_enabled: val }),
-      })
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+
+      const currentSettings = (user?.settings ?? {}) as Record<string, unknown>
+      const updatedSettings = { ...currentSettings, push_enabled: val }
+
+      const { error } = await sb
+        .from('users')
+        .update({ settings: updatedSettings })
+        .eq('auth_id', authUser.id)
+
+      if (error) throw new Error(error.message)
+
       await fetchMe()
     } catch {
       setPushEnabled(!val)

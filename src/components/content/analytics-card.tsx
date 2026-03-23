@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import {
   LineChart,
   Line,
@@ -223,10 +223,10 @@ export default function AnalyticsCard({ contentId, period: initialPeriod = '30d'
     setLoading(true)
     setError(false)
     try {
-      const result = await apiFetch<AnalyticsData>(
-        `/api/community/shares/${contentId}/analytics?period=${p}`
-      )
-      setData(result)
+      const sb = createClient()
+      const { data: result, error: err } = await sb.rpc('get_share_analytics', { p_content_id: contentId, p_period: p })
+      if (err) throw err
+      setData(result as unknown as AnalyticsData)
     } catch {
       setError(true)
       setData(null)

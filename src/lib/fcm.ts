@@ -5,7 +5,10 @@ function getApiUrl(): string {
 }
 
 function getAuthHeaders(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('orchestra_token') : null
+  let token: string | null = null
+  if (typeof window !== 'undefined') {
+    try { const s = JSON.parse(localStorage.getItem('orchestra-auth') ?? '{}'); token = s?.state?.mcpToken ?? null } catch {}
+  }
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
   return headers

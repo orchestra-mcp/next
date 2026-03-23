@@ -1,7 +1,7 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { apiFetch } from '@/lib/api'
+import * as db from '@/lib/supabase/queries'
 
 export type Role = 'admin' | 'team_owner' | 'team_manager' | 'user'
 
@@ -198,14 +198,16 @@ export const useRoleStore = create<RolesState & RolesActions>()(
 
       fetchMyRole: async () => {
         // Skip API call for dev seed sessions — role is already set
-        const token = typeof window !== 'undefined' ? localStorage.getItem('orchestra_token') : null
-        if (token === 'dev_seed_token') {
-          set({ roleLoaded: true })
-          return
-        }
         try {
-          const res = await apiFetch<{ role: Role }>('/api/auth/me/role')
-          set({ currentRole: res.role, roleLoaded: true })
+          const state = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('orchestra-auth') ?? '{}') : {}
+          if (state?.state?.mcpToken === 'dev_seed_token') {
+            set({ roleLoaded: true })
+            return
+          }
+        } catch {}
+        try {
+          const role = await db.fetchMyRole()
+          set({ currentRole: role as Role, roleLoaded: true })
         } catch {
           // On error (e.g. no backend), keep existing role but mark as loaded
           set({ roleLoaded: true })
@@ -216,10 +218,8 @@ export const useRoleStore = create<RolesState & RolesActions>()(
         set({ loading: true, error: null })
         try {
           const teamId = get().team?.id
-          const url = teamId ? `/api/team?team_id=${teamId}` : '/api/team'
-          const res = await apiFetch<Team | { team: Team }>(url)
-          const team = ('team' in res && res.team) ? res.team : res as Team
-          set({ team, loading: false })
+          const team = await db.fetchTeam(teamId)
+          set({ team: team as Team, loading: false })
         } catch (e) {
           set({ error: (e as Error).message, loading: false })
         }
@@ -227,14 +227,7 @@ export const useRoleStore = create<RolesState & RolesActions>()(
 
       fetchAllTeams: async () => {
         try {
-          const res = await apiFetch<Array<Team | { team: Team; role?: string }> | { teams: Team[] }>('/api/teams/')
-          let teams: Team[]
-          if (Array.isArray(res)) {
-            // Backend returns [{ team: {...}, role: "..." }] or flat Team[]
-            teams = res.map(item => 'team' in item && item.team ? item.team as Team : item as Team)
-          } else {
-            teams = res.teams ?? []
-          }
+          const teams = await db.fetchAllTeams() as Team[]
           // Only update `team` if not already set (don't override active team)
           set(state => ({ teams, team: state.team ?? teams[0] ?? null }))
         } catch {
@@ -252,9 +245,8 @@ export const useRoleStore = create<RolesState & RolesActions>()(
         set({ loading: true, error: null })
         try {
           const teamId = get().team?.id
-          const url = teamId ? `/api/team/members?team_id=${teamId}` : '/api/team/members'
-          const res = await apiFetch<{ members: TeamMember[] }>(url)
-          set({ members: res.members, loading: false })
+          const items = await db.fetchTeamMembers(teamId)
+          set({ members: items as TeamMember[], loading: false })
         } catch (e) {
           set({ error: (e as Error).message, loading: false })
         }
@@ -263,8 +255,8 @@ export const useRoleStore = create<RolesState & RolesActions>()(
       fetchAllUsers: async () => {
         set({ loading: true, error: null })
         try {
-          const res = await apiFetch<{ users: TeamMember[] }>('/api/admin/users')
-          set({ allUsers: res.users, loading: false })
+          const items = await db.fetchAllUsers()
+          set({ allUsers: items as TeamMember[], loading: false })
         } catch (e) {
           set({ error: (e as Error).message, loading: false })
         }
@@ -275,10 +267,7 @@ export const useRoleStore = create<RolesState & RolesActions>()(
         const teamId = get().team?.id
         if (!teamId) { set({ error: 'No team found', loading: false }); throw new Error('No team found') }
         try {
-          await apiFetch(`/api/teams/${teamId}/invite`, {
-            method: 'POST',
-            body: JSON.stringify({ email, role }),
-          })
+          await db.inviteTeamMember(teamId, email, role)
           set({ loading: false })
           await get().fetchMembers()
         } catch (e) {
@@ -290,10 +279,7 @@ export const useRoleStore = create<RolesState & RolesActions>()(
       updateMemberRole: async (memberId, role) => {
         set({ loading: true, error: null })
         try {
-          await apiFetch(`/api/team/members/${memberId}/role`, {
-            method: 'PATCH',
-            body: JSON.stringify({ role }),
-          })
+          await db.updateMemberRole(memberId, role)
           set(state => ({
             members: state.members.map(m => m.id === memberId ? { ...m, role } : m),
             allUsers: state.allUsers.map(m => m.id === memberId ? { ...m, role } : m),
@@ -308,7 +294,7 @@ export const useRoleStore = create<RolesState & RolesActions>()(
       removeMember: async (memberId) => {
         set({ loading: true, error: null })
         try {
-          await apiFetch(`/api/team/members/${memberId}`, { method: 'DELETE' })
+          await db.removeTeamMember(memberId)
           set(state => ({
             members: state.members.filter(m => m.id !== memberId),
             loading: false,
@@ -322,7 +308,7 @@ export const useRoleStore = create<RolesState & RolesActions>()(
       suspendUser: async (userId) => {
         set({ loading: true, error: null })
         try {
-          await apiFetch(`/api/admin/users/${userId}/suspend`, { method: 'POST' })
+          await db.suspendUser(userId)
           set(state => ({
             allUsers: state.allUsers.map(u => u.id === userId ? { ...u, status: 'suspended' as const } : u),
             loading: false,
@@ -336,7 +322,7 @@ export const useRoleStore = create<RolesState & RolesActions>()(
       unsuspendUser: async (userId) => {
         set({ loading: true, error: null })
         try {
-          await apiFetch(`/api/admin/users/${userId}/unsuspend`, { method: 'POST' })
+          await db.unsuspendUser(userId)
           set(state => ({
             allUsers: state.allUsers.map(u => u.id === userId ? { ...u, status: 'active' as const } : u),
             loading: false,
@@ -351,12 +337,9 @@ export const useRoleStore = create<RolesState & RolesActions>()(
         set({ loading: true, error: null })
         try {
           const teamId = get().team?.id
-          const url = teamId ? `/api/team?team_id=${teamId}` : '/api/team'
-          const res = await apiFetch<{ team: Team }>(url, {
-            method: 'PATCH',
-            body: JSON.stringify(data),
-          })
-          set({ team: res.team, loading: false })
+          if (!teamId) throw new Error('No team found')
+          const team = await db.updateTeam(teamId, data as Record<string, unknown>)
+          set({ team: team as Team, loading: false })
         } catch (e) {
           set({ error: (e as Error).message, loading: false })
           throw e
@@ -368,7 +351,7 @@ export const useRoleStore = create<RolesState & RolesActions>()(
         if (!teamId) return
         set({ loading: true, error: null })
         try {
-          await apiFetch(`/api/teams/${teamId}`, { method: 'DELETE' })
+          await db.deleteTeam(teamId)
           set(state => ({
             team: null,
             teams: state.teams.filter(t => t.id !== teamId),

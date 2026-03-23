@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import AdminSettingsForm from '../_shared/AdminSettingsForm'
 
 export default function AdminGeneralPage() {
@@ -8,9 +8,22 @@ export default function AdminGeneralPage() {
 
   // Load the separate coming_soon setting to show its real state
   useEffect(() => {
-    apiFetch<{ key: string; value: { enabled: boolean } }>('/api/admin/settings/coming_soon')
-      .then(res => setComingSoon(res.value?.enabled ?? false))
-      .catch(() => setComingSoon(false))
+    async function load() {
+      try {
+        const sb = createClient()
+        const { data, error } = await sb
+          .from('settings')
+          .select('value')
+          .eq('key', 'coming_soon')
+          .maybeSingle()
+
+        if (error) throw error
+        setComingSoon(data?.value?.enabled ?? false)
+      } catch {
+        setComingSoon(false)
+      }
+    }
+    load()
   }, [])
 
   return (

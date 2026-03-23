@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useThemeStore } from '@/store/theme'
 import { useFeatureFlagsStore } from '@/store/feature-flags'
 import { useTranslations } from 'next-intl'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 interface Sponsor {
   id: number
@@ -58,9 +58,11 @@ export default function SponsorsPage() {
     let cancelled = false
     async function load() {
       try {
-        const res = await apiFetch<{ sponsors: Sponsor[] }>('/api/public/sponsors', { skipAuth: true })
+        const sb = createClient()
+        const { data, error } = await sb.from('sponsors').select('*').eq('status', 'active').order('order', { ascending: true })
+        if (error) throw error
         if (!cancelled) {
-          setSponsors(res.sponsors.filter(s => s.status === 'active'))
+          setSponsors((data || []) as Sponsor[])
           setLoading(false)
         }
       } catch {

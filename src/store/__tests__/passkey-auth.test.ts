@@ -10,9 +10,9 @@ vi.mock('@/lib/api', () => ({
   apiFetch: (...args: any[]) => mockedApiFetch(...args),
 }))
 
-vi.mock('@/lib/powersync', () => ({
-  connectPowerSync: vi.fn().mockResolvedValue(undefined),
-  disconnectPowerSync: vi.fn().mockResolvedValue(undefined),
+vi.mock('@/lib/supabase/realtime', () => ({
+  connectRealtime: vi.fn(),
+  disconnectRealtime: vi.fn(),
 }))
 
 let useAuthStore: any
@@ -27,9 +27,9 @@ beforeEach(async () => {
   vi.doMock('@/lib/api', () => ({
     apiFetch: (...args: any[]) => mockedApiFetch(...args),
   }))
-  vi.doMock('@/lib/powersync', () => ({
-    connectPowerSync: vi.fn().mockResolvedValue(undefined),
-    disconnectPowerSync: vi.fn().mockResolvedValue(undefined),
+  vi.doMock('@/lib/supabase/realtime', () => ({
+    connectRealtime: vi.fn(),
+    disconnectRealtime: vi.fn(),
   }))
 
   const mod = await import('../auth')
@@ -158,7 +158,7 @@ describe('loginWithPasskey', () => {
     expect(finishBody.response).toHaveProperty('userHandle')
     expect(finishBody.response).not.toHaveProperty('user_handle')
 
-    // Token stored
-    expect(store['orchestra_token']).toBe('jwt-token')
+    // MCP token stored
+    expect(store['mcpToken']).toBe('jwt-token')
   })
 })

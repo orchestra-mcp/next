@@ -14,6 +14,7 @@ export default function TwoFactorSetupPage() {
   const [step, setStep] = useState<'idle' | 'setup' | 'confirm' | 'done' | 'disable'>('idle')
   const [qrUrl, setQrUrl] = useState('')
   const [secret, setSecret] = useState('')
+  const [factorId, setFactorId] = useState('')
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState('')
   const [showSecret, setShowSecret] = useState(false)
@@ -49,6 +50,7 @@ export default function TwoFactorSetupPage() {
       const res = await setup2FA()
       setQrUrl(res.qr_url)
       setSecret(res.secret)
+      setFactorId(res.factorId)
       setStep('setup')
     } catch {}
   }
@@ -59,7 +61,7 @@ export default function TwoFactorSetupPage() {
     if (code.replace(/\s/g, '').length < 6) { setCodeError('Enter the 6-digit code from your app'); return }
     clearError()
     try {
-      await confirm2FA(code.replace(/\s/g, ''))
+      await confirm2FA(factorId, code.replace(/\s/g, ''))
       setStep('done')
     } catch {}
   }
@@ -69,7 +71,12 @@ export default function TwoFactorSetupPage() {
     setCodeError('')
     clearError()
     try {
-      await disable2FA(code.replace(/\s/g, ''))
+      // Get the existing factor ID for disabling
+      const sb = (await import('@/lib/supabase/client')).createClient()
+      const { data: factors } = await sb.auth.mfa.listFactors()
+      const existingFactorId = factors?.totp?.[0]?.id
+      if (!existingFactorId) throw new Error('No 2FA factor found')
+      await disable2FA(existingFactorId)
       setCode('')
       setStep('idle')
     } catch {}

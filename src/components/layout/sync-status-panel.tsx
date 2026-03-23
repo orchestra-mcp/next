@@ -27,12 +27,10 @@ const ACTION_COLORS: Record<string, string> = {
   status_changed: '#f59e0b',
 }
 
-const POWERSYNC_STATE_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
+const REALTIME_STATE_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
   connected: { color: '#22c55e', label: 'Connected', icon: 'bx-check-circle' },
   connecting: { color: '#f59e0b', label: 'Connecting', icon: 'bx-loader-alt' },
   disconnected: { color: '#ef4444', label: 'Disconnected', icon: 'bx-x-circle' },
-  uploading: { color: '#00e5ff', label: 'Uploading', icon: 'bx-upload' },
-  downloading: { color: '#a855f7', label: 'Downloading', icon: 'bx-download' },
 }
 
 const CONFLICT_RESOLUTION_COLORS: Record<string, string> = {
@@ -86,11 +84,11 @@ const TUNNEL_STATUS_COLORS: Record<string, string> = {
 }
 
 export function SyncStatusPanel({ open, onClose }: SyncStatusPanelProps) {
-  const { syncStatus, powerSyncState, lastSyncAt, recentEvents, pendingWrites, conflicts, autoRefresh, setAutoRefresh, clearConflicts } = useSyncStore()
+  const { syncStatus, realtimeState, lastSyncAt, recentEvents, pendingWrites, conflicts, autoRefresh, setAutoRefresh, clearConflicts } = useSyncStore()
   const { tunnels } = useTunnelStore()
 
   const statusConfig = STATUS_CONFIG[syncStatus]
-  const psConfig = POWERSYNC_STATE_CONFIG[powerSyncState] ?? POWERSYNC_STATE_CONFIG.disconnected
+  const rtConfig = REALTIME_STATE_CONFIG[realtimeState] ?? REALTIME_STATE_CONFIG.disconnected
   const displayEvents = recentEvents.slice(0, 20)
   const pendingConflicts = conflicts.filter(c => c.resolution === 'pending').length
 
@@ -216,14 +214,14 @@ export function SyncStatusPanel({ open, onClose }: SyncStatusPanelProps) {
             </div>
           </div>
 
-          {/* PowerSync + Pending Writes + Last Sync row */}
+          {/* Realtime + Pending Writes + Last Sync row */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr 1fr',
             gap: 8,
             marginBottom: 24,
           }}>
-            {/* PowerSync State */}
+            {/* Realtime State */}
             <div style={{
               padding: '12px 10px',
               borderRadius: 10,
@@ -231,15 +229,15 @@ export function SyncStatusPanel({ open, onClose }: SyncStatusPanelProps) {
               border: '1px solid rgba(255, 255, 255, 0.06)',
               textAlign: 'center',
             }}>
-              <i className={`bx ${psConfig.icon}`} style={{
+              <i className={`bx ${rtConfig.icon}`} style={{
                 fontSize: 18,
-                color: psConfig.color,
+                color: rtConfig.color,
                 display: 'block',
                 marginBottom: 4,
-                animation: powerSyncState === 'connecting' ? 'syncPulse 1.5s ease-in-out infinite' : undefined,
+                animation: realtimeState === 'connecting' ? 'syncPulse 1.5s ease-in-out infinite' : undefined,
               }} />
-              <div style={{ fontSize: 10, fontWeight: 600, color: psConfig.color }}>{psConfig.label}</div>
-              <div style={{ fontSize: 9, color: 'rgba(255, 255, 255, 0.25)', marginTop: 2 }}>PowerSync</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: rtConfig.color }}>{rtConfig.label}</div>
+              <div style={{ fontSize: 9, color: 'rgba(255, 255, 255, 0.25)', marginTop: 2 }}>Realtime</div>
             </div>
 
             {/* Pending Writes */}

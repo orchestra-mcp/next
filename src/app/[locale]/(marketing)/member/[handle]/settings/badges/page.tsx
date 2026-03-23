@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import ProfileCard from '@/components/profile/profile-card'
 
 interface Badge {
@@ -45,10 +45,51 @@ export default function BadgesPage() {
   useEffect(() => {
     async function load() {
       try {
+        const sb = createClient()
         const handle = user?.username || (user?.settings?.handle as string)
         if (!handle) throw new Error('no handle')
-        const res = await apiFetch<{ badges: Badge[] }>(`/api/public/member/${handle}/badges`)
-        setBadges(res.badges ?? [])
+
+        // Get the user record by handle/username
+        const { data: memberData, error: memberError } = await sb
+          .from('users')
+          .select('id')
+          .or(`username.eq.${handle},settings->>handle.eq.${handle}`)
+          .maybeSingle()
+
+        if (memberError || !memberData) throw new Error('User not found')
+
+        // Get all badge definitions
+        const { data: allBadges, error: badgesError } = await sb
+          .from('badges')
+          .select('*')
+          .order('sort_order', { ascending: true })
+
+        if (badgesError) throw new Error(badgesError.message)
+
+        // Get user's earned badges
+        const { data: userBadges, error: ubError } = await sb
+          .from('user_badges')
+          .select('badge_id, awarded_at')
+          .eq('user_id', memberData.id)
+
+        if (ubError) throw new Error(ubError.message)
+
+        const earnedMap = new Map((userBadges ?? []).map(ub => [ub.badge_id, ub.awarded_at]))
+
+        const merged: Badge[] = (allBadges ?? []).map(b => ({
+          id: b.id,
+          slug: b.slug,
+          name: b.name,
+          description: b.description,
+          icon: b.icon,
+          color: b.color,
+          category: b.category,
+          points_required: b.points_required,
+          awarded_at: earnedMap.get(b.id) ?? undefined,
+          earned: earnedMap.has(b.id),
+        }))
+
+        setBadges(merged)
       } catch {
         setBadges(SEED_BADGES)
       }

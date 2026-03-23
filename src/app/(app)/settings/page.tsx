@@ -14,7 +14,8 @@ import { useAdminStore } from '@/store/admin'
 import { ContentLocaleTabs } from '@/components/ui/content-locale-tabs'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { apiFetch, isDevSeed } from '@/lib/api'
+import { isDevSeed } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
 import { usePreferencesStore } from '@/store/preferences'
 import MarkdownEditor from '@/components/ui/markdown-editor'
@@ -144,8 +145,9 @@ function PasskeysTab({ textPrimary, textMuted, textDim, cardBorder, saveBtnSt, S
 
   const fetchPasskeys = useCallback(async () => {
     try {
-      const res = await apiFetch<{ passkeys: PasskeyItem[] }>('/api/settings/passkeys')
-      setPasskeys(res.passkeys ?? [])
+      const sb = createClient()
+      const { data } = await sb.from('passkeys').select('*').order('created_at', { ascending: false })
+      setPasskeys(data ?? [])
     } catch { /* empty */ } finally { setLoading(false) }
   }, [])
 
@@ -178,14 +180,16 @@ function PasskeysTab({ textPrimary, textMuted, textDim, cardBorder, saveBtnSt, S
   const handleDelete = async (id: number) => {
     if (!confirm('Remove this passkey? You won\'t be able to sign in with it anymore.')) return
     try {
-      await apiFetch(`/api/settings/passkeys/${id}`, { method: 'DELETE' })
+      const sb = createClient()
+      await sb.from('passkeys').delete().eq('id', id)
       setPasskeys(p => p.filter(k => k.id !== id))
     } catch (e) { setError((e as Error).message) }
   }
 
   const handleRename = async (id: number) => {
     try {
-      await apiFetch(`/api/settings/passkeys/${id}`, { method: 'PATCH', body: JSON.stringify({ name: renameValue }) })
+      const sb = createClient()
+      await sb.from('passkeys').update({ name: renameValue }).eq('id', id)
       setPasskeys(p => p.map(k => k.id === id ? { ...k, name: renameValue } : k))
       setRenamingId(null)
     } catch (e) { setError((e as Error).message) }
@@ -920,10 +924,13 @@ function PublicProfileSettings({ inputSt, labelSt, saveBtnSt, textDim, textMuted
       return
     }
     try {
-      const formData = new FormData()
-      formData.append('cover', file)
-      const res = await apiFetch<{ ok: boolean; cover_url: string }>('/api/settings/cover', { method: 'POST', body: formData })
-      setCoverUrl(res.cover_url)
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `covers/${authUser!.id}-${Date.now()}.${ext}`
+      await sb.storage.from('uploads').upload(path, file, { upsert: true })
+      const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(path)
+      setCoverUrl(publicUrl)
     } catch {}
     finally { setCoverUploading(false) }
   }
@@ -960,16 +967,15 @@ function PublicProfileSettings({ inputSt, labelSt, saveBtnSt, textDim, textMuted
       return
     }
     try {
-      await apiFetch('/api/settings/profile', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          public_profile_enabled: publicEnabled,
-          handle,
-          bio,
-          cover_url: coverUrl,
-          social_links: socialLinks.filter(l => l.url.trim()),
-        }),
-      })
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      await sb.from('users').update({
+        public_profile_enabled: publicEnabled,
+        handle,
+        bio,
+        cover_url: coverUrl,
+        social_links: socialLinks.filter(l => l.url.trim()),
+      }).eq('auth_uid', authUser!.id)
       setSaved(true)
       await fetchMe()
       setTimeout(() => setSaved(false), 2000)
@@ -1230,10 +1236,11 @@ export default function SettingsPage() {
     setDeleteLoading(true)
     setDeleteError('')
     try {
-      await apiFetch('/api/auth/account', { method: 'DELETE', body: JSON.stringify({ password: deletePassword }) })
-      // Logout and redirect
-      localStorage.removeItem('orchestra_token')
-      document.cookie = 'orchestra_token=;path=/;max-age=0'
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      await sb.from('users').delete().eq('auth_uid', authUser!.id)
+      await sb.auth.signOut()
+      // Redirect
       window.location.href = '/login?message=account_deletion_scheduled'
     } catch (e: any) {
       setDeleteError(e?.message || 'Failed to delete account')
@@ -1256,10 +1263,13 @@ export default function SettingsPage() {
     if (!file) return
     setAvatarUploading(true)
     try {
-      const formData = new FormData()
-      formData.append('avatar', file)
-      const res = await apiFetch<{ ok: boolean; avatar_url: string }>('/api/settings/avatar', { method: 'POST', body: formData })
-      updateAvatarUrl(res.avatar_url)
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `avatars/${authUser!.id}-${Date.now()}.${ext}`
+      await sb.storage.from('uploads').upload(path, file, { upsert: true })
+      const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(path)
+      updateAvatarUrl(publicUrl)
     } catch {}
     finally { setAvatarUploading(false) }
   }
@@ -1326,10 +1336,11 @@ export default function SettingsPage() {
   }
 
   useEffect(() => {
-    apiFetch<{ value: Record<string, unknown> }>('/api/public/settings/integrations', { skipAuth: true })
-      .then(res => {
+    const sb = createClient()
+    sb.from('settings').select('value').eq('key', 'integrations').maybeSingle()
+      .then(({ data }) => {
         const providers: Record<string, boolean> = {}
-        for (const [k, v] of Object.entries(res.value ?? {})) {
+        for (const [k, v] of Object.entries((data?.value as Record<string, unknown>) ?? {})) {
           if (k.endsWith('_enabled')) providers[k.replace('_enabled', '')] = !!v
         }
         setEnabledProviders(providers)
@@ -1342,17 +1353,18 @@ export default function SettingsPage() {
     if (tab === 'apitokens') fetchApiKeys()
     if (tab === 'social') fetchConnectedAccounts()
     if (tab === 'integrations') {
-      apiFetch<{ integrations: Array<{ provider: string; guild_id: string; channel_id: string; team_id: string; webhook_url: string }> }>('/api/settings/integrations/user')
-        .then(res => {
+      const sb = createClient()
+      sb.from('user_integrations').select('*')
+        .then(({ data }) => {
           const map: Record<string, { guild_id: string; channel_id: string; team_id: string; webhook_url: string }> = {}
-          for (const i of res.integrations ?? []) {
+          for (const i of data ?? []) {
             map[i.provider] = { guild_id: i.guild_id, channel_id: i.channel_id, team_id: i.team_id, webhook_url: i.webhook_url }
           }
           setUserIntegrations(map)
         })
         .catch(() => {})
-      apiFetch<{ apps: Record<string, { install_url: string; name: string }> }>('/api/settings/integrations/apps')
-        .then(res => setAppInstallUrls(res.apps ?? {}))
+      sb.from('settings').select('value').eq('key', 'integration_apps').maybeSingle()
+        .then(({ data }) => setAppInstallUrls((data?.value as Record<string, { install_url: string; name: string }>) ?? {}))
         .catch(() => {})
     }
     if (tab.startsWith('admin-') && isAdmin) {
@@ -1395,7 +1407,9 @@ export default function SettingsPage() {
       setSaved(true); setTimeout(() => setSaved(false), 2000); return
     }
     try {
-      await apiFetch('/api/settings/profile', { method: 'PATCH', body: JSON.stringify({ name, email, phone, gender, position, timezone }) })
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      await sb.from('users').update({ name, email, phone, gender, position, timezone }).eq('auth_uid', authUser!.id)
       await fetchMe() // refresh user in store so settings persist
 
       // Apply language change only on save — reload page to get correct translations and dir
@@ -1413,7 +1427,7 @@ export default function SettingsPage() {
     if (pwNew !== pwConfirm) { setPwMsg({ ok: false, text: t('passwordsDoNotMatch') }); return }
     setPwSaving(true); setPwMsg(null)
     try {
-      if (!isDevSeed()) await apiFetch('/api/auth/change-password', { method: 'POST', body: JSON.stringify({ current_password: pwCurrent, new_password: pwNew }) })
+      if (!isDevSeed()) { const sb = createClient(); await sb.auth.updateUser({ password: pwNew }) }
       setPwMsg({ ok: true, text: t('passwordUpdated') })
       setPwCurrent(''); setPwNew(''); setPwConfirm('')
     } catch (e) { setPwMsg({ ok: false, text: (e as Error).message }) }
@@ -1834,9 +1848,10 @@ export default function SettingsPage() {
                       onClick={async () => {
                         setIntegrationSaving(true)
                         try {
-                          await apiFetch(`/api/settings/integrations/user/${provider.provider}`, {
-                            method: 'PUT',
-                            body: JSON.stringify(userIntegrations[provider.provider] ?? {}),
+                          const sb = createClient()
+                          await sb.from('user_integrations').upsert({
+                            provider: provider.provider,
+                            ...(userIntegrations[provider.provider] ?? {}),
                           })
                           setIntegrationSaved(true); setTimeout(() => setIntegrationSaved(false), 2000)
                         } catch {} finally { setIntegrationSaving(false) }
@@ -1848,7 +1863,8 @@ export default function SettingsPage() {
                     <button
                       onClick={async () => {
                         try {
-                          await apiFetch(`/api/settings/integrations/user/${provider.provider}`, { method: 'DELETE' })
+                          const sb = createClient()
+                          await sb.from('user_integrations').delete().eq('provider', provider.provider)
                           setUserIntegrations(prev => { const n = { ...prev }; delete n[provider.provider]; return n })
                         } catch {}
                       }}
@@ -2004,7 +2020,9 @@ export default function SettingsPage() {
                 style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                 onClick={async () => {
                   try {
-                    const res = await apiFetch<{ ok: boolean; count: number; seeded: string[] }>('/api/admin/settings/seed', { method: 'POST' })
+                    const sb = createClient()
+                    const { data: { session } } = await sb.auth.getSession()
+                    const res = await fetch(process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/admin-seed', { method: 'POST', headers: { Authorization: 'Bearer ' + session!.access_token, 'Content-Type': 'application/json' } }).then(r => r.json()) as { ok: boolean; count: number; seeded: string[] }
                     setAdminSaved(true); setTimeout(() => setAdminSaved(false), 3000)
                     // Reload current tab setting
                     const rawKey = tab.replace('admin-', '')
@@ -2174,7 +2192,9 @@ export default function SettingsPage() {
                   try {
                     // Save SMTP settings first, then send test
                     await handleSaveAdminSetting('smtp')
-                    const res = await apiFetch<{ ok: boolean; sent_to?: string; error?: string }>('/api/admin/settings/test-email', { method: 'POST' })
+                    const sb = createClient()
+                    const { data: { session } } = await sb.auth.getSession()
+                    const res = await fetch(process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/admin-test-email', { method: 'POST', headers: { Authorization: 'Bearer ' + session!.access_token, 'Content-Type': 'application/json' } }).then(r => r.json()) as { ok: boolean; sent_to?: string; error?: string }
                     setTestEmailResult({ ok: true, text: `Test email sent to ${res.sent_to}` })
                   } catch (e: any) {
                     setTestEmailResult({ ok: false, text: e?.message || 'Failed to send test email' })
@@ -2212,15 +2232,14 @@ export default function SettingsPage() {
                   style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${cardBorder}`, background: 'transparent', color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                   onClick={async () => {
                     try {
-                      const res = await apiFetch<{ ok: boolean; sitemap: string }>('/api/admin/settings/generate-sitemap', { method: 'POST' })
+                      const sb = createClient()
+                      const { data: { session } } = await sb.auth.getSession()
+                      const res = await fetch(process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/admin-generate-sitemap', { method: 'POST', headers: { Authorization: 'Bearer ' + session!.access_token, 'Content-Type': 'application/json' } }).then(r => r.json()) as { ok: boolean; sitemap: string }
                       if (res.sitemap) {
                         setAdminSettings(p => ({ ...p, seo: { ...p.seo, generated_sitemap: res.sitemap } }))
                         // Also save to seo settings so /sitemap.xml route can serve it
                         try {
-                          await apiFetch('/api/admin/settings', {
-                            method: 'PATCH',
-                            body: JSON.stringify({ key: 'seo', value: { ...adminSettings.seo, generated_sitemap: res.sitemap } }),
-                          })
+                          await sb.from('settings').upsert({ key: 'seo', value: { ...adminSettings.seo, generated_sitemap: res.sitemap }, updated_at: new Date().toISOString() }, { onConflict: 'key' })
                         } catch {}
                       }
                     } catch {}

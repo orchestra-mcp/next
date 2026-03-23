@@ -1,7 +1,7 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { apiFetch } from '@/lib/api'
+import * as db from '@/lib/supabase/queries'
 import type { WidgetLayout } from '@/types/dashboard'
 import { DEFAULT_LAYOUT, WIDGET_REGISTRY, LAYOUT_VERSION } from '@/types/dashboard'
 
@@ -29,10 +29,7 @@ function debouncedSave(widgets: WidgetLayout[]) {
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(async () => {
     try {
-      await apiFetch('/api/settings/preferences', {
-        method: 'PATCH',
-        body: JSON.stringify({ dashboard_layout: widgets }),
-      })
+      await db.upsertUserSetting('dashboard_layout', widgets)
     } catch {
       // Silently fail — localStorage has the truth
     }
@@ -62,12 +59,9 @@ export const useDashboardStore = create<DashboardState & DashboardActions>()(
 
       fetchLayout: async () => {
         try {
-          const res = await apiFetch<{ preferences: { dashboard_layout?: WidgetLayout[] } }>(
-            '/api/settings/preferences'
-          )
-          const layout = res.preferences?.dashboard_layout
+          const layout = await db.fetchUserSetting('dashboard_layout')
           if (layout && Array.isArray(layout) && layout.length > 0) {
-            set({ widgets: migrateLayout(layout), loaded: true })
+            set({ widgets: migrateLayout(layout as WidgetLayout[]), loaded: true })
           } else {
             set({ loaded: true })
           }

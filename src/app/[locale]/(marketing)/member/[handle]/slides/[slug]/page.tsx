@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { relativeTime } from '@/lib/mcp-parsers'
 import { SlideRenderer } from '@/components/content/slide-renderer'
 import { JsonLd } from '@/components/content/json-ld'
@@ -42,12 +42,12 @@ export default function PublicSlideDetailPage(props: PageProps) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await apiFetch<{
-          presentation: Presentation
-          slides: Slide[]
-        }>(`/api/public/presentations/${handle}/${slug}`)
-        setPresentation(res.presentation)
-        setSlides(res.slides ?? [])
+        const sb = createClient()
+        const { data: presData, error: presError } = await sb.from('presentations').select('*').eq('author_handle', handle).eq('slug', slug).eq('visibility', 'public').single()
+        if (presError) throw presError
+        setPresentation(presData as Presentation)
+        const { data: slideData } = await sb.from('slides').select('*').eq('presentation_id', presData.id).order('slide_number')
+        setSlides((slideData as Slide[]) ?? [])
       } catch {
         setNotFound(true)
       }

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { apiFetch, uploadUrl } from '@/lib/api'
+import { uploadUrl } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -211,24 +212,29 @@ export function AdminContentTable({ apiBase = '/api/admin/content' }: AdminConte
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams()
-      params.set('page', String(page))
-      params.set('per_page', String(PER_PAGE))
-      params.set('sort', sortField)
-      params.set('dir', sortDir)
-      if (debouncedSearch) params.set('q', debouncedSearch)
-      if (entityFilter !== 'all') params.set('entity_type', entityFilter)
-      if (visibilityFilter !== 'all') params.set('visibility', visibilityFilter)
+      const sb = createClient()
+      let query = sb.from('admin_content').select('*', { count: 'exact' })
 
-      const res = await apiFetch<ContentListResponse>(`${apiBase}?${params.toString()}`)
-      setItems(res.items ?? [])
-      setTotal(res.total ?? 0)
+      if (debouncedSearch) query = query.ilike('title', `%${debouncedSearch}%`)
+      if (entityFilter !== 'all') query = query.eq('entity_type', entityFilter)
+      if (visibilityFilter !== 'all') query = query.eq('visibility', visibilityFilter)
+
+      query = query.order(sortField, { ascending: sortDir === 'asc' })
+
+      const from = (page - 1) * PER_PAGE
+      const to = from + PER_PAGE - 1
+      query = query.range(from, to)
+
+      const { data, count, error } = await query
+      if (error) throw error
+      setItems((data as ContentItem[]) ?? [])
+      setTotal(count ?? 0)
     } catch {
       setItems([])
       setTotal(0)
     }
     setLoading(false)
-  }, [apiBase, page, sortField, sortDir, debouncedSearch, entityFilter, visibilityFilter])
+  }, [page, sortField, sortDir, debouncedSearch, entityFilter, visibilityFilter])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -275,10 +281,9 @@ export function AdminContentTable({ apiBase = '/api/admin/content' }: AdminConte
   const toggleVisibility = async (item: ContentItem) => {
     const nextVis = item.visibility === 'public' ? 'private' : 'public'
     try {
-      await apiFetch(`${apiBase}/${item.id}/visibility`, {
-        method: 'PATCH',
-        body: JSON.stringify({ visibility: nextVis }),
-      })
+      const sb = createClient()
+      const { error } = await sb.from('admin_content').update({ visibility: nextVis }).eq('id', item.id)
+      if (error) throw error
       await fetchData()
     } catch { /* silently fail */ }
   }
@@ -286,7 +291,9 @@ export function AdminContentTable({ apiBase = '/api/admin/content' }: AdminConte
   const deleteItem = async (id: number) => {
     if (!confirm('Are you sure you want to delete this content?')) return
     try {
-      await apiFetch(`${apiBase}/${id}`, { method: 'DELETE' })
+      const sb = createClient()
+      const { error } = await sb.from('admin_content').delete().eq('id', id)
+      if (error) throw error
       await fetchData()
     } catch { /* silently fail */ }
   }
@@ -296,10 +303,16 @@ export function AdminContentTable({ apiBase = '/api/admin/content' }: AdminConte
     if (action === 'delete' && !confirm(`Delete ${selected.size} item(s)?`)) return
     setActionLoading(true)
     try {
-      await apiFetch(`${apiBase}/bulk`, {
-        method: 'POST',
-        body: JSON.stringify({ ids: Array.from(selected), action }),
-      })
+      const sb = createClient()
+      const ids = Array.from(selected)
+      if (action === 'delete') {
+        const { error } = await sb.from('admin_content').delete().in('id', ids)
+        if (error) throw error
+      } else {
+        const newVis = action === 'publish' ? 'public' : 'private'
+        const { error } = await sb.from('admin_content').update({ visibility: newVis }).in('id', ids)
+        if (error) throw error
+      }
       setSelected(new Set())
       await fetchData()
     } catch { /* silently fail */ }

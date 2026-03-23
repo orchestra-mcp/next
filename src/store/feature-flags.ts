@@ -1,6 +1,6 @@
 'use client'
 import { create } from 'zustand'
-import { apiFetch } from '@/lib/api'
+import * as db from '@/lib/supabase/queries'
 
 interface FeatureFlags {
   // Public pages
@@ -83,8 +83,7 @@ export const useFeatureFlagsStore = create<FeatureFlagsState>()((set, get) => ({
 
   fetchFlags: async () => {
     try {
-      const res = await apiFetch<{ key: string; value: Record<string, unknown> }>('/api/public/settings/features')
-      const val = res.value ?? {}
+      const val = await db.fetchFeatureFlagsSetting()
       const flags: FeatureFlags = { ...DEFAULT_FLAGS }
       for (const k of Object.keys(DEFAULT_FLAGS)) {
         if (typeof val[k] === 'boolean') {

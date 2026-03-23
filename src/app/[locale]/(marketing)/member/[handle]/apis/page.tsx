@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import ProfileSection from '@/components/profile/profile-section'
 
 interface ApiCollection {
@@ -37,10 +37,10 @@ export default function PublicApiCollectionsPage(props: PageProps) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await apiFetch<{ collections: ApiCollection[] }>(
-          `/api/public/api-collections/${handle}`
-        )
-        setCollections(res.collections ?? [])
+        const sb = createClient()
+        const { data, error } = await sb.from('api_collections').select('*').eq('author_handle', handle).eq('visibility', 'public').order('name')
+        if (error) throw error
+        setCollections(data ?? [])
       } catch {
         setCollections([])
       }

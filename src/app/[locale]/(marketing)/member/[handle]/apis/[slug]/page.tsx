@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { JsonLd } from '@/components/content/json-ld'
 import { buildJsonLd } from '@/lib/seo'
 import { useProfileTheme } from '@/components/profile/use-profile-theme'
@@ -86,13 +86,14 @@ export default function PublicApiCollectionDetailPage(props: PageProps) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await apiFetch<{ collection: ApiCollection; endpoints: ApiEndpoint[] }>(
-          `/api/public/api-collections/${handle}/${slug}`
-        )
-        setCollection(res.collection)
-        const eps = res.endpoints ?? []
-        setEndpoints(eps)
-        if (eps.length > 0) setActiveId(eps[0].id)
+        const sb = createClient()
+        const { data: colData, error: colError } = await sb.from('api_collections').select('*').eq('author_handle', handle).eq('slug', slug).eq('visibility', 'public').single()
+        if (colError) throw colError
+        setCollection(colData as ApiCollection)
+        const { data: epData } = await sb.from('api_endpoints').select('*').eq('collection_id', colData.id).order('sort_order')
+        const eps = epData ?? []
+        setEndpoints(eps as ApiEndpoint[])
+        if (eps.length > 0) setActiveId((eps[0] as ApiEndpoint).id)
       } catch {
         setNotFound(true)
       }

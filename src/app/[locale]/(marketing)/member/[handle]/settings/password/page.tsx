@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import ProfileCard from '@/components/profile/profile-card'
 
 const inputSt: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 9, border: '1px solid var(--color-border)', background: 'var(--color-bg-alt)', color: 'var(--color-fg)', fontSize: 13, outline: 'none' }
@@ -30,10 +30,9 @@ export default function PasswordSettingsPage() {
 
     setSaving(true)
     try {
-      await apiFetch('/api/auth/change-password', {
-        method: 'POST',
-        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
-      })
+      const sb = createClient()
+      const { error } = await sb.auth.updateUser({ password: newPassword })
+      if (error) throw new Error(error.message)
       setMessage({ type: 'success', text: 'Password updated successfully.' })
       setCurrentPassword('')
       setNewPassword('')

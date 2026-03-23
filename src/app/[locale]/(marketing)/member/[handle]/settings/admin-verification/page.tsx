@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useRoleStore } from '@/store/roles'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import ProfileCard from '@/components/profile/profile-card'
 
 interface Tier {
@@ -33,8 +33,14 @@ export default function AdminVerificationPage() {
 
   const load = useCallback(async () => {
     try {
-      const res = await apiFetch<{ tiers: Tier[] }>('/api/admin/verification-tiers')
-      setTiers(res.tiers ?? [])
+      const sb = createClient()
+      const { data, error } = await sb
+        .from('verification_tiers')
+        .select('*')
+        .order('sort_order', { ascending: true })
+
+      if (error) throw error
+      setTiers(data ?? [])
     } catch {}
     setLoading(false)
   }, [])
@@ -47,10 +53,34 @@ export default function AdminVerificationPage() {
     if (!editing) return
     setSaving(true)
     try {
+      const sb = createClient()
       if (editing.id) {
-        await apiFetch(`/api/admin/verification-tiers/${editing.id}`, { method: 'PUT', body: JSON.stringify(editing) })
+        const { error } = await sb
+          .from('verification_tiers')
+          .update({
+            slug: editing.slug,
+            name: editing.name,
+            description: editing.description,
+            icon: editing.icon,
+            color: editing.color,
+            badge_text: editing.badge_text,
+            sort_order: editing.sort_order,
+          })
+          .eq('id', editing.id)
+        if (error) throw error
       } else {
-        await apiFetch('/api/admin/verification-tiers', { method: 'POST', body: JSON.stringify(editing) })
+        const { error } = await sb
+          .from('verification_tiers')
+          .insert({
+            slug: editing.slug,
+            name: editing.name,
+            description: editing.description,
+            icon: editing.icon,
+            color: editing.color,
+            badge_text: editing.badge_text,
+            sort_order: editing.sort_order,
+          })
+        if (error) throw error
       }
       setEditing(null)
       await load()
@@ -60,14 +90,23 @@ export default function AdminVerificationPage() {
 
   const removeTier = async (id: number) => {
     if (!confirm('Delete this verification tier?')) return
-    await apiFetch(`/api/admin/verification-tiers/${id}`, { method: 'DELETE' })
+    const sb = createClient()
+    await sb.from('verification_tiers').delete().eq('id', id)
     await load()
   }
 
   const verifyUser = async () => {
     if (!userId || !selectedTier) return
     try {
-      await apiFetch(`/api/admin/users/${userId}/verify`, { method: 'POST', body: JSON.stringify({ tier_id: parseInt(selectedTier), note: verifyNote }) })
+      const sb = createClient()
+      const { error } = await sb
+        .from('verifications')
+        .insert({
+          user_id: parseInt(userId),
+          tier_id: parseInt(selectedTier),
+          note: verifyNote || null,
+        })
+      if (error) throw new Error(error.message)
       setUserId(''); setSelectedTier(''); setVerifyNote('')
       alert('User verified successfully')
     } catch (e) { alert((e as Error).message) }

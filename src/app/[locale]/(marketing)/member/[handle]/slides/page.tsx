@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { relativeTime } from '@/lib/mcp-parsers'
 import ProfileSection from '@/components/profile/profile-section'
 
@@ -28,10 +28,10 @@ export default function PublicSlidesPage(props: PageProps) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await apiFetch<{ presentations: Presentation[] }>(
-          `/api/public/presentations/${handle}`
-        )
-        setPresentations(res.presentations ?? [])
+        const sb = createClient()
+        const { data, error } = await sb.from('presentations').select('*').eq('author_handle', handle).eq('visibility', 'public').order('updated_at', { ascending: false })
+        if (error) throw error
+        setPresentations(data ?? [])
       } catch {
         setPresentations([])
       }

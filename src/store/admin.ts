@@ -1,6 +1,6 @@
 'use client'
 import { create } from 'zustand'
-import { apiFetch } from '@/lib/api'
+import * as db from '@/lib/supabase/queries'
 
 export interface AdminPage {
   id: number
@@ -225,11 +225,10 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   setContentLocale: (locale: string) => set({ contentLocale: locale }),
 
   fetchPages: async () => {
-    const { contentLocale } = get()
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ pages: AdminPage[] }>(`/api/admin/pages?locale=${contentLocale}`)
-      set({ pages: res.pages, loading: false })
+      const items = await db.fetchAdminPages()
+      set({ pages: items as AdminPage[], loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -237,11 +236,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   createPage: async (data) => {
     try {
-      const res = await apiFetch<{ page: AdminPage }>('/api/admin/pages', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
-      set(s => ({ pages: [res.page, ...s.pages] }))
+      const page = await db.createAdminPage(data as Record<string, unknown>)
+      set(s => ({ pages: [page as AdminPage, ...s.pages] }))
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -249,13 +245,9 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   },
 
   updatePage: async (id, data) => {
-    const locale = (data as any).locale || get().contentLocale
     try {
-      const res = await apiFetch<{ page: AdminPage }>(`/api/admin/pages/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ ...data, locale }),
-      })
-      set(s => ({ pages: s.pages.map(p => p.id === id ? res.page : p) }))
+      const page = await db.updateAdminPage(id, data as Record<string, unknown>)
+      set(s => ({ pages: s.pages.map(p => p.id === id ? page as AdminPage : p) }))
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -264,7 +256,7 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   deletePage: async (id) => {
     try {
-      await apiFetch(`/api/admin/pages/${id}`, { method: 'DELETE' })
+      await db.deleteAdminPage(id)
       set(s => ({ pages: s.pages.filter(p => p.id !== id) }))
     } catch (e) {
       set({ error: (e as Error).message })
@@ -273,11 +265,10 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   },
 
   fetchPosts: async () => {
-    const { contentLocale } = get()
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ posts: AdminPost[] }>(`/api/admin/posts?locale=${contentLocale}`)
-      set({ posts: res.posts, loading: false })
+      const items = await db.fetchAdminPosts()
+      set({ posts: items as AdminPost[], loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -285,11 +276,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   createPost: async (data) => {
     try {
-      const res = await apiFetch<{ post: AdminPost }>('/api/admin/posts', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
-      set(s => ({ posts: [res.post, ...s.posts] }))
+      const post = await db.createAdminPost(data as Record<string, unknown>)
+      set(s => ({ posts: [post as AdminPost, ...s.posts] }))
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -297,13 +285,9 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   },
 
   updatePost: async (id, data) => {
-    const locale = (data as any).locale || get().contentLocale
     try {
-      const res = await apiFetch<{ post: AdminPost }>(`/api/admin/posts/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ ...data, locale }),
-      })
-      set(s => ({ posts: s.posts.map(p => p.id === id ? res.post : p) }))
+      const post = await db.updateAdminPost(id, data as Record<string, unknown>)
+      set(s => ({ posts: s.posts.map(p => p.id === id ? post as AdminPost : p) }))
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -312,7 +296,7 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   deletePost: async (id) => {
     try {
-      await apiFetch(`/api/admin/posts/${id}`, { method: 'DELETE' })
+      await db.deleteAdminPost(id)
       set(s => ({ posts: s.posts.filter(p => p.id !== id) }))
     } catch (e) {
       set({ error: (e as Error).message })
@@ -323,8 +307,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   fetchCategories: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ categories: AdminCategory[] }>('/api/admin/categories')
-      set({ categories: res.categories, loading: false })
+      const items = await db.fetchAdminCategories()
+      set({ categories: items as AdminCategory[], loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -332,11 +316,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   createCategory: async (name, type = 'blog') => {
     try {
-      const res = await apiFetch<{ category: AdminCategory }>('/api/admin/categories', {
-        method: 'POST',
-        body: JSON.stringify({ name, type }),
-      })
-      set(s => ({ categories: [...s.categories, res.category] }))
+      const cat = await db.createAdminCategory(name, type)
+      set(s => ({ categories: [...s.categories, cat as AdminCategory] }))
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -345,7 +326,7 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   deleteCategory: async (id) => {
     try {
-      await apiFetch(`/api/admin/categories/${id}`, { method: 'DELETE' })
+      await db.deleteAdminCategory(id)
       set(s => ({ categories: s.categories.filter(c => c.id !== id) }))
     } catch (e) {
       set({ error: (e as Error).message })
@@ -356,8 +337,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   fetchContact: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ messages: AdminContact[] }>('/api/admin/contact')
-      set({ contact: res.messages, loading: false })
+      const items = await db.fetchAdminContact()
+      set({ contact: items as AdminContact[], loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -365,7 +346,7 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   deleteContact: async (id) => {
     try {
-      await apiFetch(`/api/admin/contact/${id}`, { method: 'DELETE' })
+      await db.deleteAdminContact(id)
       set(s => ({ contact: s.contact.filter(c => c.id !== id) }))
     } catch (e) {
       set({ error: (e as Error).message })
@@ -376,8 +357,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   fetchIssues: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ issues: AdminIssue[] }>('/api/admin/issues')
-      set({ issues: res.issues, loading: false })
+      const items = await db.fetchAdminIssues()
+      set({ issues: items as AdminIssue[], loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -385,11 +366,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   updateIssue: async (id, data) => {
     try {
-      const res = await apiFetch<{ issue: AdminIssue }>(`/api/admin/issues/${id}/status`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      })
-      set(s => ({ issues: s.issues.map(i => i.id === id ? res.issue : i) }))
+      const issue = await db.updateAdminIssue(id, data as Record<string, unknown>)
+      set(s => ({ issues: s.issues.map(i => i.id === id ? issue as AdminIssue : i) }))
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -399,8 +377,7 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   fetchNotificationsSent: async (limit = 20, offset = 0) => {
     set({ notificationsLoading: true, error: null })
     try {
-      const res = await apiFetch<{ notifications: AdminNotificationSent[] }>(`/api/admin/notifications?limit=${limit}&offset=${offset}`)
-      const items = res.notifications ?? []
+      const items = await db.fetchAdminNotificationsSent(limit, offset) as AdminNotificationSent[]
       set({ notifications: items, notificationsHasMore: items.length >= limit, notificationsLoading: false })
     } catch (e) {
       set({ error: (e as Error).message, notificationsLoading: false })
@@ -414,8 +391,7 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
     const offset = notifications.length
     set({ notificationsLoading: true })
     try {
-      const res = await apiFetch<{ notifications: AdminNotificationSent[] }>(`/api/admin/notifications?limit=${limit}&offset=${offset}`)
-      const items = res.notifications ?? []
+      const items = await db.fetchAdminNotificationsSent(limit, offset) as AdminNotificationSent[]
       set(s => {
         const existingIds = new Set(s.notifications.map(n => n.id))
         const newItems = items.filter(n => !existingIds.has(n.id))
@@ -428,10 +404,7 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   sendNotification: async (data) => {
     try {
-      await apiFetch('/api/admin/notifications', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
+      await db.sendAdminNotification(data as Record<string, unknown>)
       await get().fetchNotificationsSent()
     } catch (e) {
       set({ error: (e as Error).message })
@@ -444,8 +417,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   fetchSponsors: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ sponsors: AdminSponsor[] }>('/api/admin/sponsors')
-      set({ sponsors: res.sponsors ?? [], loading: false })
+      const items = await db.fetchAdminSponsors()
+      set({ sponsors: (items ?? []) as AdminSponsor[], loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -453,11 +426,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   createSponsor: async (data) => {
     try {
-      const res = await apiFetch<{ sponsor: AdminSponsor }>('/api/admin/sponsors', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
-      set(s => ({ sponsors: [res.sponsor, ...s.sponsors] }))
+      const sponsor = await db.createAdminSponsor(data as Record<string, unknown>)
+      set(s => ({ sponsors: [sponsor as AdminSponsor, ...s.sponsors] }))
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -466,11 +436,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   updateSponsor: async (id, data) => {
     try {
-      const res = await apiFetch<{ sponsor: AdminSponsor }>(`/api/admin/sponsors/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      })
-      set(s => ({ sponsors: s.sponsors.map(sp => sp.id === id ? res.sponsor : sp) }))
+      const sponsor = await db.updateAdminSponsor(id, data as Record<string, unknown>)
+      set(s => ({ sponsors: s.sponsors.map(sp => sp.id === id ? sponsor as AdminSponsor : sp) }))
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -479,7 +446,7 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   deleteSponsor: async (id) => {
     try {
-      await apiFetch(`/api/admin/sponsors/${id}`, { method: 'DELETE' })
+      await db.deleteAdminSponsor(id)
       set(s => ({ sponsors: s.sponsors.filter(sp => sp.id !== id) }))
     } catch (e) {
       set({ error: (e as Error).message })
@@ -492,8 +459,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   fetchCommunityPosts: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ posts: AdminCommunityPost[] }>('/api/admin/community/posts')
-      set({ communityPosts: res.posts ?? [], loading: false })
+      const items = await db.fetchAdminCommunityPosts()
+      set({ communityPosts: (items ?? []) as AdminCommunityPost[], loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -501,11 +468,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   updateCommunityPost: async (id, data) => {
     try {
-      const res = await apiFetch<{ post: AdminCommunityPost }>(`/api/admin/community/posts/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      })
-      set(s => ({ communityPosts: s.communityPosts.map(p => p.id === id ? res.post : p) }))
+      const post = await db.updateAdminCommunityPost(id, data as Record<string, unknown>)
+      set(s => ({ communityPosts: s.communityPosts.map(p => p.id === id ? post as AdminCommunityPost : p) }))
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -514,7 +478,7 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   deleteCommunityPost: async (id) => {
     try {
-      await apiFetch(`/api/admin/community/posts/${id}`, { method: 'DELETE' })
+      await db.deleteAdminCommunityPost(id)
       set(s => ({ communityPosts: s.communityPosts.filter(p => p.id !== id) }))
     } catch (e) {
       set({ error: (e as Error).message })
@@ -527,9 +491,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   fetchGitHubIssues: async (repo) => {
     set({ loading: true, error: null })
     try {
-      const q = repo ? `?repo=${encodeURIComponent(repo)}` : ''
-      const res = await apiFetch<{ issues: AdminGitHubIssue[] }>(`/api/admin/github/issues${q}`)
-      set({ githubIssues: res.issues ?? [], loading: false })
+      const items = await db.fetchAdminGitHubIssues(repo)
+      set({ githubIssues: (items ?? []) as AdminGitHubIssue[], loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -538,8 +501,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   syncGitHubIssues: async (repo) => {
     set({ loading: true, error: null })
     try {
-      const body = repo ? JSON.stringify({ repo }) : undefined
-      await apiFetch('/api/admin/github/sync', { method: 'POST', body })
+      // GitHub sync reads from github_issues table — trigger a re-fetch
+      // Future: edge function to sync from GitHub API
       await get().fetchGitHubIssues(repo)
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
@@ -549,8 +512,19 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
 
   fetchGitHubRepos: async () => {
     try {
-      const res = await apiFetch<{ repos: AdminGitHubRepo[] }>('/api/admin/github/repos')
-      set({ githubRepos: res.repos ?? [] })
+      const items = await db.fetchAdminGitHubRepos()
+      // Extract unique repos
+      const seen = new Set<string>()
+      const repos: AdminGitHubRepo[] = []
+      for (const item of items as any[]) {
+        const repo = item.repo as string
+        if (!seen.has(repo)) {
+          seen.add(repo)
+          const parts = repo.split('/')
+          repos.push({ owner: parts[0] || '', name: parts[1] || repo, full_name: repo })
+        }
+      }
+      set({ githubRepos: repos })
     } catch (e) {
       set({ error: (e as Error).message })
     }
@@ -559,10 +533,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   // ── Settings ──
 
   fetchSetting: async (key) => {
-    const { contentLocale } = get()
     try {
-      const res = await apiFetch<{ key: string; value: Record<string, unknown>; updated_at?: string }>(`/api/admin/settings/${key}?locale=${contentLocale}`)
-      const val = res.value as Record<string, unknown>
+      const val = await db.fetchAdminSetting(key)
       set(s => ({ settings: { ...s.settings, [key]: val } }))
       return val
     } catch (e) {
@@ -572,12 +544,8 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   },
 
   updateSetting: async (key, value) => {
-    const { contentLocale } = get()
     try {
-      await apiFetch(`/api/admin/settings/${key}?locale=${contentLocale}`, {
-        method: 'PATCH',
-        body: JSON.stringify(value),
-      })
+      await db.updateAdminSetting(key, value)
       set(s => ({ settings: { ...s.settings, [key]: value } }))
     } catch (e) {
       set({ error: (e as Error).message })
@@ -586,15 +554,9 @@ export const useAdminStore = create<AdminState & AdminActions>()((set, get) => (
   },
 
   impersonateUser: async (userId) => {
-    try {
-      const res = await apiFetch<{ token: string }>(`/api/admin/users/${userId}/impersonate`, {
-        method: 'POST',
-      })
-      return res.token
-    } catch (e) {
-      set({ error: (e as Error).message })
-      throw e
-    }
+    // Impersonation not available via PostgREST — requires admin Supabase auth
+    // This would need a dedicated edge function in the future
+    throw new Error('Impersonation requires an admin edge function')
   },
 
   clearError: () => set({ error: null }),

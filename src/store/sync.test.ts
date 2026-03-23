@@ -7,7 +7,6 @@ describe('SyncStore', () => {
     // Reset store between tests
     useSyncStore.setState({
       syncStatus: 'idle',
-      powerSyncState: 'disconnected',
       lastSyncAt: null,
       connectedTunnels: [],
       recentEvents: [],
@@ -17,21 +16,6 @@ describe('SyncStore', () => {
       autoRefresh: true,
       autoRefreshInterval: 30,
     })
-  })
-
-  // ── PowerSync State ───────────────────────────────────────────────────────
-
-  it('sets powerSyncState', () => {
-    useSyncStore.getState().setPowerSyncState('connected')
-    expect(useSyncStore.getState().powerSyncState).toBe('connected')
-  })
-
-  it('cycles through all powerSync states', () => {
-    const states = ['connected', 'connecting', 'disconnected', 'uploading', 'downloading'] as const
-    for (const s of states) {
-      useSyncStore.getState().setPowerSyncState(s)
-      expect(useSyncStore.getState().powerSyncState).toBe(s)
-    }
   })
 
   // ── Pending Writes ────────────────────────────────────────────────────────

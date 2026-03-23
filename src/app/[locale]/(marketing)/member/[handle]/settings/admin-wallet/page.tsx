@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRoleStore } from '@/store/roles'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import ProfileCard from '@/components/profile/profile-card'
 
 const inputSt: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-bg-alt)', color: 'var(--color-fg)', fontSize: 13, outline: 'none' }
@@ -44,10 +44,16 @@ export default function AdminWalletPage() {
     if (!userId || !amount) return
     setSending(true); setResult(null)
     try {
-      await apiFetch(`/api/admin/users/${userId}/points`, {
-        method: 'POST',
-        body: JSON.stringify({ amount: parseInt(amount), reason, description }),
-      })
+      const sb = createClient()
+      const { error } = await sb
+        .from('wallet_transactions')
+        .insert({
+          user_id: parseInt(userId),
+          amount: parseInt(amount),
+          reason,
+          description,
+        })
+      if (error) throw new Error(error.message)
       setResult(`${parseInt(amount) > 0 ? 'Added' : 'Deducted'} ${Math.abs(parseInt(amount))} points`)
       setAmount(''); setDescription('')
     } catch (e) { setResult((e as Error).message) }
@@ -57,10 +63,16 @@ export default function AdminWalletPage() {
   const awardBadge = async () => {
     if (!badgeUserId || !badgeId) return
     try {
-      await apiFetch(`/api/admin/users/${badgeUserId}/badges`, {
-        method: 'POST',
-        body: JSON.stringify({ badge_id: parseInt(badgeId), note: badgeNote }),
-      })
+      const sb = createClient()
+      const { error } = await sb
+        .from('user_badges')
+        .insert({
+          user_id: parseInt(badgeUserId),
+          badge_id: parseInt(badgeId),
+          note: badgeNote || null,
+          awarded_at: new Date().toISOString(),
+        })
+      if (error) throw new Error(error.message)
       alert('Badge awarded')
       setBadgeUserId(''); setBadgeId(''); setBadgeNote('')
     } catch (e) { alert((e as Error).message) }
@@ -70,8 +82,15 @@ export default function AdminWalletPage() {
     if (!lookupId) return
     setLookupLoading(true)
     try {
-      const res = await apiFetch<{ transactions: Transaction[] }>(`/api/admin/users/${lookupId}/transactions`)
-      setTransactions(res.transactions ?? [])
+      const sb = createClient()
+      const { data, error } = await sb
+        .from('wallet_transactions')
+        .select('id, amount, balance_after, reason, description, created_at')
+        .eq('user_id', parseInt(lookupId))
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setTransactions(data ?? [])
     } catch {}
     setLookupLoading(false)
   }

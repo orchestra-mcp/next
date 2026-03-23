@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import ProfileCard from '@/components/profile/profile-card'
 
 const MCP_URL = 'https://orchestra-mcp.dev/mcp'
@@ -49,14 +49,20 @@ export default function McpSettingsPage() {
 
       // Then try to sync with backend
       try {
-        const [permRes, tokenRes] = await Promise.all([
-          apiFetch<{ permissions?: Record<string, boolean> }>('/api/settings/mcp-permissions'),
-          apiFetch<{ token?: string }>('/api/settings/mcp-token'),
+        const sb = createClient()
+        const { data: { user: authUser } } = await sb.auth.getUser()
+        if (!authUser) throw new Error('Not authenticated')
+
+        const [permResult, tokenResult] = await Promise.all([
+          sb.from('user_settings').select('value').eq('user_auth_id', authUser.id).eq('key', 'mcp_permissions').maybeSingle(),
+          sb.from('api_keys').select('key').eq('user_auth_id', authUser.id).eq('type', 'mcp').maybeSingle(),
         ])
-        if (permRes.permissions) {
-          setPermissions(DEFAULT_PERMISSIONS.map(p => ({ ...p, enabled: permRes.permissions![p.key] ?? p.enabled })))
+
+        if (permResult.data?.value) {
+          const permMap = permResult.data.value as Record<string, boolean>
+          setPermissions(DEFAULT_PERMISSIONS.map(p => ({ ...p, enabled: permMap[p.key] ?? p.enabled })))
         }
-        if (tokenRes.token) setMcpToken(tokenRes.token)
+        if (tokenResult.data?.key) setMcpToken(tokenResult.data.key)
       } catch {
         // backend not yet available — localStorage values remain
       } finally {
@@ -82,7 +88,14 @@ export default function McpSettingsPage() {
     localStorage.setItem('orchestra_mcp_permissions', JSON.stringify(map))
 
     try {
-      await apiFetch('/api/settings/mcp-permissions', { method: 'PATCH', body: JSON.stringify({ permissions: map }) })
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+
+      await sb.from('user_settings').upsert(
+        { user_auth_id: authUser.id, key: 'mcp_permissions', value: map },
+        { onConflict: 'user_auth_id,key' }
+      )
     } catch {
       // backend not yet available — local save is sufficient
     }
@@ -96,8 +109,19 @@ export default function McpSettingsPage() {
     setRegenerating(true)
     setMessage(null)
     try {
-      const res = await apiFetch('/api/settings/mcp-token/regenerate', { method: 'POST' })
-      if (res.token) setMcpToken(res.token)
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+
+      const newToken = crypto.randomUUID()
+
+      const { error } = await sb.from('api_keys').upsert(
+        { user_auth_id: authUser.id, type: 'mcp', key: newToken },
+        { onConflict: 'user_auth_id,type' }
+      )
+      if (error) throw new Error(error.message)
+
+      setMcpToken(newToken)
       setMessage({ type: 'success', text: 'Token regenerated. Update your Claude Desktop config.' })
     } catch (err) {
       setMessage({ type: 'error', text: (err as Error).message || 'Failed to regenerate token.' })

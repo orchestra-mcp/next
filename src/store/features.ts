@@ -1,6 +1,6 @@
 'use client'
 import { create } from 'zustand'
-import { apiFetch, apiList, apiResource } from '@/lib/api'
+import * as db from '@/lib/supabase/queries'
 import type { Feature, FeatureStatus } from '@/types/models'
 import type { FilterState } from '@/store/filter-presets'
 
@@ -28,17 +28,15 @@ export const useFeaturesStore = create<FeaturesState & FeaturesActions>(
     fetchFeatures: async (projectId, filters) => {
       set({ loading: true, error: null })
       try {
-        const params = new URLSearchParams()
-        if (filters?.status) params.set('status', filters.status)
-        if (filters?.priority) params.set('priority', filters.priority)
-        if (filters?.kind) params.set('kind', filters.kind)
-        if (filters?.assignee) params.set('assignee_id', filters.assignee)
-        if (filters?.search) params.set('search', filters.search)
-        if (filters?.labels && filters.labels.length > 0) params.set('labels', filters.labels.join(','))
-        const qs = params.toString()
-        const url = `/api/projects/${projectId}/features${qs ? `?${qs}` : ''}`
-        const { items } = await apiList<Feature>(url)
-        set({ features: items, loading: false })
+        const items = await db.fetchFeatures(projectId, {
+          status: filters?.status,
+          priority: filters?.priority,
+          kind: filters?.kind,
+          assignee: filters?.assignee,
+          search: filters?.search,
+          labels: filters?.labels,
+        })
+        set({ features: items as Feature[], loading: false })
       } catch (e) {
         set({ error: (e as Error).message, loading: false })
       }
@@ -47,10 +45,7 @@ export const useFeaturesStore = create<FeaturesState & FeaturesActions>(
     updateStatus: async (id, status) => {
       set({ loading: true, error: null })
       try {
-        const feature = await apiResource<Feature>(`/api/features/${id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ status }),
-        })
+        const feature = await db.updateFeature(id, { status }) as Feature
         set(state => ({
           features: state.features.map(f => f.id === id ? feature : f),
           loading: false,
@@ -63,10 +58,7 @@ export const useFeaturesStore = create<FeaturesState & FeaturesActions>(
     assignFeature: async (id, userId) => {
       set({ loading: true, error: null })
       try {
-        const feature = await apiResource<Feature>(`/api/features/${id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ assignee_id: userId }),
-        })
+        const feature = await db.updateFeature(id, { assignee_id: userId }) as Feature
         set(state => ({
           features: state.features.map(f => f.id === id ? feature : f),
           loading: false,
@@ -79,10 +71,7 @@ export const useFeaturesStore = create<FeaturesState & FeaturesActions>(
     updateFeature: async (id, data) => {
       set({ loading: true, error: null })
       try {
-        const feature = await apiResource<Feature>(`/api/features/${id}`, {
-          method: 'PATCH',
-          body: JSON.stringify(data),
-        })
+        const feature = await db.updateFeature(id, data) as Feature
         set(state => ({
           features: state.features.map(f => f.id === id ? feature : f),
           loading: false,

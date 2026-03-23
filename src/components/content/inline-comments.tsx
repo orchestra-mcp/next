@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { apiFetch, uploadUrl } from '@/lib/api'
+import { uploadUrl } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { relativeTime } from '@/lib/mcp-parsers'
 
 interface Comment {
@@ -28,12 +29,12 @@ export function InlineComments({ contentId }: InlineCommentsProps) {
 
   function fetchComments() {
     setLoading(true)
-    apiFetch<{ comments: Comment[]; count: number }>(
-      `/api/community/shares/${contentId}/inline-comments`
-    )
-      .then((res) => {
-        setComments(res.comments)
-        setCount(res.count)
+    const sb = createClient()
+    sb.from('inline_comments').select('*').eq('content_id', contentId).order('created_at', { ascending: true })
+      .then(({ data, error }) => {
+        if (error) throw error
+        setComments(data ?? [])
+        setCount(data?.length ?? 0)
       })
       .catch(() => {
         setComments([])
@@ -50,10 +51,11 @@ export function InlineComments({ contentId }: InlineCommentsProps) {
     if (!body.trim() || submitting) return
     setSubmitting(true)
     try {
-      await apiFetch(`/api/community/shares/${contentId}/inline-comments`, {
-        method: 'POST',
-        body: JSON.stringify({ body: body.trim(), kind }),
-      })
+      const sb = createClient()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+      const { error } = await sb.from('inline_comments').insert({ content_id: contentId, body: body.trim(), kind, user_id: user.id })
+      if (error) throw error
       setBody('')
       setKind('comment')
       fetchComments()

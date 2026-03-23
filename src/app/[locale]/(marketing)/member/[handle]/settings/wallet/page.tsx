@@ -1,7 +1,7 @@
 'use client'
 import { use, useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import ProfileCard from '@/components/profile/profile-card'
 
 interface Transaction {
@@ -64,10 +64,40 @@ export default function WalletPage() {
   useEffect(() => {
     async function load() {
       try {
+        const sb = createClient()
         const handle = user?.username || (user?.settings?.handle as string)
         if (!handle) throw new Error('no handle')
-        const res = await apiFetch<WalletData>(`/api/public/member/${handle}/wallet`)
-        setData(res)
+
+        // Get the user record by handle/username
+        const { data: memberData, error: memberError } = await sb
+          .from('users')
+          .select('id')
+          .or(`username.eq.${handle},settings->>handle.eq.${handle}`)
+          .maybeSingle()
+
+        if (memberError || !memberData) throw new Error('User not found')
+
+        // Get wallet data
+        const { data: walletData, error: walletError } = await sb
+          .from('wallet')
+          .select('balance, lifetime_earned')
+          .eq('user_id', memberData.id)
+          .maybeSingle()
+
+        // Get transactions
+        const { data: txData, error: txError } = await sb
+          .from('wallet_transactions')
+          .select('id, amount, balance_after, reason, description, created_at')
+          .eq('user_id', memberData.id)
+          .order('created_at', { ascending: true })
+
+        if (walletError || txError) throw new Error('Failed to load wallet')
+
+        setData({
+          balance: walletData?.balance ?? 0,
+          lifetime_earned: walletData?.lifetime_earned ?? 0,
+          transactions: txData ?? [],
+        })
       } catch {
         // Fallback to seed data for testing
         setData(SEED_WALLET)

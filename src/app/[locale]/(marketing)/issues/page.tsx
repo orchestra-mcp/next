@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useThemeStore } from '@/store/theme'
 import { useFeatureFlagsStore } from '@/store/feature-flags'
 import { useTranslations } from 'next-intl'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 
 interface GitHubIssue {
@@ -97,9 +97,11 @@ export default function IssuesPage() {
     let cancelled = false
     async function load() {
       try {
-        const res = await apiFetch<{ issues: GitHubIssue[] }>('/api/public/issues', { skipAuth: true })
+        const sb = createClient()
+        const { data, error } = await sb.from('github_issues').select('*').order('created_at', { ascending: false })
+        if (error) throw error
         if (!cancelled) {
-          setIssues(res.issues)
+          setIssues((data || []) as GitHubIssue[])
           setLoading(false)
         }
       } catch {

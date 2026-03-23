@@ -1,7 +1,7 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { apiFetch } from '@/lib/api'
+import * as db from '@/lib/supabase/queries'
 import type { Workspace } from '@/types/models'
 
 interface WorkspacesState {
@@ -22,7 +22,7 @@ interface WorkspacesActions {
 
 export const useWorkspaceStore = create<WorkspacesState & WorkspacesActions>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       workspaces: [],
       activeWorkspaceId: null,
       loading: false,
@@ -31,15 +31,8 @@ export const useWorkspaceStore = create<WorkspacesState & WorkspacesActions>()(
       fetchWorkspaces: async (teamId) => {
         set({ loading: true, error: null })
         try {
-          if (teamId) {
-            const res = await apiFetch<{ workspaces: Workspace[] }>(`/api/teams/${teamId}/workspaces`)
-            set({ workspaces: res.workspaces, loading: false })
-          } else {
-            // Fetch all user workspaces (personal + team-linked)
-            const res = await apiFetch<Workspace[]>('/api/workspaces')
-            const workspaces = Array.isArray(res) ? res : []
-            set({ workspaces, loading: false })
-          }
+          const items = await db.fetchWorkspaces(teamId)
+          set({ workspaces: items as Workspace[], loading: false })
         } catch (e) {
           set({ error: (e as Error).message, loading: false })
         }
@@ -48,15 +41,12 @@ export const useWorkspaceStore = create<WorkspacesState & WorkspacesActions>()(
       createWorkspace: async (teamId, data) => {
         set({ loading: true, error: null })
         try {
-          const res = await apiFetch<{ workspace: Workspace }>(`/api/teams/${teamId}/workspaces`, {
-            method: 'POST',
-            body: JSON.stringify(data),
-          })
+          const workspace = await db.createWorkspace({ ...data, team_id: teamId }) as Workspace
           set(state => ({
-            workspaces: [...state.workspaces, res.workspace],
+            workspaces: [...state.workspaces, workspace],
             loading: false,
           }))
-          return res.workspace
+          return workspace
         } catch (e) {
           set({ error: (e as Error).message, loading: false })
           throw e
@@ -66,12 +56,9 @@ export const useWorkspaceStore = create<WorkspacesState & WorkspacesActions>()(
       updateWorkspace: async (id, data) => {
         set({ loading: true, error: null })
         try {
-          const res = await apiFetch<{ workspace: Workspace }>(`/api/workspaces/${id}`, {
-            method: 'PATCH',
-            body: JSON.stringify(data),
-          })
+          const workspace = await db.updateWorkspace(id, data) as Workspace
           set(state => ({
-            workspaces: state.workspaces.map(w => w.id === id ? res.workspace : w),
+            workspaces: state.workspaces.map(w => w.id === id ? workspace : w),
             loading: false,
           }))
         } catch (e) {
@@ -83,7 +70,7 @@ export const useWorkspaceStore = create<WorkspacesState & WorkspacesActions>()(
       deleteWorkspace: async (id) => {
         set({ loading: true, error: null })
         try {
-          await apiFetch(`/api/workspaces/${id}`, { method: 'DELETE' })
+          await db.deleteWorkspace(id)
           set(state => ({
             workspaces: state.workspaces.filter(w => w.id !== id),
             activeWorkspaceId: state.activeWorkspaceId === id ? null : state.activeWorkspaceId,

@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 interface Workspace {
   id: string
@@ -62,8 +62,10 @@ export function WorkspaceSelector({ onSelect, onCreateNew }: WorkspaceSelectorPr
       setLoading(true)
       setError(null)
       try {
-        const data = await apiFetch<Workspace[]>('/api/workspaces')
-        if (!cancelled) setWorkspaces(data)
+        const sb = createClient()
+        const { data, error } = await sb.from('workspaces').select('*').order('updated_at', { ascending: false })
+        if (error) throw error
+        if (!cancelled) setWorkspaces(data ?? [])
       } catch (e) {
         if (!cancelled) setError((e as Error).message)
       } finally {

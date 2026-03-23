@@ -1,7 +1,7 @@
 'use client'
 import { use, useState, useEffect, useCallback } from 'react'
 import { useAuthStore } from '@/store/auth'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useProfileTheme } from '@/components/profile/use-profile-theme'
 import ProfileSection from '@/components/profile/profile-section'
 import ProfileCard from '@/components/profile/profile-card'
@@ -43,13 +43,13 @@ export default function SocialLinksPage(props: PageProps) {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [loaded, setLoaded] = useState(false)
 
-  // Load current social links from the member profile API
+  // Load current social links from the member profile
   const loadLinks = useCallback(async () => {
     try {
-      const res = await apiFetch<{ member: { social_links?: SocialLink[] } }>(
-        `/api/public/community/members/${handle}`
-      )
-      const existing = res.member?.social_links
+      const sb = createClient()
+      const { data, error } = await sb.from('users').select('social_links').eq('username', handle).single()
+      if (error) throw error
+      const existing = data?.social_links as SocialLink[] | undefined
       if (Array.isArray(existing) && existing.length > 0) {
         setLinks(existing)
       }
@@ -95,10 +95,9 @@ export default function SocialLinksPage(props: PageProps) {
     setSaving(true)
     setMessage(null)
     try {
-      await apiFetch('/api/users/profile/social-links', {
-        method: 'PUT',
-        body: JSON.stringify({ social_links: links }),
-      })
+      const sb = createClient()
+      const { error } = await sb.from('users').update({ social_links: links }).eq('username', handle)
+      if (error) throw error
       setMessage({ type: 'success', text: 'Social links saved.' })
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Failed to save social links.'

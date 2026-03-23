@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth'
-import { apiFetch, uploadUrl } from '@/lib/api'
+import { uploadUrl } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useProfileTheme } from './use-profile-theme'
 import ProfileCard from './profile-card'
 import AvatarUploadModal from './avatar-upload-modal'
@@ -81,20 +82,16 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
     setSuccessMessage(null)
 
     try {
-      const payload: { name: string; username?: string; bio?: string } = {
-        name: name.trim(),
-      }
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+
+      const payload: Record<string, string> = { name: name.trim() }
       if (username) payload.username = username
       if (bio !== undefined) payload.bio = bio.trim()
 
-      const result = await apiFetch<{
-        name: string
-        username?: string
-        bio?: string
-      }>('/api/users/profile', {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      })
+      const { data: result, error } = await sb.from('users').update(payload).eq('auth_uid', authUser.id).select('name, username, bio').single()
+      if (error) throw error
 
       useAuthStore.setState((state) => ({
         user: state.user

@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 type ApprovalState = 'idle' | 'approving' | 'approved' | 'error'
 
@@ -14,16 +14,18 @@ function CliAuthContent() {
   const [state, setState] = useState<ApprovalState>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
-  // Auth check: redirect to login with return URL if no token
+  // Auth check: redirect to login with return URL if no session
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const token = localStorage.getItem('orchestra_token')
-    if (!token) {
-      const redirect = code
-        ? `/login?redirect=${encodeURIComponent(`/cli-auth?code=${code}`)}`
-        : '/login'
-      router.replace(redirect)
-    }
+    const sb = createClient()
+    sb.auth.getUser().then(({ data }) => {
+      if (!data.user) {
+        const redirect = code
+          ? `/login?redirect=${encodeURIComponent(`/cli-auth?code=${code}`)}`
+          : '/login'
+        router.replace(redirect)
+      }
+    })
   }, [code, router])
 
   // If no code in URL, show an error state
@@ -49,10 +51,17 @@ function CliAuthContent() {
     setState('approving')
     setErrorMsg('')
     try {
-      await apiFetch('/api/auth/device/approve', {
+      // Device approval via edge function
+      const sb = createClient()
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
+      const edgeUrl = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/device-auth'
+      const res = await fetch(edgeUrl, {
         method: 'POST',
-        body: JSON.stringify({ user_code: code }),
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: 'approve', user_code: code }),
       })
+      if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || 'Approval failed') }
       setState('approved')
     } catch (err: any) {
       setState('error')

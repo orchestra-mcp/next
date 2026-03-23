@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { useAuthStore } from '@/store/auth'
 import { useAdminStore } from '@/store/admin'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { apiFetch, isDevSeed } from '@/lib/api'
+import { isDevSeed } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 // ── Social platform definitions ──────────────────────────────
 
@@ -135,8 +136,15 @@ export default function DashboardPage() {
     try {
       const formData = new FormData()
       formData.append('cover', file)
-      const res = await apiFetch<{ ok: boolean; cover_url: string }>('/api/settings/cover', { method: 'POST', body: formData })
-      setCoverUrl(res.cover_url)
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `covers/${authUser.id}-${Date.now()}.${ext}`
+      const { error: uploadError } = await sb.storage.from('uploads').upload(path, file, { upsert: true })
+      if (uploadError) throw uploadError
+      const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(path)
+      setCoverUrl(publicUrl)
     } catch {}
     finally { setCoverUploading(false) }
   }
@@ -172,15 +180,17 @@ export default function DashboardPage() {
       return
     }
     try {
-      await apiFetch('/api/settings/profile', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          public_profile_enabled: publicEnabled,
-          handle, bio,
-          cover_url: coverUrl,
-          social_links: socialLinks.filter(l => l.url.trim()),
-        }),
-      })
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+      const { error } = await sb.from('users').update({
+        is_public: publicEnabled,
+        username: handle,
+        bio,
+        cover_url: coverUrl,
+        social_links: socialLinks.filter(l => l.url.trim()),
+      }).eq('auth_uid', authUser.id)
+      if (error) throw new Error(error.message)
       setSaved(true)
       await fetchMe()
       setTimeout(() => setSaved(false), 2000)

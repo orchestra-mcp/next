@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/store/auth'
 import ProfileCard from '@/components/profile/profile-card'
 
@@ -21,8 +21,18 @@ export default function PasskeysSettingsPage() {
 
   const fetchPasskeys = useCallback(async () => {
     try {
-      const res = await apiFetch<PasskeyItem[]>('/api/settings/passkeys')
-      setPasskeys(Array.isArray(res) ? res : [])
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+
+      const { data, error } = await sb
+        .from('passkeys')
+        .select('id, name, created_at')
+        .eq('user_auth_id', authUser.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw new Error(error.message)
+      setPasskeys(data ?? [])
     } catch {
       // silently fail
     } finally {
@@ -59,7 +69,13 @@ export default function PasskeysSettingsPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this passkey?')) return
     try {
-      await apiFetch(`/api/settings/passkeys/${id}`, { method: 'DELETE' })
+      const sb = createClient()
+      const { error } = await sb
+        .from('passkeys')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw new Error(error.message)
       setPasskeys((prev) => prev.filter((p) => p.id !== id))
     } catch (err) {
       setMessage({ type: 'error', text: (err as Error).message || 'Failed to delete passkey.' })

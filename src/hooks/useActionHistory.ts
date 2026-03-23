@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 export interface ActionHistoryEntry {
   id: string
@@ -39,20 +39,25 @@ export function useActionHistory() {
   }) => {
     setLoading(true)
     try {
-      const params = new URLSearchParams()
-      if (opts?.type) params.set('type', opts.type)
-      if (opts?.limit) params.set('limit', String(opts.limit))
-      if (opts?.offset) params.set('offset', String(opts.offset))
+      const sb = createClient()
+      let query = sb.from('action_history').select('*', { count: 'exact' })
 
-      const qs = params.toString() ? `?${params.toString()}` : ''
-      const path = opts?.tunnelId
-        ? `/api/tunnels/${opts.tunnelId}/actions/history${qs}`
-        : `/api/actions/history${qs}`
+      if (opts?.tunnelId) query = query.eq('tunnel_id', opts.tunnelId)
+      if (opts?.type) query = query.eq('action_type', opts.type)
 
-      const data = await apiFetch<ActionHistoryResponse>(path)
-      setEntries(data.entries ?? [])
-      setTotal(data.total)
-      return data
+      query = query.order('created_at', { ascending: false })
+
+      const limit = opts?.limit ?? 50
+      const offset = opts?.offset ?? 0
+      query = query.range(offset, offset + limit - 1)
+
+      const { data, count, error } = await query
+      if (error) throw error
+
+      const fetchedEntries = (data ?? []) as ActionHistoryEntry[]
+      setEntries(fetchedEntries)
+      setTotal(count ?? 0)
+      return { entries: fetchedEntries, total: count ?? 0, limit, offset }
     } catch {
       setEntries([])
       setTotal(0)

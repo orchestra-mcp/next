@@ -1,6 +1,6 @@
 'use client'
 import { create } from 'zustand'
-import { apiFetch } from '@/lib/api'
+import * as db from '@/lib/supabase/queries'
 
 export interface Session {
   id: string
@@ -69,19 +69,20 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
   loading: false,
   error: null,
 
+  // Sessions — via Supabase PostgREST
   fetchSessions: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ sessions: Session[] }>('/api/settings/sessions')
-      set({ sessions: res.sessions, loading: false })
+      const items = await db.fetchSessions()
+      set({ sessions: items as Session[], loading: false })
     } catch (e) {
-            set({ error: (e as Error).message, loading: false })
+      set({ error: (e as Error).message, loading: false })
     }
   },
 
   revokeSession: async (id) => {
     try {
-      await apiFetch(`/api/settings/sessions/${id}`, { method: 'DELETE' })
+      await db.deleteSession(id)
       set(s => ({ sessions: s.sessions.filter(x => x.id !== id) }))
     } catch (e) {
       set({ error: (e as Error).message })
@@ -89,23 +90,20 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
     }
   },
 
+  // API Keys — via Supabase PostgREST
   fetchApiKeys: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ api_keys: ApiKey[] }>('/api/settings/api-keys')
-      set({ apiKeys: (res.api_keys ?? []).filter(Boolean), loading: false })
+      const items = await db.fetchApiKeys()
+      set({ apiKeys: (items as ApiKey[]).filter(Boolean), loading: false })
     } catch (e) {
-            set({ error: (e as Error).message, loading: false })
+      set({ error: (e as Error).message, loading: false })
     }
   },
 
   createApiKey: async (name) => {
     try {
-      const res = await apiFetch<{ ok: boolean; token: string; key: ApiKey }>('/api/settings/api-keys', {
-        method: 'POST',
-        body: JSON.stringify({ name }),
-      })
-      const created: ApiKey = { ...res.key, key: res.token }
+      const created = await db.createApiKey(name) as ApiKey
       set(s => ({ apiKeys: [created, ...s.apiKeys] }))
       return created
     } catch (e) {
@@ -116,7 +114,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
 
   revokeApiKey: async (id) => {
     try {
-      await apiFetch(`/api/settings/api-keys/${id}`, { method: 'DELETE' })
+      await db.deleteApiKey(id)
       set(s => ({ apiKeys: s.apiKeys.filter(k => k.id !== id) }))
     } catch (e) {
       set({ error: (e as Error).message })
@@ -124,19 +122,20 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
     }
   },
 
+  // Connected Accounts — via Supabase PostgREST
   fetchConnectedAccounts: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ accounts: ConnectedAccount[] }>('/api/settings/connected-accounts')
-      set({ connectedAccounts: res.accounts, loading: false })
+      const items = await db.fetchConnectedAccounts()
+      set({ connectedAccounts: items as ConnectedAccount[], loading: false })
     } catch (e) {
-            set({ error: (e as Error).message, loading: false })
+      set({ error: (e as Error).message, loading: false })
     }
   },
 
   unlinkAccount: async (provider) => {
     try {
-      await apiFetch(`/api/settings/connected-accounts/${provider}`, { method: 'DELETE' })
+      await db.deleteConnectedAccount(provider)
       set(s => ({ connectedAccounts: s.connectedAccounts.filter(a => a.provider !== provider) }))
     } catch (e) {
       set({ error: (e as Error).message })
@@ -144,19 +143,20 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
     }
   },
 
+  // Notifications — via Supabase PostgREST
   fetchNotifications: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ notifications: Notification[] }>('/api/notifications')
-      set({ notifications: res.notifications, loading: false })
+      const items = await db.fetchNotifications()
+      set({ notifications: items as Notification[], loading: false })
     } catch (e) {
-            set({ error: (e as Error).message, loading: false })
+      set({ error: (e as Error).message, loading: false })
     }
   },
 
   markNotificationRead: async (id) => {
     try {
-      await apiFetch(`/api/notifications/${id}/read`, { method: 'PATCH' })
+      await db.markNotificationRead(id)
       set(s => ({
         notifications: s.notifications.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n),
       }))
@@ -172,7 +172,6 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()((set, 
 
   pushRealtimeNotification: (n) => {
     set(s => {
-      // Avoid duplicates (in case fetch already picked it up)
       if (s.notifications.some(x => x.id === n.id)) return s
       return { notifications: [n, ...s.notifications] }
     })

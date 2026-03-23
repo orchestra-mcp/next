@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useAuthStore } from '@/store/auth'
 import { useThemeStore } from '@/store/theme'
 import { useTranslations } from 'next-intl'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 function getPostLoginRedirect(): string {
   const user = useAuthStore.getState().user
@@ -17,7 +17,7 @@ function getPostLoginRedirect(): string {
 export default function RegisterPage() {
   const t = useTranslations()
   const router = useRouter()
-  const { register, loading, error, token, clearError } = useAuthStore()
+  const { register, loginWithOAuth, loading, error, user, clearError } = useAuthStore()
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
   const [name, setName] = useState('')
@@ -27,29 +27,31 @@ export default function RegisterPage() {
   const [registrationDisabled, setRegistrationDisabled] = useState(false)
 
   useEffect(() => {
-    apiFetch<{ value: Record<string, unknown> }>('/api/public/settings/integrations', { skipAuth: true })
-      .then(res => {
+    const sb = createClient()
+    sb.from('settings').select('value').eq('key', 'integrations').maybeSingle()
+      .then(({ data }) => {
+        if (!data?.value || typeof data.value !== 'object') return
         const providers: Record<string, boolean> = {}
-        for (const [k, v] of Object.entries(res.value ?? {})) {
+        for (const [k, v] of Object.entries(data.value as Record<string, unknown>)) {
           if (k.endsWith('_enabled')) providers[k.replace('_enabled', '')] = !!v
         }
         setEnabledProviders(providers)
       })
       .catch(() => {})
 
-    apiFetch<{ value: Record<string, unknown> }>('/api/public/settings/general', { skipAuth: true })
-      .then(res => {
-        if (res.value?.allow_register === false) setRegistrationDisabled(true)
+    sb.from('settings').select('value').eq('key', 'general').maybeSingle()
+      .then(({ data }) => {
+        if ((data?.value as any)?.allow_register === false) setRegistrationDisabled(true)
       })
       .catch(() => {})
   }, [])
 
   // If already logged in (returning user), go to profile
   useEffect(() => {
-    if (token && typeof window !== 'undefined') {
+    if (user && typeof window !== 'undefined') {
       window.location.href = getPostLoginRedirect()
     }
-  }, [token])
+  }, [user])
 
   const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
   const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
@@ -116,7 +118,7 @@ export default function RegisterPage() {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: providers.length === 1 ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 24 }}>
                 {providers.map(s => (
-                  <button key={s.label} type="button" onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/oauth/${s.provider}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, border: `1px solid ${socialBtnBorder}`, background: socialBtnBg, color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <button key={s.label} type="button" onClick={() => loginWithOAuth(s.provider as 'github' | 'google')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, border: `1px solid ${socialBtnBorder}`, background: socialBtnBg, color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
                     <i className={`bx ${s.icon}`} style={{ fontSize: 16 }} /> {s.label}
                   </button>
                 ))}

@@ -1,6 +1,6 @@
 'use client'
 import { create } from 'zustand'
-import { apiFetch, apiList, apiResource } from '@/lib/api'
+import * as db from '@/lib/supabase/queries'
 import type { Project } from '@/types/models'
 
 interface ProjectsState {
@@ -19,7 +19,7 @@ interface ProjectsActions {
 }
 
 export const useProjectStore = create<ProjectsState & ProjectsActions>()(
-  (set, get) => ({
+  (set) => ({
     projects: [],
     loading: false,
     error: null,
@@ -27,13 +27,11 @@ export const useProjectStore = create<ProjectsState & ProjectsActions>()(
     fetchProjects: async (params) => {
       set({ loading: true, error: null })
       try {
-        const url = params?.workspaceId
-          ? `/api/workspaces/${params.workspaceId}/projects`
-          : params?.teamId
-            ? `/api/teams/${params.teamId}/projects`
-            : '/api/projects'
-        const { items } = await apiList<Project>(url)
-        set({ projects: items, loading: false })
+        const items = await db.fetchProjects({
+          workspaceId: params?.workspaceId,
+          teamId: params?.teamId,
+        })
+        set({ projects: items as Project[], loading: false })
       } catch (e) {
         set({ error: (e as Error).message, loading: false })
       }
@@ -42,10 +40,7 @@ export const useProjectStore = create<ProjectsState & ProjectsActions>()(
     createProject: async (workspaceId, data) => {
       set({ loading: true, error: null })
       try {
-        const project = await apiResource<Project>(`/api/workspaces/${workspaceId}/projects`, {
-          method: 'POST',
-          body: JSON.stringify(data),
-        })
+        const project = await db.createProject({ ...data, workspace_id: workspaceId }) as Project
         set(state => ({
           projects: [...state.projects, project],
           loading: false,
@@ -60,10 +55,7 @@ export const useProjectStore = create<ProjectsState & ProjectsActions>()(
     updateProject: async (id, data) => {
       set({ loading: true, error: null })
       try {
-        const project = await apiResource<Project>(`/api/projects/${id}`, {
-          method: 'PATCH',
-          body: JSON.stringify(data),
-        })
+        const project = await db.updateProject(id, data) as Project
         set(state => ({
           projects: state.projects.map(p => p.id === id ? project : p),
           loading: false,
@@ -77,7 +69,7 @@ export const useProjectStore = create<ProjectsState & ProjectsActions>()(
     deleteProject: async (id) => {
       set({ loading: true, error: null })
       try {
-        await apiFetch(`/api/projects/${id}`, { method: 'DELETE' })
+        await db.deleteProject(id)
         set(state => ({
           projects: state.projects.filter(p => p.id !== id),
           loading: false,

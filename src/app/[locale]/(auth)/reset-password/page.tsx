@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useAuthStore } from '@/store/auth'
@@ -34,8 +34,6 @@ function StrengthBar({ password }: { password: string }) {
 export default function ResetPasswordPage() {
   const t = useTranslations()
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const resetToken = searchParams.get('token') ?? ''
   const { resetPassword, loading, error, clearError } = useAuthStore()
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
@@ -46,10 +44,6 @@ export default function ResetPasswordPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [done, setDone] = useState(false)
   const [localError, setLocalError] = useState('')
-
-  useEffect(() => {
-    if (!resetToken) router.replace('/forgot-password')
-  }, [resetToken, router])
 
   const textPrimary = isDark ? '#f8f8f8' : '#0f0f12'
   const textMuted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)'
@@ -76,7 +70,7 @@ export default function ResetPasswordPage() {
     if (password !== confirm) { setLocalError(t('auth.passwordsDoNotMatch')); return }
     if (password.length < 8) { setLocalError(t('auth.passwordTooShort')); return }
     try {
-      await resetPassword(resetToken, password)
+      await resetPassword(password)
       setDone(true)
     } catch {}
   }

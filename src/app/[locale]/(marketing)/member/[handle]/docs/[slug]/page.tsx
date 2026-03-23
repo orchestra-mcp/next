@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { relativeTime } from '@/lib/mcp-parsers'
 import { JsonLd } from '@/components/content/json-ld'
 import { buildJsonLd } from '@/lib/seo'
@@ -52,12 +52,14 @@ export default function PublicDocDetailPage(props: PageProps) {
   useEffect(() => {
     async function load() {
       try {
+        const sb = createClient()
         const [docRes, listRes] = await Promise.all([
-          apiFetch<DocShare>(`/api/public/community/shares/${handle}/doc/${slug}`),
-          apiFetch<{ shares: SidebarDoc[] }>(`/api/public/community/shares/${handle}?entity_type=doc`),
+          sb.from('shares').select('*').eq('author_handle', handle).eq('entity_type', 'doc').eq('slug', slug).eq('visibility', 'public').single(),
+          sb.from('shares').select('id, slug, title, description, entity_type, updated_at, group').eq('author_handle', handle).eq('entity_type', 'doc').eq('visibility', 'public').order('updated_at', { ascending: false }),
         ])
-        setDoc(docRes)
-        setAllDocs(listRes.shares ?? [])
+        if (docRes.error) throw docRes.error
+        setDoc(docRes.data as DocShare)
+        setAllDocs((listRes.data as SidebarDoc[]) ?? [])
       } catch {
         setNotFound(true)
       }

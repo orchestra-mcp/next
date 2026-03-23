@@ -9,7 +9,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { colorTheme } = useThemeStore()
   const [mounted, setMounted] = useState(false)
 
-  // Sync theme/settings from PowerSync (cross-device).
+  // Sync theme/settings from Supabase Realtime (cross-device).
   useSettingsSync()
 
   useEffect(() => {

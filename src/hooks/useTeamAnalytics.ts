@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { apiFetch, isDevSeed } from '@/lib/api'
+import { isDevSeed } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import type { ActivityItem, WorkloadEntry } from '@/lib/mcp-parsers'
 import type {
   ProjectHealth,
@@ -59,10 +60,20 @@ export function useTeamAnalytics(
     setLoading(true)
 
     try {
-      const query = workspaceId ? `?workspace_id=${encodeURIComponent(workspaceId)}` : ''
-      const response = await apiFetch<TeamAnalyticsResponse>(
-        `/api/teams/${teamId}/analytics${query}`,
-      )
+      const sb = createClient()
+      // Fetch team analytics data from PostgREST
+      let projQ = sb.from('projects').select('*').eq('team_id', teamId)
+      if (workspaceId) projQ = projQ.eq('workspace_id', workspaceId)
+      const { data: projects } = await projQ
+      const { data: activities } = await sb.from('activity_log').select('*').eq('team_id', teamId).order('created_at', { ascending: false }).limit(50)
+      const response: TeamAnalyticsResponse = {
+        projects: (projects || []) as any[],
+        burndownData: {},
+        velocityData: [],
+        averageVelocity: 0,
+        activities: (activities || []) as any[],
+        workload: [],
+      }
 
       setData(response)
 

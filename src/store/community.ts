@@ -1,6 +1,6 @@
 'use client'
 import { create } from 'zustand'
-import { apiFetch } from '@/lib/api'
+import * as db from '@/lib/supabase/queries'
 
 export interface CommunityMember {
   id: number
@@ -174,9 +174,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
   fetchMembers: async (page = 1, search = '') => {
     set({ loading: true, error: null })
     try {
-      const q = new URLSearchParams({ page: String(page), search })
-      const res = await apiFetch<{ members: CommunityMember[]; total: number }>(`/api/public/community/members?${q}`, { skipAuth: true })
-      set({ members: res.members || [], membersTotal: res.total || 0, loading: false })
+      const res = await db.fetchCommunityMembers(page, search)
+      set({ members: (res.members || []) as CommunityMember[], membersTotal: res.total || 0, loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -185,8 +184,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
   fetchMemberProfile: async (handle) => {
     set({ loading: true, error: null, profile: null })
     try {
-      const res = await apiFetch<{ profile: PublicProfile }>(`/api/public/community/members/${handle}`)
-      let profile = res.profile
+      const raw = await db.fetchMemberProfile(handle)
+      let profile = raw as unknown as PublicProfile
 
       // Merge seed data only for fields the API doesn't return yet
       // NEVER override privacy flags or fill hidden data from seed
@@ -227,8 +226,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
   fetchPosts: async (handle, page = 1) => {
     set({ loading: true, error: null })
     try {
-      const res = await apiFetch<{ posts: CommunityPost[] }>(`/api/public/community/members/${handle}/posts?page=${page}`, { skipAuth: true })
-      set({ posts: res.posts || [], loading: false })
+      const items = await db.fetchCommunityPosts(handle, page)
+      set({ posts: (items || []) as CommunityPost[], loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -237,8 +236,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
   fetchPost: async (id) => {
     set({ loading: true, error: null, currentPost: null })
     try {
-      const res = await apiFetch<{ post: CommunityPost }>(`/api/public/community/posts/${id}`, { skipAuth: true })
-      set({ currentPost: res.post, loading: false })
+      const post = await db.fetchCommunityPost(id)
+      set({ currentPost: post as CommunityPost, loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -246,8 +245,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
 
   fetchComments: async (postId) => {
     try {
-      const res = await apiFetch<{ comments: PostComment[] }>(`/api/public/community/posts/${postId}/comments`, { skipAuth: true })
-      set({ comments: res.comments || [] })
+      const items = await db.fetchPostComments(postId)
+      set({ comments: (items || []) as PostComment[] })
     } catch (e) {
       set({ error: (e as Error).message })
     }
@@ -255,13 +254,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
 
   addComment: async (postId, content, parentId) => {
     try {
-      const body: Record<string, unknown> = { content }
-      if (parentId != null) body.parent_id = parentId
-      const res = await apiFetch<{ comment: PostComment }>(`/api/community/posts/${postId}/comments`, {
-        method: 'POST',
-        body: JSON.stringify(body),
-      })
-      set(s => ({ comments: [...s.comments, res.comment] }))
+      const comment = await db.createPostComment(postId, content, parentId)
+      set(s => ({ comments: [...s.comments, comment as PostComment] }))
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -270,7 +264,7 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
 
   likePost: async (postId) => {
     try {
-      await apiFetch(`/api/community/posts/${postId}/like`, { method: 'POST' })
+      await db.likeCommunityPost(postId)
       set(s => ({
         posts: s.posts.map(p => p.id === postId ? { ...p, likes_count: p.liked_by_me ? p.likes_count - 1 : p.likes_count + 1, liked_by_me: !p.liked_by_me } : p),
         currentPost: s.currentPost?.id === postId ? { ...s.currentPost, likes_count: s.currentPost.liked_by_me ? s.currentPost.likes_count - 1 : s.currentPost.likes_count + 1, liked_by_me: !s.currentPost.liked_by_me } : s.currentPost,
@@ -282,8 +276,15 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
 
   fetchRelatedPosts: async (postId) => {
     try {
-      const res = await apiFetch<{ posts: CommunityPost[] }>(`/api/public/community/posts/${postId}/related`, { skipAuth: true })
-      set({ relatedPosts: res.posts || [] })
+      // Related posts: fetch posts with overlapping tags (approximation via PostgREST)
+      const current = get().currentPost
+      if (!current?.tags?.length) { set({ relatedPosts: [] }); return }
+      const sb = (await import('@/lib/supabase/client')).createClient()
+      const { data } = await sb.from('community_posts').select('*')
+        .overlaps('tags', current.tags)
+        .neq('id', postId)
+        .limit(5)
+      set({ relatedPosts: (data || []) as CommunityPost[] })
     } catch (e) {
       set({ error: (e as Error).message })
     }
@@ -291,11 +292,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
 
   createPost: async (data) => {
     try {
-      const res = await apiFetch<{ post: CommunityPost }>('/api/community/posts', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
-      set(s => ({ posts: [res.post, ...s.posts] }))
+      const post = await db.createCommunityPost(data as Record<string, unknown>)
+      set(s => ({ posts: [post as CommunityPost, ...s.posts] }))
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -304,13 +302,10 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
 
   updatePost: async (id, data) => {
     try {
-      const res = await apiFetch<{ post: CommunityPost }>(`/api/community/posts/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      })
+      const post = await db.updateCommunityPost(id, data as Record<string, unknown>)
       set(s => ({
-        posts: s.posts.map(p => p.id === id ? { ...p, ...res.post } : p),
-        currentPost: s.currentPost?.id === id ? { ...s.currentPost, ...res.post } : s.currentPost,
+        posts: s.posts.map(p => p.id === id ? { ...p, ...post } : p),
+        currentPost: s.currentPost?.id === id ? { ...s.currentPost, ...(post as CommunityPost) } : s.currentPost,
       }))
     } catch (e) {
       set({ error: (e as Error).message })
@@ -320,7 +315,7 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
 
   deletePost: async (id) => {
     try {
-      await apiFetch(`/api/community/posts/${id}`, { method: 'DELETE' })
+      await db.deleteCommunityPost(id)
       set(s => ({
         posts: s.posts.filter(p => p.id !== id),
         currentPost: s.currentPost?.id === id ? null : s.currentPost,
@@ -333,9 +328,9 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
 
   fetchActivity: async (handle) => {
     try {
-      const res = await apiFetch<{ activity: ActivityItem[] }>(`/api/public/community/members/${handle}/activity`, { skipAuth: true })
-      const items = (res.activity || []).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      set({ activity: items })
+      const items = await db.fetchMemberActivity(handle)
+      const sorted = ((items || []) as ActivityItem[]).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      set({ activity: sorted })
     } catch (e) {
       set({ error: (e as Error).message })
     }
@@ -344,9 +339,8 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
   fetchSharedEntities: async (handle, type) => {
     set({ loading: true, error: null })
     try {
-      const q = type ? `?type=${encodeURIComponent(type)}` : ''
-      const res = await apiFetch<{ data: SharedEntity[]; count: number }>(`/api/public/community/shared/${handle}${q}`, { skipAuth: true })
-      set({ sharedEntities: res.data || [], loading: false })
+      const items = await db.fetchSharedEntities(handle, type)
+      set({ sharedEntities: (items || []) as SharedEntity[], loading: false })
     } catch (e) {
       set({ error: (e as Error).message, loading: false })
     }
@@ -354,10 +348,7 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
 
   shareEntity: async (data) => {
     try {
-      await apiFetch<{ status: string }>('/api/community/share', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
+      await db.createShare(data as Record<string, unknown>)
     } catch (e) {
       set({ error: (e as Error).message })
       throw e
@@ -366,7 +357,7 @@ export const useCommunityStore = create<CommunityState & CommunityActions>()((se
 
   unshareEntity: async (id) => {
     try {
-      await apiFetch<{ status: string }>(`/api/community/share/${id}`, { method: 'DELETE' })
+      await db.deleteShare(id)
       set(s => ({ sharedEntities: s.sharedEntities.filter(e => e.id !== id) }))
     } catch (e) {
       set({ error: (e as Error).message })

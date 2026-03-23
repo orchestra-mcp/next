@@ -1,6 +1,7 @@
 'use client'
 import { create } from 'zustand'
-import { apiFetch } from '@/lib/api'
+import * as db from '@/lib/supabase/queries'
+import { createClient } from '@/lib/supabase/client'
 import type { Delegation } from '@/types/models'
 
 interface DelegationsState {
@@ -26,8 +27,8 @@ export const useDelegationsStore = create<DelegationsState & DelegationsActions>
     fetchMyDelegations: async () => {
       set({ loading: true, error: null })
       try {
-        const res = await apiFetch<{ delegations: Delegation[] }>('/api/delegations')
-        const delegations = res.delegations ?? []
+        const items = await db.fetchDelegations()
+        const delegations = (items ?? []) as Delegation[]
         const pendingCount = delegations.filter(d => d.status === 'pending').length
         set({ delegations, pendingCount, loading: false })
       } catch (e) {
@@ -38,13 +39,16 @@ export const useDelegationsStore = create<DelegationsState & DelegationsActions>
     respondToDelegation: async (id, response) => {
       set({ error: null })
       try {
-        const updated = await apiFetch<Delegation>(`/api/delegations/${id}/respond`, {
-          method: 'POST',
-          body: JSON.stringify({ response }),
-        })
+        const sb = createClient()
+        const { data, error } = await sb.from('delegations')
+          .update({ status: 'answered', response, updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .select()
+          .single()
+        if (error) throw new Error(error.message)
         set(state => {
           const delegations = state.delegations.map(d =>
-            d.id === id ? { ...d, ...updated, status: 'answered' as const, response } : d
+            d.id === id ? { ...d, ...data, status: 'answered' as const, response } : d
           )
           const pendingCount = delegations.filter(d => d.status === 'pending').length
           return { delegations, pendingCount }

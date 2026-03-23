@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/store/auth'
 import { relativeTime } from '@/lib/mcp-parsers'
 import ProfileSection from '@/components/profile/profile-section'
@@ -33,15 +33,16 @@ export default function PublicDocsPage(props: PageProps) {
   useEffect(() => {
     async function load() {
       try {
+        const sb = createClient()
         let shares: DocShare[] = []
         if (isOwner) {
-          const res = await apiFetch<{ shares: DocShare[] }>('/api/community/shares?entity_type=doc')
-          shares = res.shares ?? []
+          const { data, error } = await sb.from('shares').select('*').eq('entity_type', 'doc').order('updated_at', { ascending: false })
+          if (error) throw error
+          shares = data ?? []
         } else {
-          const res = await apiFetch<{ shares: DocShare[] }>(
-            `/api/public/community/shares/${handle}?entity_type=doc`, { skipAuth: true }
-          )
-          shares = res.shares ?? []
+          const { data, error } = await sb.from('shares').select('*').eq('author_handle', handle).eq('entity_type', 'doc').eq('visibility', 'public').order('updated_at', { ascending: false })
+          if (error) throw error
+          shares = data ?? []
         }
         setDocs(shares)
       } catch {
@@ -58,10 +59,9 @@ export default function PublicDocsPage(props: PageProps) {
     setToggling(doc.id)
     const newVis = doc.visibility === 'public' ? 'private' : 'public'
     try {
-      await apiFetch(`/api/community/shares/${doc.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ visibility: newVis }),
-      })
+      const sb = createClient()
+      const { error } = await sb.from('shares').update({ visibility: newVis }).eq('id', doc.id)
+      if (error) throw error
       setDocs(prev => prev.map(d => d.id === doc.id ? { ...d, visibility: newVis } : d))
     } catch {}
     setToggling(null)

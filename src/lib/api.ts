@@ -1,8 +1,15 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
+/** Get MCP token for gateway API calls (tunnels, MCP endpoints only). */
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem('orchestra_token')
+  try {
+    // Lazy import to avoid circular dependency
+    const state = JSON.parse(localStorage.getItem('orchestra-auth') ?? '{}')
+    return state?.state?.mcpToken ?? null
+  } catch {
+    return null
+  }
 }
 
 export function isDevSeed(): boolean {

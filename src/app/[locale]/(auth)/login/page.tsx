@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth'
 import { useRoleStore } from '@/store/roles'
 import { useThemeStore } from '@/store/theme'
 import { useTranslations } from 'next-intl'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 function getPostLoginRedirect(): string {
   const user = useAuthStore.getState().user
@@ -26,7 +26,7 @@ const DEV_SEEDS = [
 export default function LoginPage() {
   const t = useTranslations()
   const router = useRouter()
-  const { login, loginWithPasskey, loading, error, token, clearError, user } = useAuthStore()
+  const { login, loginWithPasskey, loginWithOAuth, loading, error, user, clearError } = useAuthStore()
   const { seedAdmin, setCurrentRole } = useRoleStore()
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
@@ -41,10 +41,12 @@ export default function LoginPage() {
   useEffect(() => {
     setPasskeySupported(typeof window !== 'undefined' && !!window.PublicKeyCredential)
     setShowDevPanel(localStorage.getItem('show_dev_panel') === 'true')
-    apiFetch<{ value: Record<string, unknown> }>('/api/public/settings/integrations', { skipAuth: true })
-      .then(res => {
+    const sb = createClient()
+    sb.from('settings').select('value').eq('key', 'integrations').maybeSingle()
+      .then(({ data }) => {
+        if (!data?.value || typeof data.value !== 'object') return
         const providers: Record<string, boolean> = {}
-        for (const [k, v] of Object.entries(res.value ?? {})) {
+        for (const [k, v] of Object.entries(data.value as Record<string, unknown>)) {
           if (k.endsWith('_enabled')) providers[k.replace('_enabled', '')] = !!v
         }
         setEnabledProviders(providers)
@@ -52,17 +54,15 @@ export default function LoginPage() {
       .catch(() => {})
   }, [])
 
-  useEffect(() => { if (token) window.location.href = getPostLoginRedirect() }, [token])
+  useEffect(() => { if (user) window.location.href = getPostLoginRedirect() }, [user])
 
   const handleDevSeed = (seed: typeof DEV_SEEDS[0]) => {
     // Inject seed data into role store + set the chosen role
     seedAdmin()
     setCurrentRole(seed.role)
-    // Write a sentinel dev token so auth guard passes and apiFetch guards skip
-    localStorage.setItem('orchestra_token', 'dev_seed_token')
-    document.cookie = 'orchestra_token=dev_seed_token;path=/;max-age=86400;SameSite=Lax'
+    // Inject fake user for dev mode
     const fakeUser = { id: DEV_SEEDS.indexOf(seed) + 1, name: seed.label + ' (Dev)', email: seed.email }
-    useAuthStore.setState({ token: 'dev_seed_token', user: fakeUser })
+    useAuthStore.setState({ mcpToken: 'dev_seed_token', user: fakeUser })
     window.location.href = getPostLoginRedirect()
   }
 
@@ -126,7 +126,7 @@ export default function LoginPage() {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: providers.length === 1 ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 24 }}>
                 {providers.map(s => (
-                  <button key={s.label} type="button" onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/oauth/${s.provider}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, border: `1px solid ${socialBtnBorder}`, background: socialBtnBg, color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <button key={s.label} type="button" onClick={() => loginWithOAuth(s.provider as 'github' | 'google')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, border: `1px solid ${socialBtnBorder}`, background: socialBtnBg, color: textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
                     <i className={`bx ${s.icon}`} style={{ fontSize: 16 }} /> {s.label}
                   </button>
                 ))}

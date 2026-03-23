@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useRoleStore } from '@/store/roles'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -81,11 +81,12 @@ export default function WorkflowsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const endpoint = team?.id ? `/api/teams/${team.id}/workflows` : '/api/workflows'
-    apiFetch<{ items?: Workflow[]; data?: Workflow[] } | Workflow[]>(endpoint)
-      .then(res => {
-        const items = Array.isArray(res) ? res : (res.items ?? res.data ?? [])
-        setWorkflows(items)
+    const sb = createClient()
+    let q = sb.from('workflows').select('*').order('created_at', { ascending: false })
+    if (team?.id) q = q.eq('team_id', team.id)
+    q.then(({ data, error }) => {
+        if (error) throw error
+        setWorkflows((data || []) as Workflow[])
       })
       .catch(() => setWorkflows([]))
       .finally(() => setLoading(false))

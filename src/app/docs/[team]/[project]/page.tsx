@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
 interface PublicDoc {
@@ -43,12 +43,13 @@ export default function DocsIndexPage() {
     if (!team || !project) return
     setLoading(true)
     setError(null)
-    apiFetch<PublicDoc[]>(`/api/public/docs/${team}/${project}`, { skipAuth: true })
-      .then(data => {
-        const published = (data || []).filter(d => d.published)
-        setDocs(published)
+    const sb = createClient()
+    sb.from('docs').select('*').eq('team_slug', team).eq('project_slug', project).eq('published', true).order('order', { ascending: true })
+      .then(({ data, error: fetchErr }) => {
+        if (fetchErr) throw fetchErr
+        setDocs((data || []) as PublicDoc[])
       })
-      .catch(err => {
+      .catch((err: any) => {
         console.error('[public-docs] fetch error:', err)
         setError(err.message || 'Failed to load docs')
       })

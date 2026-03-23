@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useCommunityStore } from '@/store/community'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useProfileTheme } from './use-profile-theme'
 import ProfileEditForm from './profile-edit-form'
 import { SearchableSelect } from '@/components/ui/searchable-select'
@@ -54,10 +54,11 @@ function SocialLinksPanel() {
     setSaving(true)
     setSaved(false)
     try {
-      await apiFetch('/api/settings/profile', {
-        method: 'PATCH',
-        body: JSON.stringify({ social_links: links.filter(l => l.url.trim()) }),
-      })
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+      const { error } = await sb.from('user_settings').update({ social_links: links.filter(l => l.url.trim()) }).eq('user_id', authUser.id)
+      if (error) throw error
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {}
@@ -164,10 +165,11 @@ function SponsorsPanel() {
     setSaving(true)
     setSaved(false)
     try {
-      await apiFetch('/api/settings/profile', {
-        method: 'PATCH',
-        body: JSON.stringify({ sponsors: sponsors.filter(s => s.name.trim()) }),
-      })
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+      const { error } = await sb.from('user_settings').update({ sponsors: sponsors.filter(s => s.name.trim()) }).eq('user_id', authUser.id)
+      if (error) throw error
       await fetchMe()
       const h = profile?.handle || user?.username
       if (h) await fetchMemberProfile(h)
@@ -268,10 +270,11 @@ function AppearancePanel() {
     setSaving(true)
     setSaved(false)
     try {
-      await apiFetch('/api/settings/profile', {
-        method: 'PATCH',
-        body: JSON.stringify({ appearance: { theme: profileTheme, accent: accentColor } }),
-      })
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+      const { error } = await sb.from('user_settings').update({ appearance: { theme: profileTheme, accent: accentColor } }).eq('user_id', authUser.id)
+      if (error) throw error
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {}
@@ -341,10 +344,11 @@ function PrivacyPanel() {
     setSaving(true)
     setSaved(false)
     try {
-      await apiFetch('/api/settings/profile', {
-        method: 'PATCH',
-        body: JSON.stringify({ public_profile_enabled: isPublic, show_comments_on_profile: showComments }),
-      })
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+      const { error } = await sb.from('user_settings').update({ public_profile_enabled: isPublic, show_comments_on_profile: showComments }).eq('user_id', authUser.id)
+      if (error) throw error
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {}

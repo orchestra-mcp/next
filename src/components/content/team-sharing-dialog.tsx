@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { apiFetch, uploadUrl } from '@/lib/api'
+import { uploadUrl } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 
 interface Team {
   id: number
@@ -30,9 +31,11 @@ export function TeamSharingDialog({
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    apiFetch<{ teams: Team[] }>('/api/teams')
-      .then((res) => {
-        if (!cancelled) setTeams(res.teams)
+    const sb = createClient()
+    sb.from('teams').select('id, name, avatar_url')
+      .then(({ data, error }) => {
+        if (error) throw error
+        if (!cancelled) setTeams(data ?? [])
       })
       .catch(() => {
         if (!cancelled) setTeams([])
@@ -49,9 +52,9 @@ export function TeamSharingDialog({
     if (!selectedTeamId || submitting) return
     setSubmitting(true)
     try {
-      await apiFetch(`/api/community/teams/${selectedTeamId}/content/${contentId}/share`, {
-        method: 'POST',
-      })
+      const sb = createClient()
+      const { error } = await sb.from('team_content_shares').insert({ team_id: selectedTeamId, content_id: contentId })
+      if (error) throw error
       onShared()
     } catch {
       // error handled silently
@@ -64,9 +67,9 @@ export function TeamSharingDialog({
     if (!currentTeamId || submitting) return
     setSubmitting(true)
     try {
-      await apiFetch(`/api/community/teams/${currentTeamId}/content/${contentId}/share`, {
-        method: 'DELETE',
-      })
+      const sb = createClient()
+      const { error } = await sb.from('team_content_shares').delete().eq('team_id', currentTeamId).eq('content_id', contentId)
+      if (error) throw error
       onShared()
     } catch {
       // error handled silently

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRoleStore } from '@/store/roles'
-import { apiFetch, isDevSeed } from '@/lib/api'
+import { isDevSeed } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
 interface AutomationCounts {
@@ -21,9 +22,10 @@ export function TeamAutomationWidget() {
       return
     }
 
+    const sb = createClient()
     Promise.all([
-      apiFetch<{ skills: unknown[] }>(`/api/teams/${team.id}/skills`).then(r => r.skills?.length ?? 0).catch(() => 0),
-      apiFetch<{ agents: unknown[] }>(`/api/teams/${team.id}/agents`).then(r => r.agents?.length ?? 0).catch(() => 0),
+      sb.from('team_skills').select('id', { count: 'exact', head: true }).eq('team_id', team.id).then(({ count }) => count ?? 0).catch(() => 0),
+      sb.from('team_agents').select('id', { count: 'exact', head: true }).eq('team_id', team.id).then(({ count }) => count ?? 0).catch(() => 0),
     ]).then(([skills, agents]) => {
       setCounts({ skills, agents })
     }).finally(() => setLoading(false))

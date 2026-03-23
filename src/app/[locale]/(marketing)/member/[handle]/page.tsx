@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useFeatureFlagsStore } from '@/store/feature-flags'
 import { useCommunityStore } from '@/store/community'
 import { useAuthStore } from '@/store/auth'
-import { apiFetch, uploadUrl } from '@/lib/api'
+import { uploadUrl } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useProfileTheme } from '@/components/profile/use-profile-theme'
 import ProfileCard from '@/components/profile/profile-card'
 import PostEmbed from '@/components/profile/post-embed'
@@ -290,8 +291,9 @@ export default function MemberProfilePage(props: PageProps) {
       next.add(postId)
       if (!inlineComments[postId]) {
         try {
-          const res = await apiFetch<{ comments: any[] }>(`/api/public/community/posts/${postId}/comments`, { skipAuth: true })
-          setInlineComments(prev => ({ ...prev, [postId]: res.comments || [] }))
+          const sb = createClient()
+          const { data } = await sb.from('comments').select('*').eq('post_id', postId).order('created_at', { ascending: true })
+          setInlineComments(prev => ({ ...prev, [postId]: data || [] }))
         } catch {}
       }
     }
@@ -305,8 +307,9 @@ export default function MemberProfilePage(props: PageProps) {
     try {
       await addComment(postId, text)
       setInlineCommentText(prev => ({ ...prev, [postId]: '' }))
-      const res = await apiFetch<{ comments: any[] }>(`/api/public/community/posts/${postId}/comments`, { skipAuth: true })
-      setInlineComments(prev => ({ ...prev, [postId]: res.comments || [] }))
+      const sb = createClient()
+      const { data } = await sb.from('comments').select('*').eq('post_id', postId).order('created_at', { ascending: true })
+      setInlineComments(prev => ({ ...prev, [postId]: data || [] }))
     } catch {}
     setCommentSubmitting(null)
   }

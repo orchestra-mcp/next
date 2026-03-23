@@ -3,7 +3,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuthStore } from '@/store/auth'
-import { apiFetch, uploadUrl } from '@/lib/api'
+import { uploadUrl } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useProfileTheme } from './use-profile-theme'
 
 // -- Types ----------------------------------------------------
@@ -249,26 +250,29 @@ export default function CoverUploadModal({
         )
       })
 
-      // Build form data
-      const formData = new FormData()
-      formData.append('cover', blob, 'cover.png')
+      // Upload via Supabase Storage
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
 
-      // Upload via API
-      const result = await apiFetch<{ ok: boolean; cover_url: string }>(
-        '/api/settings/cover',
-        {
-          method: 'POST',
-          body: formData,
-        },
-      )
+      const filePath = `covers/${authUser.id}-${Date.now()}.png`
+      const { error: uploadError } = await sb.storage.from('uploads').upload(filePath, blob, { contentType: 'image/png', upsert: true })
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = sb.storage.from('uploads').getPublicUrl(filePath)
+      const coverUrl = urlData.publicUrl
+
+      // Update user profile with new cover URL
+      const { error: updateError } = await sb.from('users').update({ cover_url: coverUrl }).eq('auth_uid', authUser.id)
+      if (updateError) throw updateError
 
       // Update auth store
       useAuthStore.setState((state) => ({
-        user: state.user ? { ...state.user, cover_url: result.cover_url } : null,
+        user: state.user ? { ...state.user, cover_url: coverUrl } : null,
       }))
 
       // Notify parent
-      onUploaded(result.cover_url)
+      onUploaded(coverUrl)
 
       // Close modal
       onClose()

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useRoleStore } from '@/store/roles'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import ProfileCard from '@/components/profile/profile-card'
 
 interface BadgeDef {
@@ -30,8 +30,14 @@ export default function AdminBadgesPage() {
 
   const load = useCallback(async () => {
     try {
-      const res = await apiFetch<{ badges: BadgeDef[] }>('/api/admin/badges')
-      setBadges(res.badges ?? [])
+      const sb = createClient()
+      const { data, error } = await sb
+        .from('badges')
+        .select('*')
+        .order('sort_order', { ascending: true })
+
+      if (error) throw error
+      setBadges(data ?? [])
     } catch {}
     setLoading(false)
   }, [])
@@ -44,10 +50,38 @@ export default function AdminBadgesPage() {
     if (!editing) return
     setSaving(true)
     try {
+      const sb = createClient()
       if (editing.id) {
-        await apiFetch(`/api/admin/badges/${editing.id}`, { method: 'PUT', body: JSON.stringify(editing) })
+        const { error } = await sb
+          .from('badges')
+          .update({
+            slug: editing.slug,
+            name: editing.name,
+            description: editing.description,
+            icon: editing.icon,
+            color: editing.color,
+            category: editing.category,
+            points_required: editing.points_required,
+            auto_award: editing.auto_award,
+            sort_order: editing.sort_order,
+          })
+          .eq('id', editing.id)
+        if (error) throw error
       } else {
-        await apiFetch('/api/admin/badges', { method: 'POST', body: JSON.stringify(editing) })
+        const { error } = await sb
+          .from('badges')
+          .insert({
+            slug: editing.slug,
+            name: editing.name,
+            description: editing.description,
+            icon: editing.icon,
+            color: editing.color,
+            category: editing.category,
+            points_required: editing.points_required,
+            auto_award: editing.auto_award,
+            sort_order: editing.sort_order,
+          })
+        if (error) throw error
       }
       setEditing(null)
       await load()
@@ -57,7 +91,8 @@ export default function AdminBadgesPage() {
 
   const remove = async (id: number) => {
     if (!confirm('Delete this badge?')) return
-    await apiFetch(`/api/admin/badges/${id}`, { method: 'DELETE' })
+    const sb = createClient()
+    await sb.from('badges').delete().eq('id', id)
     await load()
   }
 

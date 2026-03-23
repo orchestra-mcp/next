@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useCommunityStore } from '@/store/community'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Switch } from '@orchestra-mcp/ui'
 import ProfileCard from '@/components/profile/profile-card'
@@ -88,17 +88,28 @@ export default function ProfileSettingsPage() {
 
   const save = async () => {
     try {
-      await apiFetch('/api/settings/profile', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          name, email, phone, gender, position, timezone,
-          public_profile_enabled: publicEnabled,
-          ...(profileHandle.trim() ? { handle: profileHandle.trim() } : {}),
-          bio,
-          about,
-          social_links: socialLinks.filter(l => l.url.trim()),
-        }),
-      })
+      const sb = createClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+
+      const currentSettings = (user?.settings ?? {}) as Record<string, unknown>
+      const updatedSettings = {
+        ...currentSettings,
+        phone, gender, position, timezone,
+        public_profile_enabled: publicEnabled,
+        ...(profileHandle.trim() ? { handle: profileHandle.trim() } : {}),
+        bio,
+        about,
+        social_links: socialLinks.filter(l => l.url.trim()),
+      }
+
+      const { error } = await sb
+        .from('users')
+        .update({ name, email, settings: updatedSettings })
+        .eq('auth_id', authUser.id)
+
+      if (error) throw new Error(error.message)
+
       await fetchMe()
       // Refresh community profile so sidebar reflects changes
       const h = profileHandle || profile?.handle || user?.username

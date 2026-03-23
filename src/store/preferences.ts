@@ -1,7 +1,7 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { apiFetch } from '@/lib/api'
+import * as db from '@/lib/supabase/queries'
 import { isRTL, getDirection } from '@/i18n/config'
 import type { Locale } from '@/i18n/config'
 
@@ -53,8 +53,8 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
       fetchPreferences: async () => {
         set({ loading: true })
         try {
-          const res = await apiFetch<{ preferences: Partial<UserPreferences> }>('/api/settings/preferences')
-          const merged = { ...DEFAULT_PREFERENCES, ...(res.preferences ?? {}) }
+          const val = await db.fetchPreferences()
+          const merged = { ...DEFAULT_PREFERENCES, ...(val as Partial<UserPreferences>) }
           set({ preferences: merged, loaded: true, loading: false })
         } catch {
           set({ loaded: true, loading: false })
@@ -74,10 +74,7 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
         }
 
         try {
-          await apiFetch('/api/settings/preferences', {
-            method: 'PATCH',
-            body: JSON.stringify({ [key]: value }),
-          })
+          await db.updatePreferences({ [key]: value })
         } catch (e) {
           // Revert on error — refetch
           get().fetchPreferences()
@@ -87,10 +84,7 @@ export const usePreferencesStore = create<PreferencesState & PreferencesActions>
       updatePreferences: async (partial) => {
         set(s => ({ preferences: { ...s.preferences, ...partial } }))
         try {
-          await apiFetch('/api/settings/preferences', {
-            method: 'PATCH',
-            body: JSON.stringify(partial),
-          })
+          await db.updatePreferences(partial as Record<string, unknown>)
         } catch (e) {
           get().fetchPreferences()
         }

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useThemeStore } from '@/store/theme'
 import { useTranslations } from 'next-intl'
 import { useAuthStore } from '@/store/auth'
-import { apiFetch } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { posts } from './posts'
 
 const tagColors: Record<string, { bg: string; border: string; text: string }> = {
@@ -139,15 +139,18 @@ function CommentsSection({ slug, isDark, textPrimary, textMuted, borderColor }: 
   // Lazy-load comments on first render
   if (!loaded) {
     setLoaded(true)
-    apiFetch<Comment[]>(`/api/blog/${slug}/comments`, { skipAuth: true }).then(setComments).catch(() => {})
+    const sb = createClient()
+    sb.from('post_comments').select('*').eq('post_slug', slug).order('created_at', { ascending: false }).then(({ data }) => { if (data) setComments(data as Comment[]) }).catch(() => {})
   }
 
   const handleSubmit = async () => {
     if (!body.trim() || submitting) return
     setSubmitting(true)
     try {
-      const c = await apiFetch<Comment>(`/api/blog/${slug}/comments`, { method: 'POST', body: JSON.stringify({ body }) })
-      setComments(prev => [c, ...prev])
+      const sb = createClient()
+      const { data: c, error } = await sb.from('post_comments').insert({ post_slug: slug, body }).select().single()
+      if (error) throw error
+      setComments(prev => [c as Comment, ...prev])
       setBody('')
     } catch {}
     setSubmitting(false)
