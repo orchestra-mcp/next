@@ -17,7 +17,7 @@ export default function PrivacyPage(props: PageProps) {
 
   const { colors } = useProfileTheme()
   const { profile } = useCommunityStore()
-  const { user, token } = useAuthStore()
+  const { user, mcpToken: token } = useAuthStore()
 
   const [showComments, setShowComments] = useState(true)
   const [isPublic, setIsPublic] = useState(true)

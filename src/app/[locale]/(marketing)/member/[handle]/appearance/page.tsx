@@ -33,7 +33,7 @@ export default function AppearancePage(props: PageProps) {
 
   const { isDark, colors } = useProfileTheme()
   const { profile } = useCommunityStore()
-  const { user, token } = useAuthStore()
+  const { user, mcpToken: token } = useAuthStore()
 
   const [profileTheme, setProfileTheme] = useState('system')
   const [accentColor, setAccentColor] = useState('#00e5ff')

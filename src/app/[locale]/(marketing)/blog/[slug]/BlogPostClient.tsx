@@ -130,7 +130,7 @@ function RelatedPosts({ currentSlug, isDark, textPrimary, textMuted, borderColor
 function CommentsSection({ slug, isDark, textPrimary, textMuted, borderColor }: {
   slug: string; isDark: boolean; textPrimary: string; textMuted: string; borderColor: string
 }) {
-  const { token, user } = useAuthStore()
+  const { mcpToken: token, user } = useAuthStore()
   const [comments, setComments] = useState<Comment[]>([])
   const [loaded, setLoaded] = useState(false)
   const [body, setBody] = useState('')

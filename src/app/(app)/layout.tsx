@@ -12,7 +12,7 @@ import { MarketingFooter } from '@/components/layout/marketing-footer'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const { token, user, fetchMe, impersonating, exitImpersonation } = useAuthStore()
+  const { mcpToken, user, fetchMe, impersonating, exitImpersonation } = useAuthStore()
   const { fetchMyRole } = useRoleStore()
   const { fetchNotifications } = useSettingsStore()
 
@@ -21,15 +21,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Auth + initial data loading
   useEffect(() => {
-    if (!token) { router.push('/login'); return }
+    if (!mcpToken) { router.push('/login'); return }
     if (!user) fetchMe()
     fetchMyRole()
     fetchNotifications()
-  }, [token, user, router, fetchMe])
+  }, [mcpToken, user, router, fetchMe])
 
   // Auto-request push notification permission on first visit
   useEffect(() => {
-    if (!token || !user) return
+    if (!mcpToken || !user) return
     const timer = setTimeout(async () => {
       if (typeof window === 'undefined' || !('Notification' in window)) return
       if (Notification.permission !== 'default') return // already decided
@@ -41,7 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer)
   }, [token, user])
 
-  if (!token) return null
+  if (!mcpToken) return null
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
