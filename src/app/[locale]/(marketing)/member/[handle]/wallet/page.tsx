@@ -57,6 +57,7 @@ export default function PublicWalletPage(props: PageProps) {
   const { colors } = useProfileTheme()
 
   const isOwner = !!user && (
+    user.handle === handle ||
     user.username === handle ||
     (user.settings?.handle as string) === handle
   )
@@ -70,14 +71,14 @@ export default function PublicWalletPage(props: PageProps) {
       try {
         const sb = createClient()
         // Fetch wallet balance from user_wallets table
-        const { data: walletData, error: walletError } = await sb.from('user_wallets').select('balance, lifetime_earned').eq('username', handle).single()
+        const { data: userRow } = await sb.from('users').select('id').eq('handle', handle).single()
+        if (!userRow) throw new Error('user not found')
+        const { data: walletData, error: walletError } = await sb.from('user_wallets').select('balance, lifetime_earned').eq('user_id', userRow.id).single()
         if (walletError) throw walletError
         setBalance(walletData?.balance ?? 0)
         setLifetime(walletData?.lifetime_earned ?? 0)
-        // Fetch transactions
-        const { data: txData, error: txError } = await sb.from('wallet_transactions').select('*').eq('username', handle).order('created_at', { ascending: false })
-        if (txError) throw txError
-        setTransactions(txData ?? [])
+        // wallet_transactions not yet implemented — use seed data
+        setTransactions(SEED_TRANSACTIONS)
       } catch {
         setBalance(285)
         setLifetime(340)

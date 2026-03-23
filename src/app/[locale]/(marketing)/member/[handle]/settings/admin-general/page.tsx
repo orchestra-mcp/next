@@ -12,7 +12,7 @@ export default function AdminGeneralPage() {
       try {
         const sb = createClient()
         const { data, error } = await sb
-          .from('settings')
+          .from('system_settings')
           .select('value')
           .eq('key', 'coming_soon')
           .maybeSingle()

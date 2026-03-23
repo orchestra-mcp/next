@@ -42,7 +42,7 @@ export default function LoginPage() {
     setPasskeySupported(typeof window !== 'undefined' && !!window.PublicKeyCredential)
     setShowDevPanel(localStorage.getItem('show_dev_panel') === 'true')
     const sb = createClient()
-    sb.from('settings').select('value').eq('key', 'integrations').maybeSingle()
+    sb.from('system_settings').select('value').eq('key', 'integrations').maybeSingle()
       .then(({ data }) => {
         if (!data?.value || typeof data.value !== 'object') return
         const providers: Record<string, boolean> = {}

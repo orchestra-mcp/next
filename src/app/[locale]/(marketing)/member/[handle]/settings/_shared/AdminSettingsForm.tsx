@@ -57,7 +57,7 @@ export default function AdminSettingsForm({ settingKey, title, fields, showLocal
 
       // Upsert the setting into the settings table
       const { error } = await sb
-        .from('settings')
+        .from('system_settings')
         .upsert(
           { key: `${settingKey}:${contentLocale}`, value: values },
           { onConflict: 'key' }
@@ -67,7 +67,7 @@ export default function AdminSettingsForm({ settingKey, title, fields, showLocal
       // Sync standalone settings that have their own keys
       if (settingKey === 'general' && 'coming_soon' in values) {
         const { error: csError } = await sb
-          .from('settings')
+          .from('system_settings')
           .upsert(
             {
               key: `coming_soon:${contentLocale}`,

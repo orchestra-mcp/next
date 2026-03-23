@@ -52,7 +52,7 @@ export function ShareControlPanel({
     setSaving(true)
     try {
       const sb = createClient()
-      const { error } = await sb.from('community_shares').update({ visibility: newVisibility }).eq('id', shareId)
+      const { error } = await sb.from('shared_contents').update({ visibility: newVisibility }).eq('id', shareId)
       if (error) throw error
       setVisibility(newVisibility)
       onVisibilityChange?.(newVisibility)

@@ -47,7 +47,7 @@ export default function SocialLinksPage(props: PageProps) {
   const loadLinks = useCallback(async () => {
     try {
       const sb = createClient()
-      const { data, error } = await sb.from('users').select('social_links').eq('username', handle).single()
+      const { data, error } = await sb.from('users').select('social_links').eq('handle', handle).single()
       if (error) throw error
       const existing = data?.social_links as SocialLink[] | undefined
       if (Array.isArray(existing) && existing.length > 0) {
@@ -96,7 +96,7 @@ export default function SocialLinksPage(props: PageProps) {
     setMessage(null)
     try {
       const sb = createClient()
-      const { error } = await sb.from('users').update({ social_links: links }).eq('username', handle)
+      const { error } = await sb.from('users').update({ social_links: links }).eq('handle', handle)
       if (error) throw error
       setMessage({ type: 'success', text: 'Social links saved.' })
     } catch (e: unknown) {

@@ -38,7 +38,7 @@ export default function ProfileContentCard({ handle }: Props) {
         const sb = createClient()
         const { data: { user } } = await sb.auth.getUser()
         if (!user) throw new Error('Not authenticated')
-        const { data, error } = await sb.from('community_shares').select('id, entity_type, visibility').eq('user_id', user.id)
+        const { data, error } = await sb.from('shared_contents').select('id, entity_type, visibility').eq('user_id', user.id)
         if (error) throw error
         setShares(data ?? [])
       } catch {

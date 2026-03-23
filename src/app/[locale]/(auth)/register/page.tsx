@@ -28,7 +28,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     const sb = createClient()
-    sb.from('settings').select('value').eq('key', 'integrations').maybeSingle()
+    sb.from('system_settings').select('value').eq('key', 'integrations').maybeSingle()
       .then(({ data }) => {
         if (!data?.value || typeof data.value !== 'object') return
         const providers: Record<string, boolean> = {}
@@ -39,7 +39,7 @@ export default function RegisterPage() {
       })
       .catch(() => {})
 
-    sb.from('settings').select('value').eq('key', 'general').maybeSingle()
+    sb.from('system_settings').select('value').eq('key', 'general').maybeSingle()
       .then(({ data }) => {
         if ((data?.value as any)?.allow_register === false) setRegistrationDisabled(true)
       })

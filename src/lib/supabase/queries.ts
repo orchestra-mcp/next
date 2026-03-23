@@ -130,9 +130,13 @@ export async function fetchUserSetting(key: string) {
 
 export async function upsertUserSetting(key: string, value: unknown) {
   const sb = getClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return
+  const { data: profile } = await sb.from('users').select('id').single()
+  if (!profile) return
   throwOnError(
     await sb.from('user_settings').upsert(
-      { key, value, updated_at: new Date().toISOString() },
+      { user_id: profile.id, key, value, updated_at: new Date().toISOString() },
       { onConflict: 'user_id,key' }
     )
   )
@@ -142,7 +146,7 @@ export async function upsertUserSetting(key: string, value: unknown) {
 
 export async function fetchFeatureFlagsSetting() {
   const sb = getClient()
-  const result = await sb.from('settings').select('value').eq('key', 'features').maybeSingle()
+  const result = await sb.from('system_settings').select('value').eq('key', 'features').maybeSingle()
   if (result.error) throw new Error(result.error.message)
   return (result.data?.value ?? {}) as Record<string, unknown>
 }
@@ -238,7 +242,7 @@ export async function fetchMemberProfile(handle: string) {
   return throwOnError(
     await sb.from('users')
       .select('id,name,username,avatar_url,cover_url,bio,about,role,location,created_at,social_links,is_public,show_badges,show_wallet,settings')
-      .eq('username', handle)
+      .eq('handle', handle)
       .single()
   )
 }
@@ -636,7 +640,7 @@ export async function fetchAdminGitHubRepos() {
 
 export async function fetchAdminSetting(key: string) {
   const sb = getClient()
-  const result = await sb.from('settings').select('value,updated_at').eq('key', key).maybeSingle()
+  const result = await sb.from('system_settings').select('value,updated_at').eq('key', key).maybeSingle()
   if (result.error) throw new Error(result.error.message)
   return (result.data?.value ?? {}) as Record<string, unknown>
 }
@@ -644,7 +648,7 @@ export async function fetchAdminSetting(key: string) {
 export async function updateAdminSetting(key: string, value: Record<string, unknown>) {
   const sb = getClient()
   throwOnError(
-    await sb.from('settings').upsert(
+    await sb.from('system_settings').upsert(
       { key, value, updated_at: new Date().toISOString() },
       { onConflict: 'key' }
     )

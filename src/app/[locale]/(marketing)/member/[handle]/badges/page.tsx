@@ -45,7 +45,7 @@ export default function PublicBadgesPage(props: PageProps) {
       try {
         const sb = createClient()
         // Fetch user's badges with badge details via join
-        const { data: userData, error: userError } = await sb.from('users').select('id').eq('username', handle).single()
+        const { data: userData, error: userError } = await sb.from('users').select('id').eq('handle', handle).single()
         if (userError) throw userError
         const userId = userData.id
         const { data, error } = await sb.from('user_badges').select('*, badge:badges(*)').eq('user_id', userId)

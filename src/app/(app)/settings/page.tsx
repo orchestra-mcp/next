@@ -1337,7 +1337,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const sb = createClient()
-    sb.from('settings').select('value').eq('key', 'integrations').maybeSingle()
+    sb.from('system_settings').select('value').eq('key', 'integrations').maybeSingle()
       .then(({ data }) => {
         const providers: Record<string, boolean> = {}
         for (const [k, v] of Object.entries((data?.value as Record<string, unknown>) ?? {})) {
@@ -1363,7 +1363,7 @@ export default function SettingsPage() {
           setUserIntegrations(map)
         })
         .catch(() => {})
-      sb.from('settings').select('value').eq('key', 'integration_apps').maybeSingle()
+      sb.from('system_settings').select('value').eq('key', 'integration_apps').maybeSingle()
         .then(({ data }) => setAppInstallUrls((data?.value as Record<string, { install_url: string; name: string }>) ?? {}))
         .catch(() => {})
     }
@@ -2239,7 +2239,7 @@ export default function SettingsPage() {
                         setAdminSettings(p => ({ ...p, seo: { ...p.seo, generated_sitemap: res.sitemap } }))
                         // Also save to seo settings so /sitemap.xml route can serve it
                         try {
-                          await sb.from('settings').upsert({ key: 'seo', value: { ...adminSettings.seo, generated_sitemap: res.sitemap }, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+                          await sb.from('system_settings').upsert({ key: 'seo', value: { ...adminSettings.seo, generated_sitemap: res.sitemap }, updated_at: new Date().toISOString() }, { onConflict: 'key' })
                         } catch {}
                       }
                     } catch {}

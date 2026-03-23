@@ -55,7 +55,7 @@ export default function ProfileSidebar({ handle }: ProfileSidebarProps) {
     async function loadShares() {
       try {
         const sb = createClient()
-        let query = sb.from('community_shares').select('entity_type, visibility')
+        let query = sb.from('shared_contents').select('entity_type, visibility')
         if (isOwner) {
           const { data: { user: authUser } } = await sb.auth.getUser()
           if (authUser) query = query.eq('user_id', authUser.id)
