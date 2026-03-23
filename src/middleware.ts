@@ -17,6 +17,7 @@ const BYPASS_PATHS = [
   '/magic-login',
   '/two-factor',
   '/cli-auth',
+  '/auth/callback',
 ]
 
 const PUBLIC_PREFIXES = ['/_next', '/api', '/uploads', '/favicon', '/logo', '/og-image', '/icons']
