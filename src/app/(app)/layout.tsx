@@ -39,7 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
     }, 3000) // delay 3s to not interrupt the user immediately
     return () => clearTimeout(timer)
-  }, [token, user])
+  }, [mcpToken, user])
 
   if (!mcpToken) return null
 
